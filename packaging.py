@@ -1,60 +1,104 @@
 from __future__ import annotations
 
-import numpy as np
-from scipy.linalg import solve_discrete_are
+import hashlib
+import os
+import tempfile
+import zipfile
+from pathlib import Path
+from typing import Iterable
+
+from .utils import atomic_write_text, ensure_dir
 
 
-def dlqr(A: np.ndarray, B: np.ndarray, Q: np.ndarray, R: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    P = solve_discrete_are(A, B, Q, R)
-    K = np.linalg.solve(R + B.T @ P @ B, B.T @ P @ A)
-    return K, P
+def zip_paths(zip_path: Path | str, include_roots: list[tuple[Path, str]]) -> Path:
+    zip_path = Path(zip_path)
+    ensure_dir(zip_path.parent)
+    zip_real = zip_path.resolve()
+    fd, tmp_name = tempfile.mkstemp(prefix=zip_path.name + ".", suffix=".tmp", dir=zip_path.parent)
+    os.close(fd)
+    tmp_real = Path(tmp_name).resolve()
+    try:
+        with zipfile.ZipFile(tmp_name, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            for root, arc_prefix in include_roots:
+                root = Path(root)
+                if root.is_file():
+                    root_real = root.resolve()
+                    if root_real == zip_real or root_real == tmp_real or root.name.endswith(".tmp"):
+                        continue
+                    zf.write(root, arcname=str(Path(arc_prefix) / root.name))
+                    continue
+                if not root.exists():
+                    continue
+                for file_path in sorted(p for p in root.rglob("*") if p.is_file()):
+                    file_real = file_path.resolve()
+                    if file_real == zip_real or file_real == tmp_real:
+                        continue
+                    if file_path.name.endswith(".tmp") or file_path.suffix == ".tmp":
+                        continue
+                    arcname = str(Path(arc_prefix) / file_path.relative_to(root))
+                    zf.write(file_path, arcname=arcname)
+        os.replace(tmp_name, zip_path)
+    finally:
+        if os.path.exists(tmp_name):
+            os.unlink(tmp_name)
+    return zip_path
 
 
-def dlqr_robust(
-    A: np.ndarray,
-    B: np.ndarray,
-    Q: np.ndarray,
-    R: np.ndarray,
-    mismatch_bound: float = 0.20,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Robust LQR with gain scaling for bounded model mismatch (Prop H.3).
-
-    When the true dynamics (A_true, B_true) differ from the nominal model
-    (A, B) by up to `mismatch_bound`, the standard LQR gain K can be
-    destabilising if ρ(A - B*K) * (1 + mismatch_bound) ≥ 1.
-
-    Fix: inflate R by (1 + mismatch_bound)² to obtain a more conservative
-    gain K_r satisfying: ρ(A - B*K_r) ≤ ρ(A-B*K) / (1 + mismatch_bound).
-    This is the standard "robust LQR" gain derating, equivalent to requiring
-    the closed-loop to be stable for all (A', B') with ‖A'−A‖ ≤ δ·‖A‖.
-
-    Returns (K_robust, P_robust), mirroring dlqr().
-    """
-    R_robust = R * (1.0 + mismatch_bound) ** 2
-    P_r = solve_discrete_are(A, B, Q, R_robust)
-    K_r = np.linalg.solve(R_robust + B.T @ P_r @ B, B.T @ P_r @ A)
-    return K_r, P_r
+def sha256_file(path: Path | str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
-def finite_horizon_tracking(
-    A: np.ndarray,
-    B: np.ndarray,
-    Q: np.ndarray,
-    R: np.ndarray,
-    H: int,
-    P_terminal: np.ndarray | None = None,
-) -> list[np.ndarray]:
-    """Finite-horizon LQR gains via backward Riccati recursion.
+def update_stage_archives(project_root: Path, stage_name: str) -> list[Path]:
+    deliverables = ensure_dir(project_root / "deliverables" / "stages")
+    stage_results_root = project_root / "results" / stage_name
+    archives = []
+    archives.append(zip_paths(deliverables / f"{stage_name}_source.zip", [
+        (project_root / "src", "src"),
+        (project_root / "tests", "tests"),
+        (project_root / "configs", "configs"),
+        (project_root / "run_all.py", ""),
+        (project_root / "README.md", ""),
+        (project_root / "pyproject.toml", ""),
+    ]))
+    archives.append(zip_paths(deliverables / f"{stage_name}_docs.zip", [(project_root / "docs", "docs")]))
+    archives.append(zip_paths(deliverables / f"{stage_name}_results.zip", [
+        (stage_results_root, f"results/{stage_name}"),
+        (project_root / "results" / "run_manifest.json", "results"),
+        (project_root / "results" / "logs", "results/logs"),
+    ]))
+    return archives
 
-    When P_terminal is the DARE solution, the recursion starts at the
-    infinite-horizon optimum and stays there (fixed point), giving exactly
-    the infinite-horizon LQR gain K_LQR for all H steps.  This removes the
-    under-converged-gain artefact that appeared when P_0=Q was used.
-    """
-    P = P_terminal.copy() if P_terminal is not None else Q.copy()
-    gains = []
-    for _ in range(H):
-        K = np.linalg.solve(R + B.T @ P @ B, B.T @ P @ A)
-        gains.append(K)
-        P = Q + A.T @ P @ (A - B @ K)
-    return list(reversed(gains))
+
+def update_final_archives(project_root: Path) -> list[Path]:
+    deliverables = ensure_dir(project_root / "deliverables")
+    archives = []
+    archives.append(zip_paths(deliverables / "hdr_validation_python_source.zip", [
+        (project_root / "src", "src"),
+        (project_root / "tests", "tests"),
+        (project_root / "configs", "configs"),
+        (project_root / "run_all.py", ""),
+        (project_root / "README.md", ""),
+        (project_root / "pyproject.toml", ""),
+    ]))
+    archives.append(zip_paths(deliverables / "hdr_validation_docs.zip", [(project_root / "docs", "docs")]))
+    archives.append(zip_paths(deliverables / "hdr_validation_results.zip", [
+        (project_root / "results", "results"),
+    ]))
+    archives.append(zip_paths(deliverables / "all_deliverables_and_stage_zips.zip", [
+        (project_root / "deliverables", "deliverables"),
+    ]))
+    return archives
+
+
+def write_checksums(project_root: Path) -> Path:
+    deliverables = project_root / "deliverables"
+    rows = []
+    for file_path in sorted(p for p in deliverables.rglob("*.zip") if p.is_file()):
+        rows.append(f"{sha256_file(file_path)}  {file_path.relative_to(project_root)}")
+    out = deliverables / "checksums_sha256.txt"
+    atomic_write_text(out, "\n".join(rows) + ("\n" if rows else ""))
+    return out
