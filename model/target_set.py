@@ -9,6 +9,22 @@ class TargetSet:
         self.center = center
         self.radius = radius
 
+    @property
+    def box_low(self) -> np.ndarray:
+        return self.center - self.radius
+
+    @property
+    def box_high(self) -> np.ndarray:
+        return self.center + self.radius
+
+    @property
+    def safety_low(self) -> np.ndarray:
+        return self.center - self.radius * 1.5
+
+    @property
+    def safety_high(self) -> np.ndarray:
+        return self.center + self.radius * 1.5
+
     def dist2(self, x: np.ndarray, Q: np.ndarray | None = None, method: str = "box") -> float:
         if Q is not None:
             diff = x - self.center
