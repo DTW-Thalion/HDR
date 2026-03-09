@@ -12,6 +12,52 @@ def dlqr(A: np.ndarray, B: np.ndarray, Q: np.ndarray, R: np.ndarray) -> tuple[np
     return K, P
 
 
+def dlqr_robust(
+    A: np.ndarray,
+    B: np.ndarray,
+    Q: np.ndarray,
+    R: np.ndarray,
+    mismatch_bound: float = 0.20,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Robust DLQR: inflate R by (1+delta)^2 to maintain closed-loop stability
+    under multiplicative model mismatch of magnitude delta (mismatch_bound)."""
+    R_robust = np.asarray(R, dtype=float) * (1.0 + mismatch_bound) ** 2
+    return dlqr(A, B, Q, R_robust)
+
+
+def finite_horizon_tracking(
+    A: np.ndarray,
+    B: np.ndarray,
+    Q: np.ndarray,
+    R: np.ndarray,
+    H: int,
+    P_terminal: np.ndarray | None = None,
+) -> list[np.ndarray]:
+    """Backward Riccati recursion for finite-horizon LQR tracking.
+
+    Returns a list of H feedback gain matrices K_0, ..., K_{H-1} where
+    K_t is the optimal gain at step t.  Apply u_t = -K_t @ (x_t - x_ref).
+
+    Uses P_terminal as the terminal cost matrix (defaults to Q if None).
+    """
+    P = np.asarray(P_terminal if P_terminal is not None else Q, dtype=float).copy()
+    Q = np.asarray(Q, dtype=float)
+    R = np.asarray(R, dtype=float)
+    A = np.asarray(A, dtype=float)
+    B = np.asarray(B, dtype=float)
+    gains: list[np.ndarray] = []
+    for _ in range(H):
+        M = R + B.T @ P @ B
+        K = np.linalg.solve(M, B.T @ P @ A)
+        gains.append(K)
+        P = Q + A.T @ P @ A - A.T @ P @ B @ K
+    gains.reverse()
+    return gains
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Core committor / MDP utilities
+# ─────────────────────────────────────────────────────────────────────────────
 def finite_horizon_tracking(
     A: np.ndarray, B: np.ndarray, Q: np.ndarray, R: np.ndarray, H: int, P_terminal: np.ndarray | None = None
 ) -> list[np.ndarray]:

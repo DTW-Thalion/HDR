@@ -19,6 +19,11 @@ class TargetSet:
 
     @property
     def safety_low(self) -> np.ndarray:
+        return self.center - self.radius * 1.5
+
+    @property
+    def safety_high(self) -> np.ndarray:
+        return self.center + self.radius * 1.5
         # Conservative safety bounds (wider than target box)
         return self.center - 2.0 * self.radius
 
