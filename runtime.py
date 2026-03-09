@@ -176,7 +176,7 @@ def run(project_root: Path, profile_name: str, config: dict) -> dict:
         0.05,
     ][:K]
     p_miss_obs = float(np.mean([
-        float(np.mean(np.isnan(epi["y"]) if "y" in epi else 0.516))
+        float(1.0 - np.mean(epi["mask"])) if "mask" in epi else float(config.get("missing_fraction_target", 0.516))
         for epi in (val_eps + test_eps) if epi
     ])) if (val_eps + test_eps) else float(config.get("missing_fraction_target", 0.516))
     T_k_eff_per_basin = [

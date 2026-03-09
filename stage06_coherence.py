@@ -7,8 +7,10 @@ import numpy as np
 
 from ..control.baselines import myopic_policy
 from ..control.mode_b import committor, hybrid_mode_b_action, posterior_committor
+from ..control.mode_c import supervisor_mode_select
 from ..control.mpc import MPCResult, solve_mode_a
 from ..generator.ground_truth import SyntheticEnv
+from ..inference.ici import compute_T_k_eff
 from ..inference.imm import IMMFilter
 from ..metrics import recovery_time_from_challenge
 from ..model.coherence import coherence_from_state_history, coherence_penalty
@@ -129,6 +131,23 @@ def run_closed_loop_episode(
         Kb, _ = dlqr(basin.A, basin.B, np.eye(basin.A.shape[0]), np.eye(basin.B.shape[1]) * float(config["lambda_u"]))
         basin_Ks.append(Kb)
     policy_cache = {"pooled_K": pooled_K, "basin_Ks": basin_Ks}
+    # Compute ICI T_k_eff threshold flag (BUG 1 fix): when any basin has
+    # T_k_eff < omega_min, Mode C should permanently preempt Mode B.
+    K = len(eval_model.basins)
+    T_total_ep = float(env.T)
+    pi_vals = [
+        1.0 - float(config.get("mode1_base_rate", 0.16)) - 0.05,
+        float(config.get("mode1_base_rate", 0.16)),
+        0.05,
+    ][:K]
+    p_miss_ep = float(config.get("missing_fraction_target", 0.516))
+    omega_min_factor = float(config.get("omega_min_factor", 0.005))
+    omega_min_ep = omega_min_factor * T_total_ep
+    T_k_eff_ep = [
+        compute_T_k_eff(T_total_ep, pi_vals[k], p_miss_ep, eval_model.basins[k].rho)
+        for k in range(K)
+    ]
+    t_k_eff_below_threshold = any(t < omega_min_ep for t in T_k_eff_ep)
     # Pre-compute per-basin committor values for posterior-weighted q̂.
     # The posterior committor q̂_t = Σ_k P(z_t=k) * q_k is computed live
     # in the loop using posterior_committor(), which also applies ΔP(u).
@@ -179,7 +198,28 @@ def run_closed_loop_episode(
             "transition": eval_model.transition,  # for ΔP(u) mechanism in Mode B
             "used_burden": used_burden,            # for Mode B apply_control_constraints
         }
-        if not allow_mode_b:
+        # ICI gate (BUG 1 fix): call supervisor_mode_select with the
+        # t_k_eff_below_threshold flag so Mode C permanently preempts Mode B
+        # when T_k_eff < omega_min for any basin.
+        ici_state_live = {
+            "mode_c_recommended": t_k_eff_below_threshold,
+            "condition_i": False,
+            "condition_ii": False,
+            "condition_iii": t_k_eff_below_threshold,
+        }
+        mode_b_entry_cond = (
+            float(obs_ctl["mode_probs"][1]) >= float(config["pA"])
+            if len(obs_ctl["mode_probs"]) > 1 else False
+        )
+        supervisor_decision = supervisor_mode_select(
+            ici_state=ici_state_live,
+            mode_b_conditions_met=mode_b_entry_cond,
+            mode_c_active=False,
+            degradation_flag=False,
+            t_k_eff_below_threshold=t_k_eff_below_threshold,
+        )
+        allow_mode_b_step = allow_mode_b and (supervisor_decision != "mode_c")
+        if not allow_mode_b_step:
             q_hat = 1.0
             obs_ctl["q_hat"] = q_hat
             obs_ctl["entrenchment"] = False
