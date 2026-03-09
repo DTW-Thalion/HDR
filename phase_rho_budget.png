@@ -1,0 +1,94 @@
+{
+  "rows": [
+    {
+      "base_cost": 16.861648803609334,
+      "base_safety": 0.0,
+      "gain": -0.6558418343010874,
+      "hdr_cost": 27.92022348430922,
+      "hdr_safety": 0.015625,
+      "pA": 0.6,
+      "qmin": 0.1,
+      "sweep": "pA_qmin"
+    },
+    {
+      "base_cost": 16.861648803609334,
+      "base_safety": 0.0,
+      "gain": -0.6558418343010874,
+      "hdr_cost": 27.92022348430922,
+      "hdr_safety": 0.015625,
+      "pA": 0.7,
+      "qmin": 0.1,
+      "sweep": "pA_qmin"
+    },
+    {
+      "base_cost": 16.861648803609334,
+      "base_safety": 0.0,
+      "gain": -0.6558576682621153,
+      "hdr_cost": 27.92049047099924,
+      "hdr_safety": 0.015625,
+      "pA": 0.8,
+      "qmin": 0.1,
+      "sweep": "pA_qmin"
+    },
+    {
+      "base_cost": 16.861648803609334,
+      "base_safety": 0.0,
+      "gain": -0.6558418343010874,
+      "hdr_cost": 27.92022348430922,
+      "hdr_safety": 0.015625,
+      "pA": 0.6,
+      "qmin": 0.15,
+      "sweep": "pA_qmin"
+    },
+    {
+      "base_cost": 16.861648803609334,
+      "base_safety": 0.0,
+      "gain": -0.6558418343010874,
+      "hdr_cost": 27.92022348430922,
+      "hdr_safety": 0.015625,
+      "pA": 0.7,
+      "qmin": 0.15,
+      "sweep": "pA_qmin"
+    },
+    {
+      "base_cost": 16.861648803609334,
+      "base_safety": 0.0,
+      "gain": -0.6558576682621153,
+      "hdr_cost": 27.92049047099924,
+      "hdr_safety": 0.015625,
+      "pA": 0.8,
+      "qmin": 0.15,
+      "sweep": "pA_qmin"
+    },
+    {
+      "base_cost": 16.861648803609334,
+      "base_safety": 0.0,
+      "gain": -0.6558418343010874,
+      "hdr_cost": 27.92022348430922,
+      "hdr_safety": 0.015625,
+      "pA": 0.6,
+      "qmin": 0.2,
+      "sweep": "pA_qmin"
+    },
+    {
+      "base_cost": 16.861648803609334,
+      "base_safety": 0.0,
+      "gain": -0.6558418343010874,
+      "hdr_cost": 27.92022348430922,
+      "hdr_safety": 0.015625,
+      "pA": 0.7,
+      "qmin": 0.2,
+      "sweep": "pA_qmin"
+    },
+    {
+      "base_cost": 16.861648803609334,
+      "base_safety": 0.0,
+      "gain": -0.6558576682621153,
+      "hdr_cost": 27.92049047099924,
+      "hdr_safety": 0.015625,
+      "pA": 0.8,
+      "qmin": 0.2,
+      "sweep": "pA_qmin"
+    }
+  ]
+}

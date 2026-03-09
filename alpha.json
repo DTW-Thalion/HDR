@@ -1,0 +1,22 @@
+{
+  "rows": [
+    {
+      "base_cost": 30.966363257420216,
+      "base_safety": 0.0078125,
+      "gain": 0.5723716300004691,
+      "hdr_cost": 13.242095444583972,
+      "hdr_safety": 0.00390625,
+      "setting": "nominal",
+      "sweep": "negative_control"
+    },
+    {
+      "base_cost": 41.87524726661924,
+      "base_safety": 0.01171875,
+      "gain": 0.1648279753118158,
+      "hdr_cost": 34.973035043980744,
+      "hdr_safety": 0.01171875,
+      "setting": "inverse_crime",
+      "sweep": "negative_control"
+    }
+  ]
+}

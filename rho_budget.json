@@ -1,0 +1,13 @@
+{
+  "best_gain": 0.8901438857443379,
+  "failure_regimes": [
+    "coupling",
+    "delay_mismatch",
+    "noise_missing",
+    "pA_qmin",
+    "rho_budget"
+  ],
+  "oracle_optimism_gap": -0.4075436546886533,
+  "rows": 59,
+  "worst_gain": -75.924686526395
+}
