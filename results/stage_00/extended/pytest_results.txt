@@ -1,8 +1,0 @@
-{
-  "environment_report": "results/environment_report.json",
-  "notes": "Docs initialized from attached paper; stage/profile packaging refreshed.",
-  "profile": "extended",
-  "stage": "stage_00",
-  "timestamp": "2026-03-08T21:24:35Z",
-  "using_paper": true
-}
