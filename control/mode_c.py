@@ -198,6 +198,7 @@ def supervisor_mode_select(
     mode_b_conditions_met: bool,
     mode_c_active: bool,
     degradation_flag: bool,
+    t_k_eff_below_threshold: bool = False,
 ) -> str:
     """Triple-mode supervisor logic (Table 3, HDR v5.0).
 
@@ -205,10 +206,13 @@ def supervisor_mode_select(
 
     Parameters
     ----------
-    ici_state             : output of compute_ici_state()
-    mode_b_conditions_met : all three Mode B entry conditions satisfied
-    mode_c_active         : Mode C is already running
-    degradation_flag      : Mode C T_C_max exceeded
+    ici_state                : output of compute_ici_state()
+    mode_b_conditions_met    : all three Mode B entry conditions satisfied
+    mode_c_active            : Mode C is already running
+    degradation_flag         : Mode C T_C_max exceeded
+    t_k_eff_below_threshold  : any basin has T_k_eff < omega_min; when True,
+                               Mode C permanently preempts Mode B regardless of
+                               whether Mode C has formally exited.
 
     Returns
     -------
@@ -216,6 +220,8 @@ def supervisor_mode_select(
     """
     if degradation_flag:
         return "mode_a"  # forced fallback with degradation flag
+    if t_k_eff_below_threshold:
+        return "mode_c"  # ICI gate: T_k_eff too low → Mode C preempts Mode B
     if mode_c_active or ici_state.get("mode_c_recommended", False):
         return "mode_c"
     if mode_b_conditions_met:

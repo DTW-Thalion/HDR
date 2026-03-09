@@ -274,10 +274,21 @@ def hybrid_mode_b_action(
     pA = float(config["pA"])
     qmin = float(config["qmin"])
 
+    # Condition (iv): IMM-independent state-space evidence.
+    # x_hat must lie outside the target center by at least delta_x, providing
+    # evidence of entrenchment that cannot be co-satisfied by IMM posterior
+    # error alone.  This breaks the co-activation pattern when all three
+    # conditions (i)–(iii) fire simultaneously due to a miscalibrated IMM.
+    target = obs["target"]
+    target_center = 0.5 * (target.box_low + target.box_high)
+    delta_x = float(config.get("mode_b_state_margin", 0.15))
+    state_outside_target = bool(np.linalg.norm(obs["x_hat"] - target_center) >= delta_x)
+
     entry_met = (
         posterior_maladaptive >= pA
         and entrenchment
         and q_hat <= qmin
+        and state_outside_target
     )
     if not entry_met:
         return ModeBDecision(
@@ -285,7 +296,6 @@ def hybrid_mode_b_action(
         )
 
     # Compute direction toward Π(x̂, S*)
-    target = obs["target"]
     try:
         proj = target.project_exact_slsqp(obs["x_hat"])
     except Exception:

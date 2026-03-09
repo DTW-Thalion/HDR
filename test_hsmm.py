@@ -151,6 +151,40 @@ class TestSupervisorModeSelect:
         )
         assert mode == "mode_c"
 
+    def test_t_k_eff_below_threshold_preempts_mode_b(self):
+        """When T_k_eff < omega_min, Mode C preempts Mode B even if ICI conditions
+        appear clean (mode_c_recommended=False) and mode_c_active=False."""
+        mode = supervisor_mode_select(
+            ici_state={"mode_c_recommended": False},
+            mode_b_conditions_met=True,
+            mode_c_active=False,
+            degradation_flag=False,
+            t_k_eff_below_threshold=True,
+        )
+        assert mode == "mode_c"
+
+    def test_t_k_eff_above_threshold_allows_mode_b(self):
+        """When T_k_eff >= omega_min, Mode B proceeds normally when conditions met."""
+        mode = supervisor_mode_select(
+            ici_state={"mode_c_recommended": False},
+            mode_b_conditions_met=True,
+            mode_c_active=False,
+            degradation_flag=False,
+            t_k_eff_below_threshold=False,
+        )
+        assert mode == "mode_b"
+
+    def test_degradation_still_overrides_threshold(self):
+        """Degradation flag forces Mode A even when t_k_eff_below_threshold is True."""
+        mode = supervisor_mode_select(
+            ici_state={"mode_c_recommended": True},
+            mode_b_conditions_met=True,
+            mode_c_active=True,
+            degradation_flag=True,
+            t_k_eff_below_threshold=True,
+        )
+        assert mode == "mode_a"
+
 
 class TestModeCTracker:
     """ModeCTracker state management."""
