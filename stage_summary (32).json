@@ -1,0 +1,73 @@
+{
+  "H": 6,
+  "K": 3,
+  "K_values": [
+    3,
+    4
+  ],
+  "alpha_i": 0.05,
+  "chunk_size": 25,
+  "circadian_locked_controls": [
+    5,
+    6
+  ],
+  "coherence_axes": [
+    1,
+    5,
+    6
+  ],
+  "coherence_window": 24,
+  "control_dim": 8,
+  "controller_projection_method": "box",
+  "default_burden_budget": 14.0,
+  "delay_control_dims": [
+    1,
+    5
+  ],
+  "delay_steps": 2,
+  "disturbance_dim": 8,
+  "dt_minutes": 30,
+  "episodes_per_experiment": 64,
+  "eps_safe": 0.01,
+  "kappa_hi": 0.75,
+  "kappa_lo": 0.55,
+  "lambda_u": 0.1,
+  "light_plots": true,
+  "max_dwell_len": 256,
+  "mc_rollouts": 1000,
+  "mode_b_actions": [
+    "conservative",
+    "aggressive"
+  ],
+  "obs_dim": 16,
+  "optional_k4_selected_only": true,
+  "optional_variational_slds": false,
+  "pA": 0.7,
+  "parallel_workers": 1,
+  "profile_name": "extended",
+  "qmin": 0.15,
+  "rho_reference": [
+    0.72,
+    0.96,
+    0.55
+  ],
+  "run_extended_sweeps": true,
+  "save_full_trace_cap": 5,
+  "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505
+  ],
+  "selected_k4": true,
+  "selected_trace_cap": 5,
+  "stage_chunk_flush": true,
+  "state_dim": 8,
+  "steps_per_day": 48,
+  "steps_per_episode": 512,
+  "target_exact_projection_method": "slsqp",
+  "w1": 1.0,
+  "w2": 0.5,
+  "w3": 0.3
+}
