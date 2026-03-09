@@ -1,0 +1,19 @@
+# Failures
+
+## stage_03 / smoke / 2026-03-08T17:58:12Z
+
+```
+Traceback (most recent call last):
+  File "/mnt/data/hdr_validation/run_all.py", line 42, in run_stage
+    summary = module.run(project_root, profile_name, config)
+  File "/mnt/data/hdr_validation/src/hdr_validation/experiments/stage03_identification.py", line 58, in run
+    train_eps = [_load_npz(p) for p in _list_npz(stage02_root / "train")]
+                 ~~~~~~~~~^^^
+  File "/mnt/data/hdr_validation/src/hdr_validation/experiments/stage03_identification.py", line 20, in _load_npz
+    with np.load(path, allow_pickle=True) as data:
+         ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/pyvenv/lib/python3.13/site-packages/numpy/lib/_npyio_impl.py", line 463, in load
+    raise EOFError("No data left in file")
+EOFError: No data left in file
+
+```

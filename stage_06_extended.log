@@ -1,0 +1,130 @@
+# HDR operational specification used for this build
+
+Primary source: attached HDR working paper v4.3.
+
+## Interpretation rule
+
+This repository uses the paper as the formal specification **for implementation targets**, but it deliberately does **not** inherit the paper's own in silico results from Section 13 nor its Discussion/Conclusion sections as evidence. Those sections are treated as prior claims to be re-tested independently.
+
+## Core state and regimes
+
+- Latent state dimension `n = 8`
+- Axes:
+  1. immunosenescence / inflammaging
+  2. metabolic dysfunction
+  3. epigenetic drift
+  4. mitochondrial decline
+  5. proteostasis stress
+  6. circadian dysregulation
+  7. neuroendocrine imbalance
+  8. musculoskeletal / functional state
+- Baseline basin count `K = 3`
+  - `0`: desired / healthy
+  - `1`: maladaptive / near-unit-root
+  - `2`: transient / stress response
+- Optional `K = 4` used only in selected sweeps
+
+## Evaluation-model dynamics
+
+Within basin `k`, the evaluator uses a switching linear state-space model:
+
+- `x[t+1] = A[k] x[t] + B[k] u[t] + E[k] d[t] + b[k] + w[t]`
+- `y[t]   = C[k] x[t] + c[k] + v[t]`
+
+Default reference spectral radii used in the synthetic baseline design:
+
+- desired: about `0.72`
+- maladaptive: about `0.96`
+- transient: about `0.55`
+
+## Dwell model
+
+- Basin process uses an HSMM-style dwell model
+- Maladaptive dwell is intentionally heavy-tailed / low-hazard
+
+## Mode A objective
+
+Finite-horizon controller with stage cost
+
+`w1 * dist_Q(x_t, S*(t))^2 + w2 * tau_tilde(x_t, z_t) + w3 * g(kappa_hat_t) + lambda * ||u_t||_R^2`
+
+where
+
+- `tau_tilde(x, z) = dist_Q(x, S*)^2 / (1 - rho(A[z])^2)`
+- `g(kappa)` is zero in-band and quadratic outside `[kappa_lo, kappa_hi]`
+
+Defaults:
+
+- `H = 6`
+- `kappa_lo = 0.55`
+- `kappa_hi = 0.75`
+- `pA = 0.70`
+- `qmin = 0.15`
+- `alpha_i = 0.05`
+- `eps_safe = 0.01`
+- weight ratio `w1:w2:w3 = 1.0:0.5:0.3`
+- `lambda = 0.1`
+
+## Target set
+
+`S*(t) = X_safety(t) ∩ X_cohort(t) ∩ X_personal(t) ∩ X_function(t)`
+
+Fallback rule: if the intersection is empty, use `X_safety`.
+
+## Safety constraints
+
+- control bounds
+- burden budget
+- circadian compatibility windows
+- chance-constraint tightening based on predicted observation covariance
+
+## Mode B trigger
+
+Entry requires all of:
+
+1. posterior maladaptive probability at least `pA`
+2. entrenchment diagnostic positive
+3. committor estimate at most `qmin`
+
+Two implementations are required:
+
+- exact reduced discrete controlled MDP reference
+- heuristic committor-based supervisor for the hybrid system
+
+Safety fallback is always available.
+
+## Observation model
+
+Evaluation stack uses a linear-factor observation model with masked heterogeneous timing:
+
+- fast channels frequently observed
+- slow channels intermittent
+- sporadic channels rare with optional smoothing-like update
+
+For resource-safe runs, a `30 minute` master control grid is used and heterogeneous updates are emulated via masks on that grid.
+
+## Ground-truth generator requirements
+
+The synthetic ground-truth generator must be richer than the evaluation model:
+
+- switching multi-basin dynamics
+- mild nonlinearity
+- slow drift in cross-axis couplings
+- bounded control delays
+- heavy-tailed or mixture process noise in robustness settings
+- heavy-tailed maladaptive dwell times
+- control-dependent transition bias in selected scenarios
+- multi-rate observations with missingness
+- heteroskedastic observation noise
+- optional nonlinear emission perturbation
+- slowly drifting target set
+- challenge library:
+  - orthostatic-like pulse
+  - mixed-meal-like pulse
+  - exercise-like pulse
+  - optional acute-stress pulse
+
+## Validation stance
+
+This repository is explicitly restricted to **synthetic numerical validation**.
+No biological, translational, or clinical claims are made.

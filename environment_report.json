@@ -1,0 +1,147 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+import numpy as np
+from scipy.optimize import minimize
+
+
+@dataclass
+class TargetSet:
+    safety_low: np.ndarray
+    safety_high: np.ndarray
+    cohort_center: np.ndarray
+    cohort_cov: np.ndarray
+    cohort_radius: float
+    personal_center: np.ndarray
+    personal_cov: np.ndarray
+    personal_radius: float
+    function_A: np.ndarray
+    function_b: np.ndarray
+    box_low: np.ndarray
+    box_high: np.ndarray
+    fallback_used: bool
+    time_index: int
+
+    def contains_box(self, x: np.ndarray) -> bool:
+        return bool(np.all(x >= self.box_low - 1e-8) and np.all(x <= self.box_high + 1e-8))
+
+    def contains_exact(self, x: np.ndarray) -> bool:
+        x = np.asarray(x, dtype=float)
+        safety = np.all(x >= self.safety_low - 1e-8) and np.all(x <= self.safety_high + 1e-8)
+        cohort = float((x - self.cohort_center).T @ np.linalg.pinv(self.cohort_cov) @ (x - self.cohort_center)) <= self.cohort_radius**2 + 1e-8
+        personal = float((x - self.personal_center).T @ np.linalg.pinv(self.personal_cov) @ (x - self.personal_center)) <= self.personal_radius**2 + 1e-8
+        function = np.all(self.function_A @ x <= self.function_b + 1e-8)
+        return bool(safety and cohort and personal and function)
+
+    def project_box(self, x: np.ndarray) -> np.ndarray:
+        return np.clip(np.asarray(x, dtype=float), self.box_low, self.box_high)
+
+    def project_exact_slsqp(self, x: np.ndarray, Q: np.ndarray | None = None) -> np.ndarray:
+        x = np.asarray(x, dtype=float)
+        Q = np.eye(len(x)) if Q is None else np.asarray(Q, dtype=float)
+        x0 = self.project_box(x)
+
+        def obj(s):
+            d = s - x
+            return float(d.T @ Q @ d)
+
+        cons = []
+        n = len(x)
+        for i in range(n):
+            cons.append({"type": "ineq", "fun": lambda s, i=i: s[i] - self.safety_low[i]})
+            cons.append({"type": "ineq", "fun": lambda s, i=i: self.safety_high[i] - s[i]})
+        inv_c = np.linalg.pinv(self.cohort_cov)
+        inv_p = np.linalg.pinv(self.personal_cov)
+        cons.append({"type": "ineq", "fun": lambda s: self.cohort_radius**2 - float((s - self.cohort_center).T @ inv_c @ (s - self.cohort_center))})
+        cons.append({"type": "ineq", "fun": lambda s: self.personal_radius**2 - float((s - self.personal_center).T @ inv_p @ (s - self.personal_center))})
+        for row, b in zip(self.function_A, self.function_b):
+            cons.append({"type": "ineq", "fun": lambda s, row=row, b=b: float(b - row @ s)})
+        res = minimize(obj, x0=x0, method="SLSQP", constraints=cons, options={"maxiter": 200, "ftol": 1e-8})
+        if res.success:
+            return np.asarray(res.x, dtype=float)
+        return self.project_box(x)
+
+    def dist2(self, x: np.ndarray, Q: np.ndarray | None = None, method: str = "box") -> float:
+        Q = np.eye(len(x)) if Q is None else np.asarray(Q, dtype=float)
+        p = self.project_box(x) if method == "box" else self.project_exact_slsqp(x, Q)
+        d = np.asarray(x, dtype=float) - p
+        return float(d.T @ Q @ d)
+
+
+def ellipsoid_to_box(center: np.ndarray, cov: np.ndarray, radius: float) -> tuple[np.ndarray, np.ndarray]:
+    scales = np.sqrt(np.maximum(np.diag(cov), 1e-8))
+    delta = radius * scales
+    return center - delta, center + delta
+
+
+def build_target_set(
+    t: int,
+    config: dict[str, Any],
+    history: np.ndarray | None = None,
+    drift_scale: float = 0.06,
+    linear_drift_rate: float = 0.0,
+    force_empty: bool = False,
+) -> TargetSet:
+    n = int(config["state_dim"])
+    steps_per_day = int(config["steps_per_day"])
+    phase = 2.0 * np.pi * (t % steps_per_day) / float(steps_per_day)
+    drift = np.zeros(n)
+    if linear_drift_rate > 0.0:
+        # Monotone linear drift: S*(t) drifts away from origin at a constant rate.
+        # This implements the ISS "linear-in-drift" burden increase claim:
+        # as drift velocity (delta_S = linear_drift_rate) increases, the controller
+        # falls progressively further behind, with residual ∝ delta_S.
+        cumul = linear_drift_rate * t
+        drift[1] = np.clip(cumul, -1.2, 1.2)
+        drift[5] = 0.5 * np.clip(cumul, -1.0, 1.0)
+    else:
+        drift[1] = drift_scale * np.sin(phase)
+        drift[5] = 0.5 * drift_scale * np.cos(phase)
+    safety_low = -1.5 * np.ones(n)
+    safety_high = 1.5 * np.ones(n)
+    safety_low[5] = -1.2
+    safety_high[5] = 1.2
+    cohort_center = drift.copy()
+    cohort_cov = np.diag(np.linspace(0.22, 0.4, n))
+    cohort_radius = 1.6
+    if history is not None and len(history) >= 8:
+        recent = np.asarray(history)[-8:]
+        personal_center = np.mean(recent, axis=0) * 0.25 + 0.75 * drift
+        personal_cov = np.diag(np.maximum(np.var(recent, axis=0), 0.08))
+    else:
+        personal_center = 0.8 * drift
+        personal_cov = np.diag(np.linspace(0.18, 0.3, n))
+    personal_radius = 1.35
+    function_A = np.zeros((2, n))
+    function_A[0, 7] = -1.0  # x7 >= threshold
+    function_A[1, 6] = 1.0   # x6 <= threshold
+    function_b = np.array([0.4, 0.9], dtype=float)
+    lo_c, hi_c = ellipsoid_to_box(cohort_center, cohort_cov, cohort_radius)
+    lo_p, hi_p = ellipsoid_to_box(personal_center, personal_cov, personal_radius)
+    box_low = np.maximum.reduce([safety_low, lo_c, lo_p, np.array([-np.inf] * n)])
+    box_high = np.minimum.reduce([safety_high, hi_c, hi_p, np.array([np.inf] * n)])
+    box_low[7] = max(box_low[7], -function_b[0])
+    box_high[6] = min(box_high[6], function_b[1])
+    fallback_used = False
+    if force_empty or np.any(box_low > box_high):
+        box_low = safety_low.copy()
+        box_high = safety_high.copy()
+        fallback_used = True
+    return TargetSet(
+        safety_low=safety_low,
+        safety_high=safety_high,
+        cohort_center=cohort_center,
+        cohort_cov=cohort_cov,
+        cohort_radius=cohort_radius,
+        personal_center=personal_center,
+        personal_cov=personal_cov,
+        personal_radius=personal_radius,
+        function_A=function_A,
+        function_b=function_b,
+        box_low=box_low,
+        box_high=box_high,
+        fallback_used=fallback_used,
+        time_index=t,
+    )

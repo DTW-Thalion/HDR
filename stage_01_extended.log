@@ -1,0 +1,20 @@
+# Re-published bundle note
+
+This bundle was reconstructed by overlaying the code/config corrections from
+`hdr_validation_corrected.zip` onto `hdr_validation_extended_bundle.zip` while
+preserving the original extended bundle layout, tests, logs, and stage output
+artifacts.
+
+Integrated updates:
+- corrected source files under `src/hdr_validation/`
+- updated `configs/paper_defaults.json`
+- added `configs/validation.json`
+- added `docs/CORRECTIONS.md`
+
+Additional integration repair applied during re-publication:
+- `src/hdr_validation/control/lqr.py` and `src/hdr_validation/control/mpc.py`
+  were aligned so `dlqr_robust()` returns `(K_robust, P_robust)` and
+  `solve_mode_a()` uses `P_robust` as the terminal Riccati matrix.
+
+The original bundled stage results were preserved; they were not recomputed as
+part of this re-publication step.
