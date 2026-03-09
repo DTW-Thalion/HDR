@@ -1,0 +1,600 @@
+{
+  "profile": "validation",
+  "generated_at": "2026-03-09T23:06:22.337242Z",
+  "elapsed_seconds": 4.71,
+  "exit_code": 0,
+  "meta": {
+    "seeds": [
+      101,
+      202,
+      303
+    ],
+    "episodes": 12,
+    "steps": 128,
+    "mc": 150
+  },
+  "summary": {
+    "total": 88,
+    "passed": 88,
+    "failed": 0,
+    "all_passed": true
+  },
+  "stages": {
+    "stage01": {
+      "passed": 24,
+      "failed": 0,
+      "checks": [
+        {
+          "stage": "stage01",
+          "check": "tau_tilde(center) == 0",
+          "passed": true,
+          "value": "0.0"
+        },
+        {
+          "stage": "stage01",
+          "check": "tau_tilde(far) > 0",
+          "passed": true,
+          "value": "66.4452"
+        },
+        {
+          "stage": "stage01",
+          "check": "tau sandwich lower \u2264 tau_tilde",
+          "passed": true,
+          "value": "tau_L=11.3630 tau_tilde=66.4452"
+        },
+        {
+          "stage": "stage01",
+          "check": "committor q[A]=0",
+          "passed": true,
+          "value": "0.00e+00"
+        },
+        {
+          "stage": "stage01",
+          "check": "committor q[B]=1",
+          "passed": true,
+          "value": "1.000000"
+        },
+        {
+          "stage": "stage01",
+          "check": "committor q \u2208 [0,1]",
+          "passed": true,
+          "value": "min=0.0000 max=1.0000"
+        },
+        {
+          "stage": "stage01",
+          "check": "DARE P positive-definite",
+          "passed": true,
+          "value": ""
+        },
+        {
+          "stage": "stage01",
+          "check": "DARE K finite",
+          "passed": true,
+          "value": ""
+        },
+        {
+          "stage": "stage01",
+          "check": "finite_horizon_tracking len=H",
+          "passed": true,
+          "value": "6"
+        },
+        {
+          "stage": "stage01",
+          "check": "finite_horizon_tracking K[0] finite",
+          "passed": true,
+          "value": ""
+        },
+        {
+          "stage": "stage01",
+          "check": "chance tightening delta \u2265 0",
+          "passed": true,
+          "value": "mean=0.7231"
+        },
+        {
+          "stage": "stage01",
+          "check": "T_k_eff formula correct",
+          "passed": true,
+          "value": "12.5440 (expected 12.5440)"
+        },
+        {
+          "stage": "stage01",
+          "check": "mu_bar_required \u2208 (0,1]",
+          "passed": true,
+          "value": "0.0039"
+        },
+        {
+          "stage": "stage01",
+          "check": "DwellModel PMF sums to 1",
+          "passed": true,
+          "value": "1.00000000"
+        },
+        {
+          "stage": "stage01",
+          "check": "DwellModel survival[0] \u2248 1",
+          "passed": true,
+          "value": "1.0000"
+        },
+        {
+          "stage": "stage01",
+          "check": "committor consistent seed=202",
+          "passed": true,
+          "value": "max_diff=0.00e+00"
+        },
+        {
+          "stage": "stage01",
+          "check": "committor consistent seed=303",
+          "passed": true,
+          "value": "max_diff=0.00e+00"
+        },
+        {
+          "stage": "stage01",
+          "check": "total episodes correct",
+          "passed": true,
+          "value": "36"
+        },
+        {
+          "stage": "stage01",
+          "check": "x_true shape correct",
+          "passed": true,
+          "value": "(128, 8)"
+        },
+        {
+          "stage": "stage01",
+          "check": "y shape correct",
+          "passed": true,
+          "value": "(128, 16)"
+        },
+        {
+          "stage": "stage01",
+          "check": "missingness > 0 (some NaNs)",
+          "passed": true,
+          "value": "0.483"
+        },
+        {
+          "stage": "stage01",
+          "check": "missingness < 1 (not all NaN)",
+          "passed": true,
+          "value": "0.483"
+        },
+        {
+          "stage": "stage01",
+          "check": "all x_true finite",
+          "passed": true,
+          "value": ""
+        },
+        {
+          "stage": "stage01",
+          "check": "all 3 basins observed across seeds",
+          "passed": true,
+          "value": "basins=[0, 1, 2]"
+        }
+      ]
+    },
+    "stage02": {
+      "passed": 6,
+      "failed": 0,
+      "checks": [
+        {
+          "stage": "stage02",
+          "check": "IMM mode probs sum to 1",
+          "passed": true,
+          "value": "max_dev=3.33e-16"
+        },
+        {
+          "stage": "stage02",
+          "check": "IMM mode probs \u2208 [0,1]",
+          "passed": true,
+          "value": ""
+        },
+        {
+          "stage": "stage02",
+          "check": "IMM MAP modes valid",
+          "passed": true,
+          "value": "unique modes=[0 1 2]"
+        },
+        {
+          "stage": "stage02",
+          "check": "mode1 F1 > 0 (3-seed pooled)",
+          "passed": true,
+          "value": "0.8781"
+        },
+        {
+          "stage": "stage02",
+          "check": "pooled sample count correct",
+          "passed": true,
+          "value": "4608"
+        },
+        {
+          "stage": "stage02",
+          "check": "IMM predicts all K modes",
+          "passed": true,
+          "value": "unique=[0, 1, 2]"
+        }
+      ]
+    },
+    "stage03b": {
+      "passed": 11,
+      "failed": 0,
+      "checks": [
+        {
+          "stage": "stage03b",
+          "check": "Brier reliability finite",
+          "passed": true,
+          "value": "0.0246"
+        },
+        {
+          "stage": "stage03b",
+          "check": "Brier reliability \u2265 0",
+          "passed": true,
+          "value": "0.0246"
+        },
+        {
+          "stage": "stage03b",
+          "check": "Calibration does not worsen Brier",
+          "passed": true,
+          "value": "pre=0.0130 post=0.0246"
+        },
+        {
+          "stage": "stage03b",
+          "check": "p_A_robust \u2208 [0,1]",
+          "passed": true,
+          "value": "0.7246"
+        },
+        {
+          "stage": "stage03b",
+          "check": "p_A_robust \u2265 p_A",
+          "passed": true,
+          "value": "0.7246 \u2265 0.7"
+        },
+        {
+          "stage": "stage03b",
+          "check": "T_k_eff > 0",
+          "passed": true,
+          "value": "1.79"
+        },
+        {
+          "stage": "stage03b",
+          "check": "omega_min > 0",
+          "passed": true,
+          "value": "40741.9589"
+        },
+        {
+          "stage": "stage03b",
+          "check": "ICI state has required keys",
+          "passed": true,
+          "value": "['condition_i', 'condition_ii', 'condition_iii', 'mode_c_recommended', 'worst_basin_idx', 'worst_T_k_eff', 'mu_hat', 'mu_bar_required', 'R_brier', 'R_brier_max', 'omega_min']"
+        },
+        {
+          "stage": "stage03b",
+          "check": "ICI condition_i type bool",
+          "passed": true,
+          "value": ""
+        },
+        {
+          "stage": "stage03b",
+          "check": "condition_iii fires when T_k_eff < omega_min",
+          "passed": true,
+          "value": "T_k_eff=0.0100"
+        },
+        {
+          "stage": "stage03b",
+          "check": "pooled cal sample",
+          "passed": true,
+          "value": "3\u00d712\u00d7128 = 4608 = n_cal=4608"
+        }
+      ]
+    },
+    "stage03c": {
+      "passed": 8,
+      "failed": 0,
+      "checks": [
+        {
+          "stage": "stage03c",
+          "check": "Mode C entry conditions dict returned",
+          "passed": true,
+          "value": "['condition_i', 'condition_ii', 'condition_iii', 'any_triggered']"
+        },
+        {
+          "stage": "stage03c",
+          "check": "Supervisor mode selection returns valid string",
+          "passed": true,
+          "value": "selected: mode_c"
+        },
+        {
+          "stage": "stage03c",
+          "check": "Mode C action bounded by u_max=0.35",
+          "passed": true,
+          "value": "max|u|=0.1561"
+        },
+        {
+          "stage": "stage03c",
+          "check": "Fisher proxy \u2265 0 always",
+          "passed": true,
+          "value": "empty=0.0000 withdata=0.3712"
+        },
+        {
+          "stage": "stage03c",
+          "check": "Fisher proxy increases with data",
+          "passed": true,
+          "value": "0.0000 \u2192 0.3712"
+        },
+        {
+          "stage": "stage03c",
+          "check": "ModeCTracker enters",
+          "passed": true,
+          "value": ""
+        },
+        {
+          "stage": "stage03c",
+          "check": "ModeCTracker tracks steps",
+          "passed": true,
+          "value": "10"
+        },
+        {
+          "stage": "stage03c",
+          "check": "ModeCTracker exits cleanly",
+          "passed": true,
+          "value": ""
+        }
+      ]
+    },
+    "stage04": {
+      "passed": 8,
+      "failed": 0,
+      "checks": [
+        {
+          "stage": "stage04",
+          "check": "Mode A u norm bounded",
+          "passed": true,
+          "value": "max\u2016u\u2016=0.8663"
+        },
+        {
+          "stage": "stage04",
+          "check": "Mode A feasibility rate > 0.5",
+          "passed": true,
+          "value": "1.00"
+        },
+        {
+          "stage": "stage04",
+          "check": "Mode A produces non-zero control",
+          "passed": true,
+          "value": "23/72 calls"
+        },
+        {
+          "stage": "stage04",
+          "check": "Mode A on rho=0.96 basin finite u",
+          "passed": true,
+          "value": ""
+        },
+        {
+          "stage": "stage04",
+          "check": "Mode A on rho=0.96 risk computed",
+          "passed": true,
+          "value": "risk=0.7127"
+        },
+        {
+          "stage": "stage04",
+          "check": "Mode A finite seed=101",
+          "passed": true,
+          "value": "\u2016u\u2016=0.0000"
+        },
+        {
+          "stage": "stage04",
+          "check": "Mode A finite seed=202",
+          "passed": true,
+          "value": "\u2016u\u2016=0.0000"
+        },
+        {
+          "stage": "stage04",
+          "check": "Mode A finite seed=303",
+          "passed": true,
+          "value": "\u2016u\u2016=0.0000"
+        }
+      ]
+    },
+    "stage05": {
+      "passed": 9,
+      "failed": 0,
+      "checks": [
+        {
+          "stage": "stage05",
+          "check": "Exact DP V* \u2208 [0,1]",
+          "passed": true,
+          "value": "V*(start)=0.8476"
+        },
+        {
+          "stage": "stage05",
+          "check": "Exact DP V*(success)=1",
+          "passed": true,
+          "value": ""
+        },
+        {
+          "stage": "stage05",
+          "check": "Exact DP V*(failure)=0",
+          "passed": true,
+          "value": ""
+        },
+        {
+          "stage": "stage05",
+          "check": "Mode B heuristic gap \u2264 0.10",
+          "passed": true,
+          "value": "gap=0.0000"
+        },
+        {
+          "stage": "stage05",
+          "check": "Mode B heuristic V \u2208 [0,1]",
+          "passed": true,
+          "value": "V_heur(start)=0.8476"
+        },
+        {
+          "stage": "stage05",
+          "check": "epsilon_H > 0",
+          "passed": true,
+          "value": "0.7828"
+        },
+        {
+          "stage": "stage05",
+          "check": "suboptimality bound \u2265 \u03b5_H",
+          "passed": true,
+          "value": "bound=1.1828 eps_H=0.7828"
+        },
+        {
+          "stage": "stage05",
+          "check": "Posterior committor \u2208 [0,1]",
+          "passed": true,
+          "value": "0.3507"
+        },
+        {
+          "stage": "stage05",
+          "check": "Mode B aggressive > passive escape prob (n=150 MC)",
+          "passed": true,
+          "value": "0.667 \u2192 0.860"
+        }
+      ]
+    },
+    "stage06": {
+      "passed": 5,
+      "failed": 0,
+      "checks": [
+        {
+          "stage": "stage06",
+          "check": "coherence_penalty all finite",
+          "passed": true,
+          "value": ""
+        },
+        {
+          "stage": "stage06",
+          "check": "coherence_penalty all \u2265 0",
+          "passed": true,
+          "value": ""
+        },
+        {
+          "stage": "stage06",
+          "check": "coherence_penalty lower outside target",
+          "passed": true,
+          "value": "outside_low=0.2025 max_inside=0.0000"
+        },
+        {
+          "stage": "stage06",
+          "check": "coherence_grad all finite",
+          "passed": true,
+          "value": ""
+        },
+        {
+          "stage": "stage06",
+          "check": "coherence contribution monotone in w3",
+          "passed": true,
+          "value": "['0.0078', '0.0157', '0.0314', '0.0470', '0.0784']"
+        }
+      ]
+    },
+    "stage07": {
+      "passed": 17,
+      "failed": 0,
+      "checks": [
+        {
+          "stage": "stage07",
+          "check": "Mode A stable rho=0.5",
+          "passed": true,
+          "value": "\u2016u\u2016=0.0583"
+        },
+        {
+          "stage": "stage07",
+          "check": "Mode A stable rho=0.72",
+          "passed": true,
+          "value": "\u2016u\u2016=0.0635"
+        },
+        {
+          "stage": "stage07",
+          "check": "Mode A stable rho=0.85",
+          "passed": true,
+          "value": "\u2016u\u2016=0.0752"
+        },
+        {
+          "stage": "stage07",
+          "check": "Mode A stable rho=0.96",
+          "passed": true,
+          "value": "\u2016u\u2016=0.0935"
+        },
+        {
+          "stage": "stage07",
+          "check": "T_k_eff formula rho=0.72",
+          "passed": true,
+          "value": "5.9136"
+        },
+        {
+          "stage": "stage07",
+          "check": "T_k_eff formula rho=0.85",
+          "passed": true,
+          "value": "3.1680"
+        },
+        {
+          "stage": "stage07",
+          "check": "T_k_eff formula rho=0.96",
+          "passed": true,
+          "value": "0.8448"
+        },
+        {
+          "stage": "stage07",
+          "check": "Mismatch \u03b4=0.05 Mode A finite",
+          "passed": true,
+          "value": "\u2016u\u2016=0.0972"
+        },
+        {
+          "stage": "stage07",
+          "check": "Mismatch \u03b4=0.1 Mode A finite",
+          "passed": true,
+          "value": "\u2016u\u2016=0.0972"
+        },
+        {
+          "stage": "stage07",
+          "check": "Mismatch \u03b4=0.2 Mode A finite",
+          "passed": true,
+          "value": "\u2016u\u2016=0.0972"
+        },
+        {
+          "stage": "stage07",
+          "check": "IMM stable p_miss=0.0",
+          "passed": true,
+          "value": "probs=['0.000', '1.000', '0.000']"
+        },
+        {
+          "stage": "stage07",
+          "check": "IMM stable p_miss=0.3",
+          "passed": true,
+          "value": "probs=['0.000', '1.000', '0.000']"
+        },
+        {
+          "stage": "stage07",
+          "check": "IMM stable p_miss=0.6",
+          "passed": true,
+          "value": "probs=['0.000', '1.000', '0.000']"
+        },
+        {
+          "stage": "stage07",
+          "check": "IMM stable p_miss=0.9",
+          "passed": true,
+          "value": "probs=['0.000', '1.000', '0.000']"
+        },
+        {
+          "stage": "stage07",
+          "check": "Mode A finite seed=101",
+          "passed": true,
+          "value": "\u2016u\u2016=0.0000"
+        },
+        {
+          "stage": "stage07",
+          "check": "Mode A finite seed=202",
+          "passed": true,
+          "value": "\u2016u\u2016=0.0000"
+        },
+        {
+          "stage": "stage07",
+          "check": "Mode A finite seed=303",
+          "passed": true,
+          "value": "\u2016u\u2016=0.0000"
+        }
+      ]
+    }
+  }
+}
