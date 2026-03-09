@@ -1,7 +1,0 @@
-{
-  "coherence_help_label": "harms",
-  "integrated_cost_delta": 733.7244192985058,
-  "integrated_time_in_band_gain": 0.013031005859375,
-  "standalone_in_band_zero_penalty": 1.0,
-  "standalone_monotone_outside": 1.0
-}

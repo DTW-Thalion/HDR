@@ -12,9 +12,28 @@ def dlqr(A: np.ndarray, B: np.ndarray, Q: np.ndarray, R: np.ndarray) -> tuple[np
     return K, P
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Core committor / MDP utilities
-# ─────────────────────────────────────────────────────────────────────────────
+def finite_horizon_tracking(
+    A: np.ndarray, B: np.ndarray, Q: np.ndarray, R: np.ndarray, H: int, P_terminal: np.ndarray | None = None
+) -> list[np.ndarray]:
+    """Compute finite-horizon LQR tracking gains working backwards from terminal cost."""
+    if P_terminal is None:
+        P_terminal = Q.copy()
+
+    # Work backwards from horizon H to 0
+    gains = []
+    P = P_terminal.copy()
+
+    for t in range(H, 0, -1):
+        # Compute gain for this timestep
+        K = np.linalg.solve(R + B.T @ P @ B, B.T @ P @ A)
+        gains.append(K)
+
+        # Update cost-to-go for next iteration
+        P = Q + A.T @ P @ A - A.T @ P @ B @ K
+
+    # Reverse to get gains[0] = first timestep gain
+    gains.reverse()
+    return gains
 
 def committor(P: np.ndarray, A_set: list[int], B_set: list[int]) -> np.ndarray:
     """Solve the discrete committor BVP (Theorem C.2): q_T = (I-P_TT)^{-1} P_TB 1_B."""
