@@ -1,5 +1,5 @@
 {
-  "experiment": "model_mismatch_hdr_main",
+  "experiment": "mode_a_validation_summary",
   "files": [
     "config.json",
     "log.txt",

@@ -1,0 +1,12 @@
+{
+  "rows": [
+    {
+      "scenario": "nominal",
+      "violation_rate": 0.064453125
+    },
+    {
+      "scenario": "heavy_tail",
+      "violation_rate": 0.110546875
+    }
+  ]
+}

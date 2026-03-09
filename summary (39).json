@@ -1,0 +1,14 @@
+{
+  "burden_adherence_mean": 1.0,
+  "challenge_recovery_time_mean": 19.5390625,
+  "circadian_adherence_mean": 1.0,
+  "controller_solve_time_mean": 6.334040231315008e-05,
+  "cum_cost_mean": 286.8838541574718,
+  "mode_accuracy_mean": 0.553253173828125,
+  "policy": "pooled_lqr",
+  "recursive_feasibility_rate_mean": 1.0,
+  "safety_violation_rate_mean": 0.0616455078125,
+  "scenario": "model_mismatch",
+  "state_rmse_mean": 0.25810844088073853,
+  "time_in_target_mean": 0.27142333984375
+}

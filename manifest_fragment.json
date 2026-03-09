@@ -1,1 +1,14 @@
-Stage 01 completed.
+{
+  "burden_adherence_mean": 1.0,
+  "challenge_recovery_time_mean": 17.734375,
+  "circadian_adherence_mean": 1.0,
+  "controller_solve_time_mean": 0.0006277940154718609,
+  "cum_cost_mean": 1602.7072862562595,
+  "mode_accuracy_mean": 0.54217529296875,
+  "policy": "hdr_main",
+  "recursive_feasibility_rate_mean": 1.0,
+  "safety_violation_rate_mean": 0.047210693359375,
+  "scenario": "model_mismatch",
+  "state_rmse_mean": 0.25545928259342643,
+  "time_in_target_mean": 0.281036376953125
+}

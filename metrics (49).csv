@@ -1,5 +1,5 @@
 {
-  "experiment": "model_mismatch_hdr_main",
+  "experiment": "nominal_hdr_main",
   "files": [
     "config.json",
     "log.txt",
