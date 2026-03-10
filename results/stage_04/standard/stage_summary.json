@@ -1,0 +1,77 @@
+{
+  "stage": "04",
+  "label": "Stage 04 — Mode A Control",
+  "profile": "standard",
+  "date": "2026-03-10",
+  "config": {
+    "seeds": [101, 202],
+    "episodes_per_experiment": 12,
+    "total_episodes_pooled": 24,
+    "steps_per_episode": 128,
+    "mc_rollouts": 100,
+    "state_dim": 8,
+    "obs_dim": 16,
+    "control_dim": 8,
+    "K": 3,
+    "H": 6,
+    "rho_reference": [0.72, 0.96, 0.55],
+    "kappa_lo": 0.55,
+    "kappa_hi": 0.75,
+    "pA": 0.70,
+    "default_burden_budget": 28.0
+  },
+  "elapsed_s": {
+    "stage_02_dependency": 1.28,
+    "stage_04": 0.11
+  },
+  "checks": [
+    {
+      "id": "04.1",
+      "check": "Mode A u norm bounded",
+      "passed": true,
+      "value": 0.6620,
+      "note": "max‖u‖=0.6620"
+    },
+    {
+      "id": "04.2",
+      "check": "Mode A feasibility rate > 0.5",
+      "passed": true,
+      "value": 1.00,
+      "note": "64/64 feasible"
+    },
+    {
+      "id": "04.3",
+      "check": "Mode A produces non-zero control",
+      "passed": true,
+      "value": "18/64",
+      "note": "18/64 calls produced non-zero u"
+    },
+    {
+      "id": "04.4",
+      "check": "Mode A on rho=0.96 basin finite u",
+      "passed": true,
+      "value": null,
+      "note": "Finite control on maladaptive basin"
+    },
+    {
+      "id": "04.5",
+      "check": "Mode A on rho=0.96 risk computed",
+      "passed": true,
+      "value": 0.7127,
+      "note": "risk=0.7127"
+    },
+    {
+      "id": "04.6",
+      "check": "Mode A seed=202 finite u",
+      "passed": true,
+      "value": null,
+      "note": "Second seed produces consistent finite output"
+    }
+  ],
+  "summary": {
+    "total_checks": 6,
+    "passed": 6,
+    "failed": 0,
+    "status": "ALL_PASSED"
+  }
+}
