@@ -641,6 +641,9 @@ def stage04_mode_a(episodes: list[dict]) -> None:
 
     n_eps_per_seed = cfg["episodes_per_experiment"]
 
+    ep0_xhats: list[np.ndarray] = []  # log x_hat for episode 0 verification
+    ep_basins: list[int] = []  # basin index per episode
+
     for ep_idx, ep in enumerate(episodes):
         seed_idx = min(ep_idx // n_eps_per_seed, len(cfg["seeds"]) - 1)
         seed = cfg["seeds"][seed_idx]
@@ -648,6 +651,7 @@ def stage04_mode_a(episodes: list[dict]) -> None:
         sim_model = make_evaluation_model(cfg, rng_sim)
 
         basin_idx = int(ep["z_true"][0])
+        ep_basins.append(basin_idx)
         basin_obj = sim_model.basins[basin_idx]
 
         # Start from a non-trivial state: use mid-episode state from the
@@ -680,6 +684,8 @@ def stage04_mode_a(episodes: list[dict]) -> None:
             imm_state = imm_filt.step(y_clean, mask_t, u_prev_hdr)
             x_hat = imm_state.mixed_mean
             P_hat_sim = imm_state.mixed_cov
+            if ep_idx == 0 and t < 3:
+                ep0_xhats.append(x_hat.copy())
 
             # hdr_main: MPC on estimated basin
             est_bi = imm_state.map_mode
@@ -787,6 +793,84 @@ def stage04_mode_a(episodes: list[dict]) -> None:
         elif p == "basin_lqr":
             label = "basin_lqr (oracle)"
         print(f"    {label:<27s} | {mc:>11.2f} | {gain:>+9.4f}")
+
+    # --- Per-episode cost diagnostics ---
+    print("\n    --- Per-episode cost diagnostics ---")
+    median_costs = {p: float(np.median(ep_costs[p])) for p in policy_names}
+    print("\n    Policy                     | Mean cost   | Median cost")
+    print("    ---------------------------|-------------|------------")
+    for p in policy_names:
+        mc = mean_costs[p]
+        mdc = median_costs[p]
+        label = p
+        if p == "pooled_lqr":
+            label = "pooled_lqr (oracle state)"
+        elif p == "basin_lqr":
+            label = "basin_lqr (oracle)"
+        print(f"    {label:<27s} | {mc:>11.2f} | {mdc:>11.2f}")
+
+    # Paired per-episode ratio: (pe_cost - hdr_cost) / pe_cost
+    with np.errstate(divide="ignore", invalid="ignore"):
+        paired_ratios = np.where(costs_pe > 1e-12,
+                                 (costs_pe - costs_hdr) / costs_pe, 0.0)
+    median_paired = float(np.median(paired_ratios))
+    mean_paired = float(np.mean(paired_ratios))
+    print(f"\n    Paired ratio (pe-hdr)/pe:")
+    print(f"      median = {median_paired:+.6f}  (= hdr_vs_pooled_estimated_gain_nominal)")
+    print(f"      mean   = {mean_paired:+.6f}")
+
+    # Percentiles of raw cost difference (pe - hdr)
+    cost_diff = costs_pe - costs_hdr
+    pcts = np.percentile(cost_diff, [10, 25, 50, 75, 90])
+    print(f"\n    Percentiles of (pooled_estimated - hdr) cost difference:")
+    print(f"      p10={pcts[0]:+.2f}  p25={pcts[1]:+.2f}  p50={pcts[2]:+.2f}  p75={pcts[3]:+.2f}  p90={pcts[4]:+.2f}")
+    n_hdr_wins = int(np.sum(cost_diff > 0))
+    n_hdr_loses = int(np.sum(cost_diff < 0))
+    n_ties = int(np.sum(cost_diff == 0))
+    print(f"      HDR wins: {n_hdr_wins}/{len(cost_diff)}  loses: {n_hdr_loses}/{len(cost_diff)}  ties: {n_ties}")
+
+    # x_hat verification for episode 0
+    print(f"\n    x_hat verification (episode 0, first 3 steps):")
+    print(f"      (Both policies use same x_hat from shared IMM filter)")
+    for step_i, xh in enumerate(ep0_xhats):
+        print(f"      t={step_i}: x_hat[:4] = [{', '.join(f'{v:.4f}' for v in xh[:4])}]")
+    print(f"      Shared IMM: pooled_lqr_estimated uses -K_pooled @ x_hat,")
+    print(f"                  hdr_main uses solve_mode_a(x_hat, ...) — same x_hat.")
+
+    # --- Basin-stratified diagnostics ---
+    basins_arr = np.array(ep_basins)
+    print(f"\n    --- Basin-stratified diagnostics ---")
+    print(f"    Basin distribution: " + ", ".join(
+        f"basin {b}: {int(np.sum(basins_arr == b))}" for b in range(3)))
+
+    print(f"\n    Paired gain (pe-hdr)/pe by basin:")
+    print(f"    Basin | Count | Mean gain  | Median gain")
+    print(f"    ------|-------|------------|------------")
+    for b in range(3):
+        mask_b = basins_arr == b
+        if not np.any(mask_b):
+            print(f"      {b}   |   0   |     —      |     —")
+            continue
+        ratios_b = paired_ratios[mask_b]
+        print(f"      {b}   | {int(np.sum(mask_b)):>5} | {np.mean(ratios_b):>+10.6f} | {np.median(ratios_b):>+10.6f}")
+
+    print(f"\n    HDR-winning episodes (pe cost > hdr cost):")
+    win_mask = cost_diff > 0
+    if np.any(win_mask):
+        win_basins = basins_arr[win_mask]
+        for b in range(3):
+            print(f"      basin {b}: {int(np.sum(win_basins == b))} episodes")
+    else:
+        print(f"      (none)")
+
+    print(f"    HDR-losing episodes (pe cost < hdr cost):")
+    lose_mask = cost_diff < 0
+    if np.any(lose_mask):
+        lose_basins = basins_arr[lose_mask]
+        for b in range(3):
+            print(f"      basin {b}: {int(np.sum(lose_basins == b))} episodes")
+    else:
+        print(f"      (none)")
 
     # --- Gaussian calibration pass-through ---
     gc_rng = np.random.default_rng(cfg["seeds"][0] + 900)
