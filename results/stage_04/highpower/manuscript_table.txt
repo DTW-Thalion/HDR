@@ -1,0 +1,22 @@
+\begin{table}[t]
+\centering
+\caption{Benchmark A: HDR Mode A vs.\ pooled LQR (estimated state),
+maladaptive basin (Basin~1, $\rho=0.96$).
+Gain = mean fractional cost reduction over \texttt{pooled\_lqr\_estimated}.
+CI = 95\% bootstrap percentile interval (10\,000 resamples).}
+\label{tab:benchmark_a_highpower}
+\begin{tabular}{lrrrrr}
+\toprule
+Profile & Seeds & Ep./seed & $N_{\rm mal}$ & Mean gain & 95\% CI \\
+\midrule
+Standard   &  2 & 12 & 11  & $+0.057$ & ---        \\
+Extended   &  3 & 20 & 15  & $+0.036$ & ---        \\
+High-power & 20 & 20 & 123   & $+0.028$ & $[+0.021,\,+0.036]$ \\
+\bottomrule
+\end{tabular}
+\vspace{2pt}
+{\small Win rate (high-power): 77%.
+Safety $\Delta$ vs.\ baseline: $+0.0004$.
+Criterion: CI lower bound $\geq +0.03$:
+\textbf{FAILED}.}
+\end{table}
