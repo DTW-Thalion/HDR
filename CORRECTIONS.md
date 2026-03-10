@@ -1,3 +1,40 @@
+## Benchmark A claim correction (high-power run, 2026-03-10)
+
+### What the manuscript originally stated
+"HDR achieves a mean fractional cost reduction of +2.8 % over the
+pooled_lqr_estimated baseline (win rate 77.2 %; N_mal = 123 episodes
+across 20 independent seeds)."
+
+The +3 % gain criterion was implied to be satisfied.
+
+### What the high-power run actually shows
+| Metric                          | Value                  |
+|---------------------------------|------------------------|
+| N_maladaptive                   | 123                    |
+| Mean gain                       | +0.0283                |
+| 95 % CI (mean, bootstrap)       | [+0.021, +0.036]       |
+| 90 % CI (mean, bootstrap)       | [+0.022, +0.034]       |
+| Win rate                        | 0.772                  |
+| Safety Δ                        | +0.0004                |
+| Seeds individually ≥ +3 %       | 8 / 20                 |
+| CI lower bound ≥ +3 % (95 %)    | NO — criterion not met |
+| Win rate ≥ 70 %                 | YES — criterion met    |
+
+### Required manuscript language (verbatim replacement)
+"HDR achieves a mean fractional cost reduction of +2.8 % over the
+pooled_lqr_estimated baseline on maladaptive-basin episodes (win rate
+77 %; N = 123 episodes across 20 independent seeds).  The 95 %
+bootstrap CI [+2.1 %, +3.6 %] does not exclude gains below +3 %,
+indicating meaningful but not yet precisely characterised improvement.
+The win-rate criterion (≥ 70 %) is met; the mean-gain lower-CI
+criterion (≥ +3 %) is not met at the 95 % level."
+
+### Root cause of discrepancy between profile estimates
+The standard-profile estimate (+5.7 %, N_mal ≈ 11) and extended-profile
+estimate (+3.6 %, N_mal ≈ 15) are inflated by small-sample positive
+bias.  This is expected and is not a code defect.  The high-power run
+(N_mal = 123) is the authoritative figure.
+
 # HDR Claim Matrix — v5.0
 
 **Framework version:** HDR v5.0
@@ -26,7 +63,7 @@
 
 | # | Claim | Stage(s) | Criterion | Standard | Extended | Status |
 |---|-------|----------|-----------|----------|----------|--------|
-| 1 | **ICI correctly identifies when Mode A guarantees hold** | 03b, 04 | `hdr_vs_pooled_estimated_gain_maladaptive >= +0.03`; `hdr_maladaptive_win_rate >= 0.70` | gain=+0.057, rate=0.909 | gain=+0.036, rate=0.800 | **Supported** |
+| 1 | **ICI correctly identifies when Mode A guarantees hold** | 03b, 04 | `hdr_vs_pooled_estimated_gain_maladaptive >= +0.03`; `hdr_maladaptive_win_rate >= 0.70` | gain=+0.057, rate=0.909 | gain=+0.036, rate=0.800 | **Partially supported** — Win-rate criterion (≥ 70 %): MET (0.772). Mean-gain CI criterion (95 % lower bound ≥ +3 %): NOT MET (+0.021 < +0.030). Point estimate (+0.028) is below threshold. See CORRECTIONS.md §Benchmark A for full details. |
 | 2 | Mode A improves over baselines without exceeding safety budget | 04 | `hdr_vs_pooled_estimated_gain_maladaptive >= +0.03`; `hdr_maladaptive_win_rate >= 0.70`; safety delta ≤ 0.015 | gain=+0.057, rate=0.909, delta=-0.001 | gain=+0.036, rate=0.800, delta=+0.002 | **Supported** |
 | 3 | τ̃ tracks true recovery burden (Spearman ρ ≥ 0.70) | 01 | τ̃ rank correlation ≥ 0.70; τ sandwich holds | tau_tilde=66.4, tau_L=11.4 | tau_tilde=66.4, tau_L=11.4 | **Supported** |
 | 4 | Chance-constraint tightening calibrated in Gaussian settings | 01, 04 | Abs error ≤ 0.015; heavy-tail degradation < 0.10 | abs_err=0.0012 | abs_err=0.0001 | **Supported** |
