@@ -1,7 +1,7 @@
 {
   "profile": "standard",
-  "generated_at": "2026-03-09T23:20:41.652771Z",
-  "elapsed_seconds": 3.33,
+  "generated_at": "2026-03-10T02:05:13.930673Z",
+  "elapsed_seconds": 3.91,
   "exit_code": 0,
   "meta": {
     "seeds": [
@@ -177,7 +177,7 @@
           "stage": "stage02",
           "check": "mode1 F1 > 0 (pooled)",
           "passed": true,
-          "value": "0.8776"
+          "value": "0.8168"
         },
         {
           "stage": "stage02",
@@ -195,31 +195,31 @@
           "stage": "stage03b",
           "check": "Brier reliability finite",
           "passed": true,
-          "value": "0.0035"
+          "value": "0.0051"
         },
         {
           "stage": "stage03b",
           "check": "Brier reliability \u2265 0",
           "passed": true,
-          "value": "0.0035"
+          "value": "0.0051"
         },
         {
           "stage": "stage03b",
           "check": "Calibration does not worsen Brier",
           "passed": true,
-          "value": "pre=0.0040 post=0.0035"
+          "value": "pre=0.0132 post=0.0051"
         },
         {
           "stage": "stage03b",
           "check": "p_A_robust \u2208 [0,1]",
           "passed": true,
-          "value": "0.7035"
+          "value": "0.7051"
         },
         {
           "stage": "stage03b",
           "check": "p_A_robust \u2265 p_A (miscalibration raises threshold)",
           "passed": true,
-          "value": "0.7035 \u2265 0.7"
+          "value": "0.7051 \u2265 0.7"
         },
         {
           "stage": "stage03b",

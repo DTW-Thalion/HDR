@@ -303,7 +303,7 @@ def stage03_imm(episodes: list[dict]) -> dict:
         seed_eps = episodes[seed_idx * n_eps_per_seed: (seed_idx + 1) * n_eps_per_seed]
 
         for ep in seed_eps:
-            filt = IMMFilter(eval_model)
+            filt = IMMFilter.for_hard_regime(eval_model)
             for t in range(len(ep["x_true"])):
                 y_t = ep["y"][t]
                 mask_t = (~np.isnan(y_t)).astype(int)
