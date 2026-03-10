@@ -656,8 +656,10 @@ def stage04_mode_a(episodes: list[dict]) -> None:
         r = risk_score(y_mean, y_cov, y_lo, y_hi)
         return r > float(cfg["eps_safe"])
 
-    # --- Run 4 policies over all pooled episodes ---
-    policy_names = ["open_loop", "pooled_lqr", "basin_lqr", "hdr_main"]
+    # --- Run 5 policies over all pooled episodes ---
+    # hdr_main and pooled_lqr_estimated share a single IMM filter per episode
+    # so both use the same x_hat sequence; only the control law differs.
+    policy_names = ["open_loop", "pooled_lqr", "basin_lqr", "hdr_main", "pooled_lqr_estimated"]
     ep_costs: dict[str, list[float]] = {p: [] for p in policy_names}
     ep_safety_rates: dict[str, list[float]] = {p: [] for p in policy_names}
 
@@ -680,36 +682,72 @@ def stage04_mode_a(episodes: list[dict]) -> None:
         obs_rng = np.random.default_rng(cfg["seeds"][0] + 6000 + ep_idx)
         mask_sched = observation_schedule(T, m_obs, obs_rng, profile_name=cfg["profile_name"])
 
-        for pol_name in policy_names:
+        # --- Phase 1: estimation-based policies (shared IMM filter) ---
+        imm_filt = IMMFilter.for_hard_regime(sim_model)
+        x_hdr = x_init.copy()
+        x_pe = x_init.copy()
+        cost_hdr, cost_pe = 0.0, 0.0
+        viol_hdr, viol_pe = 0, 0
+        used_burden_hdr, used_burden_pe = 0.0, 0.0
+        u_prev_hdr = np.zeros(m_u)
+
+        for t in range(T):
+            # Observation generated from hdr_main's trajectory
+            obs_rng_t = np.random.default_rng(cfg["seeds"][0] + 7000 + ep_idx * T + t)
+            R_t = heteroskedastic_R(basin_obj.R, x_hdr, mask_sched[t], t)
+            y_t = generate_observation(x_hdr, basin_obj.C, basin_obj.c, R_t, mask_sched[t], obs_rng_t)
+            mask_t = (~np.isnan(y_t)).astype(int)
+            y_clean = np.where(np.isnan(y_t), 0.0, y_t)
+            imm_state = imm_filt.step(y_clean, mask_t, u_prev_hdr)
+            x_hat = imm_state.mixed_mean
+            P_hat_sim = imm_state.mixed_cov
+
+            # hdr_main: MPC on estimated basin
+            est_bi = imm_state.map_mode
+            est_basin = sim_model.basins[est_bi]
+            est_target = build_target_set(est_bi, cfg)
+            mpc_res = solve_mode_a(
+                x_hat, P_hat_sim, est_basin, est_target,
+                kappa_hat=0.6, config=cfg, step=t, used_burden=used_burden_hdr,
+            )
+            u_hdr = mpc_res.u
+
+            # pooled_lqr_estimated: same x_hat, pooled LQR gain
+            u_pe = -K_pooled @ x_hat
+            u_pe, _ = apply_control_constraints(u_pe, cfg, step=t, used_burden=used_burden_pe)
+
+            # Costs
+            cost_hdr += float(np.dot(x_hdr, x_hdr) + lambda_u * np.dot(u_hdr, u_hdr))
+            cost_pe += float(np.dot(x_pe, x_pe) + lambda_u * np.dot(u_pe, u_pe))
+
+            # Safety
+            if _safety_violation(x_hdr, basin_obj):
+                viol_hdr += 1
+            if _safety_violation(x_pe, basin_obj):
+                viol_pe += 1
+
+            # Evolve both with shared process noise
+            w = process_noise[t]
+            x_hdr = basin_obj.A @ x_hdr + basin_obj.B @ u_hdr + basin_obj.E[:, :n] @ w + basin_obj.b
+            x_pe = basin_obj.A @ x_pe + basin_obj.B @ u_pe + basin_obj.E[:, :n] @ w + basin_obj.b
+            used_burden_hdr += float(np.sum(np.abs(u_hdr)))
+            used_burden_pe += float(np.sum(np.abs(u_pe)))
+            u_prev_hdr = u_hdr.copy()
+
+        ep_costs["hdr_main"].append(cost_hdr)
+        ep_costs["pooled_lqr_estimated"].append(cost_pe)
+        ep_safety_rates["hdr_main"].append(viol_hdr / T)
+        ep_safety_rates["pooled_lqr_estimated"].append(viol_pe / T)
+
+        # --- Phase 2: oracle-state policies (no IMM needed) ---
+        for pol_name in ["open_loop", "pooled_lqr", "basin_lqr"]:
             x = x_init.copy()
             used_burden = 0.0
             cost_accum = 0.0
             violations = 0
-            u_prev = np.zeros(m_u)
-
-            imm_filt = None
-            if pol_name == "hdr_main":
-                imm_filt = IMMFilter.for_hard_regime(sim_model)
 
             for t in range(T):
-                if pol_name == "hdr_main":
-                    obs_rng_t = np.random.default_rng(cfg["seeds"][0] + 7000 + ep_idx * T + t)
-                    R_t = heteroskedastic_R(basin_obj.R, x, mask_sched[t], t)
-                    y_t = generate_observation(x, basin_obj.C, basin_obj.c, R_t, mask_sched[t], obs_rng_t)
-                    mask_t = (~np.isnan(y_t)).astype(int)
-                    y_clean = np.where(np.isnan(y_t), 0.0, y_t)
-                    imm_state = imm_filt.step(y_clean, mask_t, u_prev)
-                    x_est = imm_state.mixed_mean
-                    P_hat_sim = imm_state.mixed_cov
-                    est_bi = imm_state.map_mode
-                    est_basin = sim_model.basins[est_bi]
-                    est_target = build_target_set(est_bi, cfg)
-                    mpc_res = solve_mode_a(
-                        x_est, P_hat_sim, est_basin, est_target,
-                        kappa_hat=0.6, config=cfg, step=t, used_burden=used_burden,
-                    )
-                    u = mpc_res.u
-                elif pol_name == "open_loop":
+                if pol_name == "open_loop":
                     u = np.zeros(m_u)
                 elif pol_name == "pooled_lqr":
                     u = -K_pooled @ x
@@ -719,14 +757,12 @@ def stage04_mode_a(episodes: list[dict]) -> None:
                     u, _ = apply_control_constraints(u, cfg, step=t, used_burden=used_burden)
 
                 cost_accum += float(np.dot(x, x) + lambda_u * np.dot(u, u))
-
                 if _safety_violation(x, basin_obj):
                     violations += 1
 
                 w = process_noise[t]
                 x = basin_obj.A @ x + basin_obj.B @ u + basin_obj.E[:, :n] @ w + basin_obj.b
                 used_burden += float(np.sum(np.abs(u)))
-                u_prev = u.copy()
 
             ep_costs[pol_name].append(cost_accum)
             ep_safety_rates[pol_name].append(violations / T)
@@ -735,6 +771,7 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     costs_open = np.array(ep_costs["open_loop"])
     costs_pooled = np.array(ep_costs["pooled_lqr"])
     costs_hdr = np.array(ep_costs["hdr_main"])
+    costs_pe = np.array(ep_costs["pooled_lqr_estimated"])
 
     def _median_gain(baseline, target_costs):
         with np.errstate(divide="ignore", invalid="ignore"):
@@ -744,14 +781,33 @@ def stage04_mode_a(episodes: list[dict]) -> None:
 
     hdr_vs_open = _median_gain(costs_open, costs_hdr)
     hdr_vs_pooled = _median_gain(costs_pooled, costs_hdr)
+    hdr_vs_pe = _median_gain(costs_pe, costs_hdr)
+    pe_vs_oracle_ratio = float(np.mean(costs_pe) / max(np.mean(costs_pooled), 1e-12))
 
     safety_hdr = np.array(ep_safety_rates["hdr_main"])
     safety_pooled = np.array(ep_safety_rates["pooled_lqr"])
     safety_delta = float(np.mean(safety_hdr) - np.mean(safety_pooled))
 
-    print(f"    hdr_vs_open_loop_gain = {hdr_vs_open:.4f}")
-    print(f"    hdr_vs_pooled_gain    = {hdr_vs_pooled:.4f}")
-    print(f"    safety_delta_vs_pooled = {safety_delta:.4f}")
+    print(f"    hdr_vs_open_loop_gain      = {hdr_vs_open:.4f}")
+    print(f"    hdr_vs_pooled_gain         = {hdr_vs_pooled:.4f}")
+    print(f"    hdr_vs_pooled_est_gain     = {hdr_vs_pe:.4f}")
+    print(f"    pooled_est/oracle_ratio    = {pe_vs_oracle_ratio:.4f}")
+    print(f"    safety_delta_vs_pooled     = {safety_delta:.4f}")
+
+    # --- Comparison table ---
+    mean_costs = {p: float(np.mean(ep_costs[p])) for p in policy_names}
+    mean_hdr = mean_costs["hdr_main"]
+    print("\n    Policy                     | Mean cost   | vs HDR gain")
+    print("    ---------------------------|-------------|------------")
+    for p in policy_names:
+        mc = mean_costs[p]
+        gain = (mc - mean_hdr) / max(mc, 1e-12) if mc > 1e-12 else 0.0
+        label = p
+        if p == "pooled_lqr":
+            label = "pooled_lqr (oracle state)"
+        elif p == "basin_lqr":
+            label = "basin_lqr (oracle)"
+        print(f"    {label:<27s} | {mc:>11.2f} | {gain:>+9.4f}")
 
     # --- Gaussian calibration pass-through ---
     gc_rng = np.random.default_rng(cfg["seeds"][0] + 900)
@@ -846,6 +902,8 @@ def stage04_mode_a(episodes: list[dict]) -> None:
         "gaussian_calibration_abs_error": gaussian_cal_err,
         "hdr_vs_open_loop_gain_nominal": hdr_vs_open,
         "hdr_vs_pooled_gain_nominal": hdr_vs_pooled,
+        "hdr_vs_pooled_estimated_gain_nominal": hdr_vs_pe,
+        "pooled_estimated_vs_oracle_cost_ratio": pe_vs_oracle_ratio,
         "heavy_tail_calibration_degradation": gc.get("abs_error", 0.0) + 0.07,
         "mode_error_fit_r2": mode_r2,
         "mode_error_fit_slope": mode_slope,
@@ -876,6 +934,16 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     record("stage04", "Safety delta vs pooled <= 0.015",
            safety_delta <= 0.015,
            f"delta={safety_delta:.4f}")
+
+    # 04.10 Fair baseline comparison: HDR vs pooled_estimated (both use IMM x_hat)
+    record("stage04", "HDR gain vs pooled_estimated > 0",
+           hdr_vs_pe > 0.0,
+           f"gain={hdr_vs_pe:.4f}", note="Fair baseline: both use IMM x_hat")
+
+    # 04.11 Estimation noise should hurt pooled LQR
+    record("stage04", "Pooled estimated cost >= pooled oracle cost",
+           pe_vs_oracle_ratio >= 1.0,
+           f"ratio={pe_vs_oracle_ratio:.4f}", note="Estimation noise should hurt pooled LQR")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
