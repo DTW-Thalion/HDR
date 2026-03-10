@@ -1,45 +1,38 @@
-{
-  "state_dim": 8,
-  "obs_dim": 16,
-  "control_dim": 8,
-  "disturbance_dim": 8,
-  "K": 3,
-  "H": 6,
-  "kappa_lo": 0.55,
-  "kappa_hi": 0.75,
-  "pA": 0.70,
-  "qmin": 0.15,
-  "alpha_i": 0.05,
-  "eps_safe": 0.01,
-  "w1": 1.0,
-  "w2": 0.5,
-  "w3": 0.3,
-  "lambda_u": 0.1,
-  "rho_reference": [0.72, 0.96, 0.55],
-  "steps_per_day": 48,
-  "dt_minutes": 30,
-  "coherence_window": 24,
-  "default_burden_budget": 28.0,
-  "max_dwell_len": 256,
-  "selected_trace_cap": 5,
-  "model_mismatch_bound": 0.20,
+# HDR Claim Matrix — v5.0
 
-  "_comment_v5_ici": "HDR v5.0 Inference-Control Interface parameters",
-  "R_brier_max": 0.05,
-  "omega_min_factor": 0.005,
-  "T_C_max": 50,
-  "k_calib": 1.0,
-  "sigma_dither": 0.08,
-  "epsilon_control": 0.50,
-  "missing_fraction_target": 0.516,
-  "mode1_base_rate": 0.16,
-  "observer_mode_accuracy_approx": 0.55,
+**Framework version:** HDR v5.0  
+**Validation suite version:** `hdr_validation_v5`  
+**Claims 1–10:** Inherited and reformulated from v4.3  
+**Claims 11–14:** New ICI claims added in v5.0
 
-  "_comment_v5_w3": "Coherence weight calibration sweep range (Stage 06)",
-  "w3_sweep_values": [0.05, 0.10, 0.20, 0.30, 0.50],
+---
 
-  "_comment_v5_regime": "Regime boundary sweep parameters (Stage 07)",
-  "regime_sweep_pi_values": [0.05, 0.10, 0.16, 0.25, 0.40],
-  "regime_sweep_pmiss_values": [0.20, 0.35, 0.516, 0.65, 0.80],
-  "regime_sweep_rho_values": [0.72, 0.85, 0.90, 0.96]
-}
+## Inherited Claims (reformulated where noted)
+
+| # | Claim | Stage(s) | Notes |
+|---|-------|----------|-------|
+| 1 | **ICI correctly identifies when Mode A guarantees hold** (v4.3: "Non-oracle inference adequate for control") | 03b, 04 | mode_a_guarantee_fraction; ICI condition (i) flag |
+| 2 | Mode A improves over baselines without exceeding safety budget | 04 | Gains vs OL and pooled; safety delta within ISS bound |
+| 3 | τ̃ tracks true recovery burden (Spearman ρ ≥ 0.70) | 01 | τ̃ rank correlation ≥ 0.70 |
+| 4 | Chance-constraint tightening calibrated in Gaussian settings | 01, 04 | Abs error ≤ 0.015; heavy-tail degradation < 0.10 |
+| 5 | Mode error degradation consistent with √μ̄ ISS scaling (v4.3: "√μ̄ degradation") | 01, 04 | Continuous μ̄ sweep; γ(μ̄) monotone |
+| 6 | Stability under drifting S*(t) consistent with linear degradation | 04 | Slope > 0, R² ≥ 0.75 |
+| 7 | Mode B improves escape when Mode C pre-emption confirms adequate inference quality | 03b, 05 | safe_trigger_fraction; mode_c_should_preempt |
+| 8 | Mode B acceptably close to exact DP (including ε_H term) | 05 | Abs gap ≤ 0.10; ε_H included in bound |
+| 9 | Coherence penalty behaves as designed; w3 calibrated | 06 | Structural tests; Pareto-efficient w3 identified |
+| 10 | Identifiability improves with perturbations, priors, dither (reinterpreted vs regime boundary) | 03 | F1 >= 0.65 (standard), >= 0.80 (extended); T_k_eff > 0; T_k_eff << omega_min confirms identifiability limitation is structural, not incidental. |
+
+---
+
+## New ICI Claims (v5.0)
+
+| # | Claim | Stage(s) | Evidence |
+|---|-------|----------|----------|
+| 11 | ICI correctly identifies operating regime and activates Mode C | 03b, 03c | Entry conditions consistent; 03c.2 priority test passes |
+| 12 | Mode C improves T_k_eff and R_Brier within Fisher information bounds | 03c | Fisher proxy increases (03c.3); exit after improvement (03c.4) |
+| 13 | p_A^robust reduces FP rate vs fixed p_A under miscalibrated posterior | 03b, 05 | p_A_robust > p_A_nominal; safe_trigger_fraction = 0 when below ω_min |
+| 14 | Compound bound correctly predicts regime boundary | 01, 03, 07 | Formula verified; HDR params flagged; boundary sweep matches |
+
+---
+
+*All results are in silico only. No biological or clinical validity is implied.*

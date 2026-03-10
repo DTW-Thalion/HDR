@@ -1,36 +1,32 @@
-{
-  "profile_name": "extended",
-  "seeds": [
-    101,
-    202,
-    303,
-    404,
-    505
-  ],
-  "episodes_per_experiment": 64,
-  "steps_per_episode": 512,
-  "mc_rollouts": 1000,
-  "chunk_size": 25,
-  "K_values": [
-    3,
-    4
-  ],
-  "selected_k4": true,
-  "run_extended_sweeps": true,
-  "R_brier_max": 0.05,
-  "omega_min_factor": 0.005,
-  "T_C_max": 50,
-  "k_calib": 1.0,
-  "sigma_dither": 0.08,
-  "epsilon_control": 0.5,
-  "missing_fraction_target": 0.516,
-  "mode1_base_rate": 0.16,
-  "observer_mode_accuracy_approx": 0.55,
-  "w3_sweep_values": [
-    0.05,
-    0.1,
-    0.2,
-    0.3,
-    0.5
-  ]
-}
+# Reproducibility
+
+## Determinism
+
+- All stages use explicit integer seeds.
+- The run manifest records seeds and config hashes.
+- Completed stages are skipped automatically when the config hash is unchanged and `--skip-done` is enabled.
+
+## Resumability
+
+- Every stage writes artifacts atomically.
+- Partial results are flushed after every seed and chunk.
+- Per-stage zips are updated immediately after stage completion or failure.
+- Failures are logged to `results/logs/` and summarized in `docs/FAILURES.md`.
+
+## Re-running
+
+Standard end-to-end run:
+
+```bash
+python run_all.py --resume --skip-done
+```
+
+Selective re-run:
+
+```bash
+python run_all.py --profiles smoke --stages 03,04 --force
+```
+
+## No internet / no external downloads
+
+This repository uses only synthetic data generated locally. It performs no network access and no external dataset downloads.

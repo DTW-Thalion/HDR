@@ -375,7 +375,7 @@ The suite validates 14 claims (Claims 1–10 inherited from v4.3, Claims 11–14
 
 A claim is marked `Supported` only when it passes its criterion in both smoke and standard profiles.
 
-See `CLAIM_CRITERIA.md` for full criterion definitions and `CLAIM_MATRIX.md` for current status.
+See `EXTENDED_PROFILE_REPORT.md` for full criterion definitions and `CLAIM_MATRIX.md` for current status.
 
 ---
 
@@ -412,4 +412,22 @@ matplotlib    # visualization in plotting.py
 
 ## File Naming Note
 
-Some files at the repository root have names that do not match their content due to upload history (multiple "Add files via upload" commits). When navigating the codebase, verify file content rather than relying solely on filename. The canonical organized package is in `control/`, `inference/`, and `model/` subdirectories.
+A filename/content audit was performed (2026-03-10) and most mismatches were resolved by renaming files to their correct names. The following files were successfully renamed:
+
+- `CLAIM_MATRIX.md` → `config.json` (master configuration)
+- `VALIDATION_REPORT.md` → `smoke.json` (smoke profile overrides)
+- `ZIP_LAYOUT_NOTE.md` → `standard.json` (standard profile overrides)
+- `RESULTS_INDEX.md` → `validation.json` (validation profile overrides)
+- `REPRODUCIBILITY.md` → `extended_512.json` (extended-512 profile config)
+- `CORRECTIONS.md` → `CLAIM_MATRIX.md` (HDR claim matrix v5.0)
+- `FAILURES.md` → `REPRODUCIBILITY.md` (reproducibility and determinism documentation)
+
+The following files still have name/content mismatches that could not be resolved without conflicting with existing files. Manual resolution is required:
+
+- `README.md`: Contains Python source code (tau_tilde, tau_sandwich functions). The correct content for this name would be a project README. The code belongs to `model/recovery.py`, which already exists.
+- `CLAIM_CRITERIA.md`: Contains a JSON run manifest (stage entries with config_hash, status). The correct content for this name would be claim criteria. The JSON belongs to a manifest file, but `run_all_manifest.json` already exists.
+- `EXTENDED_PROFILE_REPORT.md`: Contains claim support criteria (the criteria file). The natural filename would be `CLAIM_CRITERIA.md`, but that name is occupied by the mismatched run manifest above.
+- `REPUBLISH_NOTE.md`: Contains the standard profile completion report. The natural filename would be `STANDARD_PROFILE_REPORT.md`, which exists but contains a runtime operational settings JSON of unclear provenance.
+- `STANDARD_PROFILE_REPORT.md`: Contains a runtime/operational settings JSON (controller_projection_method, target_exact_projection_method, etc.). The correct filename is ambiguous — it does not match any expected file in the repository structure.
+
+The canonical organized package remains in `control/`, `inference/`, and `model/` subdirectories.
