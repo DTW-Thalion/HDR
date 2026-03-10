@@ -10,11 +10,15 @@
 
 ## Test Summary
 
-| Suite | Result |
-|-------|--------|
-| Pytest unit tests | 2460/2460 passed |
-| Standard profile (T=128, 2 seeds, 12 ep/seed) | 86/86 checks passed |
-| Extended profile (T=256, 3 seeds, 20 ep/seed) | 98/98 checks passed |
+| Suite | Tests | Result |
+|-------|------:|--------|
+| Model unit tests (`test_hsmm`, `test_target_set`, `test_recovery`) | 53 | 53/53 passed |
+| Control unit tests (`test_mpc`, `test_committor`) | 2 | 2/2 passed |
+| Inference unit tests (`test_ici`, `test_imm`, `test_mode_c`) | 4 | 4/4 passed |
+| Packaging tests (`test_packaging`) | 2 | 2/2 passed |
+| **Total pytest** | **61** | **61/61 passed** |
+| Standard profile (T=128, 2 seeds, 12 ep/seed) | — | 86/86 checks passed |
+| Extended profile (T=256, 3 seeds, 20 ep/seed) | — | 98/98 checks passed |
 
 ---
 

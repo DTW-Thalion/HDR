@@ -16,7 +16,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 
 ```
 /home/user/HDR/
-├── hdr_validation -> .          # Self-referential symlink (makes root importable as 'hdr_validation')
+├── hdr_validation/              # Python package (control, inference, model)
 ├── control/                     # Control policy subpackage
 │   ├── lqr.py                   # DLQR, committor calculations, value iteration
 │   ├── mode_b.py                # Structured exploration control (Mode B)
@@ -61,7 +61,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 └── config (N).json              # Parameter sweep variants (N = 1–58)
 ```
 
-**Important**: `hdr_validation` is a symlink pointing to `.` (the repo root). This allows tests and scripts to import the package as `hdr_validation.control.mpc`, `hdr_validation.inference.ici`, etc. while the source lives at the root.
+**Important**: `hdr_validation/` is a proper Python package directory containing `control/`, `inference/`, `model/`, `utils.py`, `specification.py`, and `packaging.py`. Tests and scripts import the package as `hdr_validation.control.mpc`, `hdr_validation.inference.ici`, etc.
 
 ---
 

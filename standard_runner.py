@@ -135,6 +135,15 @@ def stage01_math():
     lower_ok = result["tau_L"] <= result["tau_tilde"] + 1e-6
     record("stage01", "tau sandwich lower ≤ tau_tilde", lower_ok,
            f"tau_L={result['tau_L']:.4f} tau_tilde={result['tau_tilde']:.4f}")
+    # Counterexample to equality: at reference params with
+    # heterogeneous spectral radii, tau_tilde > tau_L strictly.
+    # This is the numerical demonstration of the corrected
+    # Proposition H.1 (sandwich inequality, not equality).
+    gap_ok = result["tau_tilde"] > result["tau_L"] + 1e-3
+    record("stage01",
+           "tau_tilde strictly > tau_L (Prop H.1 gap confirmed)",
+           gap_ok,
+           f"gap={result['tau_tilde'] - result['tau_L']:.4f}")
 
     # 01.3 committor: boundary conditions q[A]=0, q[B]=1
     K = cfg["K"]
@@ -153,6 +162,31 @@ def stage01_math():
     P_pd = bool(np.all(np.linalg.eigvalsh(P_dare) > 0))
     record("stage01", "DARE P positive-definite", P_pd)
     record("stage01", "DARE K finite", bool(np.all(np.isfinite(K_gain))))
+
+    # 01.x — alpha from DARE and beta contraction coefficient
+    from hdr_validation.control.lqr import (
+        compute_alpha_from_dare, transient_contraction_beta
+    )
+    Q_lqr_loc = np.eye(n)
+    R_lqr_loc = np.eye(m_u) * 0.1
+    alpha_k = compute_alpha_from_dare(
+        basin.A, basin.B, Q_lqr_loc, R_lqr_loc
+    )
+    record("stage01", "alpha_from_dare in (0,1)",
+           0.0 < alpha_k < 1.0, f"{alpha_k:.4f}")
+
+    # Build a minimal 2-state transient sub-matrix for beta check
+    K_local = cfg["K"]
+    P_trans = np.ones((K_local, K_local)) / K_local
+    # Remove absorbing (target) basin column to get sub-stochastic
+    P_sub = np.delete(np.delete(P_trans, 0, axis=0), 0, axis=1)
+    beta_val = transient_contraction_beta(P_sub)
+    rho_sub  = float(np.max(np.abs(np.linalg.eigvals(P_sub))))
+    record("stage01", "beta contraction in [0,1)",
+           0.0 <= beta_val < 1.0, f"beta={beta_val:.4f}")
+    record("stage01", "rho(Q_transient) <= beta",
+           rho_sub <= beta_val + 1e-9,
+           f"rho={rho_sub:.4f} beta={beta_val:.4f}")
 
     # 01.5 finite_horizon_tracking returns H gains
     gains = finite_horizon_tracking(basin.A, basin.B, Q_lqr, R_lqr, H=6, P_terminal=P_dare)
@@ -781,6 +815,24 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     cost_diff_all = costs_pe - costs_hdr
     hdr_mal_win_rate = float(np.mean(cost_diff_all[mask_mal] > 0)) if np.any(mask_mal) else 0.0
 
+    # Bootstrap 95% CI for maladaptive gains (Benchmark A)
+    gains_maladaptive = paired_ratios_all[mask_mal] if np.any(mask_mal) else np.array([0.0])
+
+    def _bootstrap_ci(data, n_boot=10_000, ci=0.95, rng_seed=42):
+        """Bootstrap percentile CI for the mean."""
+        rng = np.random.default_rng(rng_seed)
+        data = np.asarray(data)
+        boot_means = np.array([
+            rng.choice(data, size=len(data), replace=True).mean()
+            for _ in range(n_boot)
+        ])
+        lo = float(np.percentile(boot_means, 100 * (1 - ci) / 2))
+        hi = float(np.percentile(boot_means, 100 * (1 + ci) / 2))
+        return lo, hi
+
+    ci_lo, ci_hi = _bootstrap_ci(gains_maladaptive)
+    ci_passes_criterion = ci_lo >= 0.03   # lower bound must clear +3%
+
     safety_hdr = np.array(ep_safety_rates["hdr_main"])
     safety_pooled = np.array(ep_safety_rates["pooled_lqr"])
     safety_delta = float(np.mean(safety_hdr) - np.mean(safety_pooled))
@@ -984,6 +1036,8 @@ def stage04_mode_a(episodes: list[dict]) -> None:
         "hdr_vs_pooled_estimated_gain_maladaptive": hdr_vs_pe_maladaptive,
         "hdr_vs_pooled_estimated_gain_adaptive": hdr_vs_pe_adaptive,
         "hdr_maladaptive_win_rate": hdr_mal_win_rate,
+        "benchmark_a_ci_lo": ci_lo,
+        "benchmark_a_ci_hi": ci_hi,
         "pooled_estimated_vs_oracle_cost_ratio": pe_vs_oracle_ratio,
         "heavy_tail_calibration_degradation": gc.get("abs_error", 0.0) + 0.07,
         "mode_error_fit_r2": mode_r2,
@@ -1030,6 +1084,12 @@ def stage04_mode_a(episodes: list[dict]) -> None:
            hdr_mal_win_rate > 0.7,
            f"rate={hdr_mal_win_rate:.4f}",
            note="Fraction of basin-1 episodes where HDR cost < pooled_estimated cost")
+
+    # 04.12 Bootstrap CI for Benchmark A (maladaptive basin gain)
+    record("stage04",
+           "Benchmark A 95% CI lower bound >= +0.03",
+           ci_passes_criterion,
+           f"CI=[{ci_lo:+.4f}, {ci_hi:+.4f}]")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1146,6 +1206,69 @@ def stage06_coherence() -> None:
     record("stage06", "coherence contribution monotone in w3",
            is_monotone, f"{[f'{c:.4f}' for c in contributions]}")
 
+    # 06.4 Time-in-band: HDR vs open-loop vs pooled-LQR baselines
+    from hdr_validation.model.slds import make_evaluation_model
+    from hdr_validation.control.mpc import solve_mode_a
+    from hdr_validation.control.lqr import dlqr
+    from hdr_validation.model.target_set import build_target_set
+
+    n = cfg["state_dim"]
+    m_u = cfg["control_dim"]
+    T_tib = cfg["steps_per_episode"]
+    rng_tib = np.random.default_rng(606)
+    eval_model_tib = make_evaluation_model(cfg, rng_tib)
+    basin_tib = eval_model_tib.basins[0]
+    target_tib = build_target_set(0, cfg)
+
+    A_pool = np.mean([b.A for b in eval_model_tib.basins], axis=0)
+    B_pool = np.mean([b.B for b in eval_model_tib.basins], axis=0)
+    K_pool, _ = dlqr(A_pool, B_pool, np.eye(n), np.eye(m_u) * 0.1)
+
+    kappa_hi = cfg["kappa_hi"]
+    n_tib_eps = 4
+    hdr_in_band_steps = 0
+    ol_in_band_steps = 0
+    lqr_in_band_steps = 0
+    total_steps = 0
+
+    for ep_i in range(n_tib_eps):
+        rng_ep = np.random.default_rng(606 + ep_i)
+        x_hdr = rng_ep.normal(size=n) * 1.5
+        x_ol = x_hdr.copy()
+        x_lqr = x_hdr.copy()
+        P_ep = np.eye(n) * 0.1
+        for t in range(T_tib):
+            hdr_in_band_steps += int(np.linalg.norm(x_hdr) <= kappa_hi)
+            ol_in_band_steps  += int(np.linalg.norm(x_ol)  <= kappa_hi)
+            lqr_in_band_steps += int(np.linalg.norm(x_lqr) <= kappa_hi)
+            total_steps += 1
+            res_hdr = solve_mode_a(x_hdr, P_ep, basin_tib, target_tib, kappa_hat=0.6, config=cfg, step=t)
+            u_hdr = res_hdr.u
+            u_ol  = np.zeros(m_u)
+            u_lqr = np.clip(-K_pool @ x_lqr, -0.6, 0.6)
+            w = rng_ep.multivariate_normal(np.zeros(n), basin_tib.Q)
+            def _step(x, u):
+                return basin_tib.A @ x + basin_tib.B @ u + basin_tib.E[:, :n] @ w + basin_tib.b
+            x_hdr = _step(x_hdr, u_hdr)
+            x_ol  = _step(x_ol,  u_ol)
+            x_lqr = _step(x_lqr, u_lqr)
+
+    hdr_tib = hdr_in_band_steps / max(total_steps, 1)
+    open_loop_tib = ol_in_band_steps / max(total_steps, 1)
+    lqr_tib = lqr_in_band_steps / max(total_steps, 1)
+
+    delta_vs_open = hdr_tib - open_loop_tib
+    delta_vs_lqr  = hdr_tib - lqr_tib
+
+    record("stage06", "time-in-band vs open-loop improvement",
+           delta_vs_open > 0,
+           f"HDR={hdr_tib:.3f} open={open_loop_tib:.3f} "
+           f"delta={delta_vs_open:+.3f}")
+    record("stage06", "time-in-band vs pooled-LQR improvement",
+           delta_vs_lqr > 0,
+           f"HDR={hdr_tib:.3f} lqr={lqr_tib:.3f} "
+           f"delta={delta_vs_lqr:+.3f}")
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Stage 07 — Robustness sweeps (seed-independent)
@@ -1223,6 +1346,38 @@ def stage07_robustness() -> None:
         record("stage07", f"Mode A finite seed={seed}", bool(np.all(np.isfinite(res.u))),
                f"‖u‖={np.linalg.norm(res.u):.4f}")
 
+    # 07.6 w3 sweep: peak time-in-band across w3 values
+    from hdr_validation.model.coherence import coherence_penalty
+    kappa_hi_07 = cfg["kappa_hi"]
+    w3_sweep_values = cfg["w3_sweep_values"]
+    tib_by_w3 = {}
+    rng_w3 = np.random.default_rng(707)
+    eval_model_w3 = make_evaluation_model(cfg, rng_w3)
+    basin_w3 = eval_model_w3.basins[0]
+    target_w3 = build_target_set(0, cfg)
+    T_w3 = min(cfg["steps_per_episode"], 32)
+    x_init_w3 = rng_w3.normal(size=n) * 1.2
+
+    for w3 in w3_sweep_values:
+        cfg_w3 = {**cfg, "w3": w3}
+        in_band_cnt = 0
+        x_w3 = x_init_w3.copy()
+        P_w3 = np.eye(n) * 0.1
+        rng_w3s = np.random.default_rng(int(w3 * 1000))
+        for t in range(T_w3):
+            in_band_cnt += int(np.linalg.norm(x_w3) <= kappa_hi_07)
+            res_w3 = solve_mode_a(x_w3, P_w3, basin_w3, target_w3, kappa_hat=0.6, config=cfg_w3, step=t)
+            ww = rng_w3s.multivariate_normal(np.zeros(n), basin_w3.Q)
+            x_w3 = basin_w3.A @ x_w3 + basin_w3.B @ res_w3.u + basin_w3.E[:, :n] @ ww + basin_w3.b
+        tib_by_w3[w3] = in_band_cnt / max(T_w3, 1)
+
+    best_w3_tib = max(tib_by_w3.values())
+    record("stage07",
+           "peak time-in-band across w3 sweep >= 0.65",
+           best_w3_tib >= 0.65,
+           f"peak_tib={best_w3_tib:.3f} at "
+           f"w3={max(tib_by_w3, key=tib_by_w3.get):.2f}")
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Main orchestration
@@ -1234,6 +1389,8 @@ if __name__ == "__main__":
     print(f"MC rollouts: {STANDARD_CONFIG['mc_rollouts']}")
     print(f"Python {sys.version}")
     print(f"NumPy {np.__version__}")
+    from hdr_validation.control.mpc import SCIPY_MINIMIZE_OPTIONS
+    print(f"SciPy minimize options: {SCIPY_MINIMIZE_OPTIONS}")
 
     episodes = None
     stage03_data = None

@@ -7,6 +7,10 @@ from .target_set import TargetSet
 
 
 def tau_tilde(x: np.ndarray, target: TargetSet, Q: np.ndarray, rho: float, method: str = "box") -> float:
+    """Returns an upper bound on the Lyapunov cost; equality holds
+    only when all eigenvalues share the same magnitude (Prop H.1,
+    corrected: sandwich inequality, not equality).  See the
+    Stage 01 numerical check for a concrete counterexample."""
     dist2 = target.dist2(x, Q=Q, method=method)
     denom = max(1.0 - rho**2, 1e-6)
     return float(dist2 / denom)
