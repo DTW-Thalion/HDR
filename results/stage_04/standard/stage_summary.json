@@ -20,9 +20,15 @@
     "pA": 0.70,
     "default_burden_budget": 28.0
   },
-  "elapsed_s": {
-    "stage_02_dependency": 1.28,
-    "stage_04": 0.11
+  "headline_gains": {
+    "hdr_vs_open_loop_gain_nominal": 0.0006,
+    "hdr_vs_pooled_gain_nominal": -0.0097,
+    "safety_delta_vs_pooled_nominal": -0.0013,
+    "mode_error_fit_slope": 0.1743,
+    "mode_error_fit_r2": 0.9988,
+    "target_drift_fit_slope": 3.2657,
+    "target_drift_fit_r2": 0.9987,
+    "gaussian_calibration_abs_error": 0.0012
   },
   "checks": [
     {
@@ -66,11 +72,32 @@
       "passed": true,
       "value": null,
       "note": "Second seed produces consistent finite output"
+    },
+    {
+      "id": "04.7",
+      "check": "HDR gain vs open-loop > 0",
+      "passed": true,
+      "value": 0.0006,
+      "note": "Median paired fractional improvement over open-loop"
+    },
+    {
+      "id": "04.8",
+      "check": "HDR gain vs pooled > -0.10",
+      "passed": true,
+      "value": -0.0097,
+      "note": "Not catastrophically worse than pooled LQR"
+    },
+    {
+      "id": "04.9",
+      "check": "Safety delta vs pooled <= 0.015",
+      "passed": true,
+      "value": -0.0013,
+      "note": "HDR safety violation rate vs pooled LQR"
     }
   ],
   "summary": {
-    "total_checks": 6,
-    "passed": 6,
+    "total_checks": 9,
+    "passed": 9,
     "failed": 0,
     "status": "ALL_PASSED"
   }
