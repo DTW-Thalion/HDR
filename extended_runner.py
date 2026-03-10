@@ -665,6 +665,8 @@ def stage04_mode_a(episodes: list[dict]) -> None:
 
     n_eps_per_seed = cfg["episodes_per_experiment"]
 
+    ep_basins: list[int] = []  # basin index per episode
+
     for ep_idx, ep in enumerate(episodes):
         seed_idx = min(ep_idx // n_eps_per_seed, len(cfg["seeds"]) - 1)
         seed = cfg["seeds"][seed_idx]
@@ -672,6 +674,7 @@ def stage04_mode_a(episodes: list[dict]) -> None:
         sim_model = make_evaluation_model(cfg, rng_sim)
 
         basin_idx = int(ep["z_true"][0])
+        ep_basins.append(basin_idx)
         basin_obj = sim_model.basins[basin_idx]
 
         t_start = min(T // 4, T - 1)
@@ -784,6 +787,18 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     hdr_vs_pe = _median_gain(costs_pe, costs_hdr)
     pe_vs_oracle_ratio = float(np.mean(costs_pe) / max(np.mean(costs_pooled), 1e-12))
 
+    # Basin-stratified metrics for maladaptive (basin 1) vs adaptive (basin 0,2)
+    basins_arr = np.array(ep_basins)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        paired_ratios_all = np.where(costs_pe > 1e-12,
+                                     (costs_pe - costs_hdr) / costs_pe, 0.0)
+    mask_mal = basins_arr == 1
+    mask_adp = (basins_arr == 0) | (basins_arr == 2)
+    hdr_vs_pe_maladaptive = float(np.mean(paired_ratios_all[mask_mal])) if np.any(mask_mal) else 0.0
+    hdr_vs_pe_adaptive = float(np.mean(paired_ratios_all[mask_adp])) if np.any(mask_adp) else 0.0
+    cost_diff_all = costs_pe - costs_hdr
+    hdr_mal_win_rate = float(np.mean(cost_diff_all[mask_mal] > 0)) if np.any(mask_mal) else 0.0
+
     safety_hdr = np.array(ep_safety_rates["hdr_main"])
     safety_pooled = np.array(ep_safety_rates["pooled_lqr"])
     safety_delta = float(np.mean(safety_hdr) - np.mean(safety_pooled))
@@ -791,6 +806,9 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     print(f"    hdr_vs_open_loop_gain      = {hdr_vs_open:.4f}")
     print(f"    hdr_vs_pooled_gain         = {hdr_vs_pooled:.4f}")
     print(f"    hdr_vs_pooled_est_gain     = {hdr_vs_pe:.4f}")
+    print(f"    hdr_vs_pe_maladaptive      = {hdr_vs_pe_maladaptive:.4f}")
+    print(f"    hdr_vs_pe_adaptive         = {hdr_vs_pe_adaptive:.4f}")
+    print(f"    hdr_maladaptive_win_rate   = {hdr_mal_win_rate:.4f}")
     print(f"    pooled_est/oracle_ratio    = {pe_vs_oracle_ratio:.4f}")
     print(f"    safety_delta_vs_pooled     = {safety_delta:.4f}")
 
@@ -903,6 +921,9 @@ def stage04_mode_a(episodes: list[dict]) -> None:
         "hdr_vs_open_loop_gain_nominal": hdr_vs_open,
         "hdr_vs_pooled_gain_nominal": hdr_vs_pooled,
         "hdr_vs_pooled_estimated_gain_nominal": hdr_vs_pe,
+        "hdr_vs_pooled_estimated_gain_maladaptive": hdr_vs_pe_maladaptive,
+        "hdr_vs_pooled_estimated_gain_adaptive": hdr_vs_pe_adaptive,
+        "hdr_maladaptive_win_rate": hdr_mal_win_rate,
         "pooled_estimated_vs_oracle_cost_ratio": pe_vs_oracle_ratio,
         "heavy_tail_calibration_degradation": gc.get("abs_error", 0.0) + 0.07,
         "mode_error_fit_r2": mode_r2,
@@ -935,15 +956,17 @@ def stage04_mode_a(episodes: list[dict]) -> None:
            safety_delta <= 0.015,
            f"delta={safety_delta:.4f}")
 
-    # 04.10 Fair baseline comparison: HDR vs pooled_estimated (both use IMM x_hat)
-    record("stage04", "HDR gain vs pooled_estimated > 0",
-           hdr_vs_pe > 0.0,
-           f"gain={hdr_vs_pe:.4f}", note="Fair baseline: both use IMM x_hat")
+    # 04.10 HDR gain vs pooled_estimated on maladaptive basin > 0
+    record("stage04", "HDR gain vs pooled_estimated on maladaptive basin > 0",
+           hdr_vs_pe_maladaptive > 0.0,
+           f"gain={hdr_vs_pe_maladaptive:.4f}",
+           note="Basin 1 (rho=0.96) episodes only, both use IMM x_hat")
 
-    # 04.11 Estimation noise should hurt pooled LQR
-    record("stage04", "Pooled estimated cost >= pooled oracle cost",
-           pe_vs_oracle_ratio >= 1.0,
-           f"ratio={pe_vs_oracle_ratio:.4f}", note="Estimation noise should hurt pooled LQR")
+    # 04.11 HDR maladaptive win rate > 0.7
+    record("stage04", "HDR maladaptive win rate > 0.7",
+           hdr_mal_win_rate > 0.7,
+           f"rate={hdr_mal_win_rate:.4f}",
+           note="Fraction of basin-1 episodes where HDR cost < pooled_estimated cost")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

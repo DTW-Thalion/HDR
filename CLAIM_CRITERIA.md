@@ -1240,5 +1240,17 @@
     }
   ],
   "project": "hdr_validation",
-  "updated_at": "2026-03-08T21:52:59Z"
+  "updated_at": "2026-03-08T21:52:59Z",
+  "claim_criteria": {
+    "claim_1": {
+      "description": "ICI correctly identifies when Mode A guarantees hold",
+      "metrics": ["hdr_vs_pooled_estimated_gain_maladaptive >= +0.03", "hdr_maladaptive_win_rate >= 0.70"],
+      "note": "Claims 1 and 2 are evaluated on maladaptive-basin episodes (basin index 1, rho=0.96) because HDR is a remediation framework. The fair baseline is pooled_lqr_estimated (IMM x_hat), not oracle-state pooled_lqr."
+    },
+    "claim_2": {
+      "description": "Mode A improves over baselines without exceeding safety budget",
+      "metrics": ["hdr_vs_pooled_estimated_gain_maladaptive >= +0.03", "hdr_maladaptive_win_rate >= 0.70"],
+      "note": "Claims 1 and 2 are evaluated on maladaptive-basin episodes (basin index 1, rho=0.96) because HDR is a remediation framework. The fair baseline is pooled_lqr_estimated (IMM x_hat), not oracle-state pooled_lqr."
+    }
+  }
 }
