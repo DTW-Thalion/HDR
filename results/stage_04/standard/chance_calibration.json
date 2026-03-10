@@ -4,6 +4,8 @@
   "gaussian_calibration_abs_error": 0.0011718750000000028,
   "hdr_vs_open_loop_gain_nominal": 0.0006109834023548781,
   "hdr_vs_pooled_gain_nominal": -0.009732581669693778,
+  "hdr_vs_pooled_estimated_gain_nominal": -0.0016048896570391366,
+  "pooled_estimated_vs_oracle_cost_ratio": 0.9871007262162687,
   "heavy_tail_calibration_degradation": 0.07117187500000001,
   "mode_error_fit_r2": 0.9987822326760412,
   "mode_error_fit_slope": 0.1743108477183217,
@@ -13,7 +15,8 @@
     "open_loop",
     "pooled_lqr",
     "basin_lqr",
-    "hdr_main"
+    "hdr_main",
+    "pooled_lqr_estimated"
   ],
   "selected_scenarios": [
     "nominal",
