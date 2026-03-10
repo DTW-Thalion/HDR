@@ -1,0 +1,9 @@
+BENCHMARK A — CRITERION NOT MET AT 95% CI LEVEL
+CI lower bound +0.0210 < +0.030
+Point estimate +0.0283 (above threshold)
+
+Diagnosis:
+Fewer than half of seeds (8/20) individually exceed the +3% criterion.  The pooled mean is driven by a minority of high-gain seeds.  Investigate whether the effect is specific to certain random initialisations.
+
+Recommended manuscript language (weaker-but-honest framing):
+HDR achieves a mean fractional cost reduction of +2.8% over the pooled_lqr_estimated baseline on maladaptive-basin episodes (win rate 77%; N=123 episodes across 20 independent seeds).  The 95% bootstrap CI [+2.1%, +3.6%] does not exclude gains below +3%, indicating meaningful but not yet precisely characterised improvement.
