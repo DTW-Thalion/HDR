@@ -20,11 +20,15 @@ class IMMState:
 
 
 class IMMFilter:
-    def __init__(self, model: EvaluationModel, init_mean: np.ndarray | None = None, init_cov_scale: float = 1.0):
+    def __init__(self, model: EvaluationModel, init_mean: np.ndarray | None = None, init_cov_scale: float = 1.0,
+                 q_inflation: dict[int, float] | None = None, diag_boost: float = 0.0, temperature: float = 1.0):
         n = model.state_dim
         K = len(model.basins)
         init_mean = np.zeros(n) if init_mean is None else np.asarray(init_mean, dtype=float)
         self.model = model
+        self.q_inflation = q_inflation if q_inflation is not None else {}
+        self.diag_boost = float(diag_boost)
+        self.temperature = float(temperature)
         self.state = IMMState(
             mode_probs=np.ones(K) / K,
             states=[KalmanState(mean=init_mean.copy(), cov=np.eye(n) * init_cov_scale) for _ in range(K)],
@@ -33,6 +37,13 @@ class IMMFilter:
             map_mode=0,
             dwell_length=1,
         )
+
+    @classmethod
+    def for_hard_regime(cls, model: EvaluationModel, init_mean: np.ndarray | None = None,
+                        init_cov_scale: float = 1.0) -> IMMFilter:
+        """Instantiate with tuning for the maladaptive / near-unit-root / high-missingness regime."""
+        return cls(model, init_mean=init_mean, init_cov_scale=init_cov_scale,
+                   q_inflation={1: 2.0}, diag_boost=0.15, temperature=0.7)
 
     def dynamic_transition(self) -> np.ndarray:
         K = len(self.model.basins)
@@ -53,6 +64,9 @@ class IMMFilter:
         row[prev] = stay
         T[prev] = row
         T /= T.sum(axis=1, keepdims=True)
+        if self.diag_boost > 0.0:
+            T += self.diag_boost * np.eye(K)
+            T /= T.sum(axis=1, keepdims=True)
         return T
 
     def step(self, y: np.ndarray, mask: np.ndarray, u: np.ndarray) -> IMMState:
@@ -75,12 +89,14 @@ class IMMFilter:
         new_states = []
         log_likes = np.zeros(K)
         for j, basin in enumerate(self.model.basins):
-            pred = predict(mixed_states[j], basin.A, basin.B, u, basin.Q, basin.b)
+            Q_j = basin.Q * (1.0 + self.q_inflation.get(j, 0.0)) if self.q_inflation else basin.Q
+            pred = predict(mixed_states[j], basin.A, basin.B, u, Q_j, basin.b)
             upd, ll = update(pred, y, mask, basin.C, basin.R, basin.c)
             new_states.append(upd)
             log_likes[j] = ll
 
         log_weights = np.log(c_j) + log_likes
+        log_weights /= self.temperature
         log_weights -= np.max(log_weights)
         weights = np.exp(log_weights)
         mode_probs = weights / np.sum(weights)
