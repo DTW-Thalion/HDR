@@ -136,6 +136,15 @@ def stage01_math():
     lower_ok = result["tau_L"] <= result["tau_tilde"] + 1e-6
     record("stage01", "tau sandwich lower ≤ tau_tilde", lower_ok,
            f"tau_L={result['tau_L']:.4f} tau_tilde={result['tau_tilde']:.4f}")
+    # Counterexample to equality: at reference params with
+    # heterogeneous spectral radii, tau_tilde > tau_L strictly.
+    # This is the numerical demonstration of the corrected
+    # Proposition H.1 (sandwich inequality, not equality).
+    gap_ok = result["tau_tilde"] > result["tau_L"] + 1e-3
+    record("stage01",
+           "tau_tilde strictly > tau_L (Prop H.1 gap confirmed)",
+           gap_ok,
+           f"gap={result['tau_tilde'] - result['tau_L']:.4f}")
 
     # 01.3 committor: boundary conditions q[A]=0, q[B]=1
     K = cfg["K"]
@@ -154,6 +163,31 @@ def stage01_math():
     P_pd = bool(np.all(np.linalg.eigvalsh(P_dare) > 0))
     record("stage01", "DARE P positive-definite", P_pd)
     record("stage01", "DARE K finite", bool(np.all(np.isfinite(K_gain))))
+
+    # 01.x — alpha from DARE and beta contraction coefficient
+    from hdr_validation.control.lqr import (
+        compute_alpha_from_dare, transient_contraction_beta
+    )
+    Q_lqr_loc = np.eye(n)
+    R_lqr_loc = np.eye(m_u) * 0.1
+    alpha_k = compute_alpha_from_dare(
+        basin.A, basin.B, Q_lqr_loc, R_lqr_loc
+    )
+    record("stage01", "alpha_from_dare in (0,1)",
+           0.0 < alpha_k < 1.0, f"{alpha_k:.4f}")
+
+    # Build a minimal 2-state transient sub-matrix for beta check
+    K_local = cfg["K"]
+    P_trans = np.ones((K_local, K_local)) / K_local
+    # Remove absorbing (target) basin column to get sub-stochastic
+    P_sub = np.delete(np.delete(P_trans, 0, axis=0), 0, axis=1)
+    beta_val = transient_contraction_beta(P_sub)
+    rho_sub  = float(np.max(np.abs(np.linalg.eigvals(P_sub))))
+    record("stage01", "beta contraction in [0,1)",
+           0.0 <= beta_val < 1.0, f"beta={beta_val:.4f}")
+    record("stage01", "rho(Q_transient) <= beta",
+           rho_sub <= beta_val + 1e-9,
+           f"rho={rho_sub:.4f} beta={beta_val:.4f}")
 
     # 01.5 finite_horizon_tracking returns H gains
     gains = finite_horizon_tracking(basin.A, basin.B, Q_lqr, R_lqr, H=6, P_terminal=P_dare)
@@ -797,6 +831,8 @@ if __name__ == "__main__":
     print(f"MC rollouts: {VALIDATION_CONFIG['mc_rollouts']}")
     print(f"Python {sys.version}")
     print(f"NumPy {np.__version__}")
+    from hdr_validation.control.mpc import SCIPY_MINIMIZE_OPTIONS
+    print(f"SciPy minimize options: {SCIPY_MINIMIZE_OPTIONS}")
 
     episodes = None
     stage03_data = None

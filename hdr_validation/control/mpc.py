@@ -18,6 +18,14 @@ from ..model.target_set import TargetSet
 from .lqr import finite_horizon_tracking, dlqr
 
 
+# Canonical SciPy optimizer settings — logged at runtime so
+# reviewer can verify solver configuration reproducibility.
+SCIPY_MINIMIZE_OPTIONS: dict = {
+    "method": "SLSQP",
+    "options": {"ftol": 1e-8, "maxiter": 200, "disp": False},
+}
+
+
 @dataclass
 class MPCResult:
     u: np.ndarray

@@ -412,3 +412,76 @@ def hybrid_mode_b_action(
     return ModeBDecision(
         "aggressive", u=u_candidate, q_hat=float(q_hat), triggered=True, notes="mode_b"
     )
+
+
+# ──────────────────────────────────────────────────────────────────
+# Lyapunov decrease rate from DARE solution
+# ──────────────────────────────────────────────────────────────────
+def compute_alpha_from_dare(
+    A: np.ndarray,
+    B: np.ndarray,
+    Q: np.ndarray,
+    R: np.ndarray,
+) -> float:
+    """Lyapunov decrease rate alpha for Mode A ISS bound (Prop 9.1).
+
+    Solves the DARE for the LQR terminal cost P, then returns:
+
+        alpha = 1 - lambda_min(Q) / lambda_max(A^T P A + Q)
+
+    This gives a valid (conservative) decrease rate for both LQR
+    and MPC when the MPC terminal set is the LQR invariant set.
+
+    Parameters
+    ----------
+    A, B : system matrices (n x n, n x m)
+    Q, R : LQR stage-cost matrices (n x n PD, m x m PD)
+
+    Returns
+    -------
+    alpha : float in (0, 1)
+    """
+    from scipy.linalg import solve_discrete_are
+    P = solve_discrete_are(A, B, Q, R)
+    AtPA = A.T @ P @ A
+    lam_min_Q = float(np.linalg.eigvalsh(Q).min())
+    lam_max_num = float(np.linalg.eigvalsh(AtPA + Q).max())
+    alpha = 1.0 - lam_min_Q / lam_max_num
+    assert 0.0 < alpha < 1.0, f"alpha={alpha} out of range; check Q, R."
+    return alpha
+
+
+# ──────────────────────────────────────────────────────────────────
+# Transient-MDP contraction coefficient (correct Bellman rate)
+# ──────────────────────────────────────────────────────────────────
+def transient_contraction_beta(Q_transient: np.ndarray) -> float:
+    """Bellman contraction rate for escape-probability value iteration.
+
+    For a transient absorbing-chain MDP with sub-stochastic matrix
+    Q_transient (rows are restricted to transient states), the
+    Bellman operator is a contraction in the sup-norm with rate:
+
+        beta = max_{s in T} sum_{s' in T} Q_transient[s, s']
+             = max row-sum of Q_transient
+
+    This is the correct quantity for Props H.5-H.6.  Note that
+    rho(Q_transient) <= beta always; equality requires additional
+    structure.
+
+    Parameters
+    ----------
+    Q_transient : (|T| x |T|) sub-stochastic transition matrix
+                  over transient states only (rows need not sum to 1)
+
+    Returns
+    -------
+    beta : float in [0, 1)
+    """
+    row_sums = Q_transient.sum(axis=1)
+    beta = float(row_sums.max())
+    if not (0.0 <= beta < 1.0):
+        raise ValueError(
+            f"beta={beta:.4f}: Q_transient must be strictly sub-stochastic "
+            f"(all states transient, i.e., system is absorbing)."
+        )
+    return beta

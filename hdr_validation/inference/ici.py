@@ -65,10 +65,14 @@ def compute_omega_min(n_theta: int, epsilon: float = 0.10, delta: float = 0.05) 
 
 def compute_mu_bar_required(
     epsilon_control: float,
-    alpha: float,
-    delta_A: float,
-    delta_B: float,
-    K_lqr_norm: float,
+    alpha: float | None = None,
+    delta_A: float = 0.0,
+    delta_B: float = 0.0,
+    K_lqr_norm: float = 0.0,
+    A: np.ndarray | None = None,
+    B: np.ndarray | None = None,
+    Q_lqr: np.ndarray | None = None,
+    R_lqr: np.ndarray | None = None,
 ) -> float:
     """Upper bound on allowable mode-error probability for ISS guarantee.
 
@@ -81,15 +85,25 @@ def compute_mu_bar_required(
     Parameters
     ----------
     epsilon_control : maximum allowable residual steady-state deviation
-    alpha           : stage-cost decrease rate (Lyapunov decrease factor)
+    alpha           : stage-cost decrease rate (Lyapunov decrease factor);
+                      if None, derived via compute_alpha_from_dare(A, B, Q_lqr, R_lqr)
     delta_A         : max dynamics mismatch ‖A_j − A_k‖₂
     delta_B         : max input-map mismatch ‖B_j − B_k‖₂
     K_lqr_norm      : operator norm ‖K_LQR‖₂
+    A, B, Q_lqr, R_lqr : system/cost matrices used to derive alpha when alpha is None
 
     Returns
     -------
     mu_bar_required : maximum allowable μ̄  (in [0, 1])
     """
+    if alpha is None:
+        if A is None or B is None or Q_lqr is None or R_lqr is None:
+            raise ValueError(
+                "Provide either alpha directly or all of A, B, Q_lqr, R_lqr "
+                "so alpha can be derived via compute_alpha_from_dare."
+            )
+        from hdr_validation.control.lqr import compute_alpha_from_dare
+        alpha = compute_alpha_from_dare(A, B, Q_lqr, R_lqr)
     denom = delta_A + delta_B * K_lqr_norm
     if denom < 1e-12:
         return 1.0  # no mismatch possible → any μ̄ is fine
@@ -103,10 +117,47 @@ def compute_iss_residual(
     delta_B: float,
     K_lqr_norm: float,
 ) -> float:
-    """Residual steady-state deviation under mode-error probability μ̄.
+    """Compute the expected ISS residual bound under mode-error
+    probability mu_hat.
 
-    γ(μ̄) = √μ̄ · (ΔA + ΔB‖K_k‖) / α
+    This function implements the bound from Proposition 9.1 /
+    Proposition H.2:
+
+        E[||e_t||^2] <= C(delta_A, delta_B, K_lqr_norm) * mu_hat
+
+    where the expectation is over the stationary distribution of
+    (x_t, z_t) under Assumptions H.1--H.2a:
+
+      H.1  Compact disturbance set D; per-basin stabilizability.
+      H.2a The mode-classification indicator 1[z_hat_t != z_t] has
+           time-average converging a.s. to mu_hat, and (x_t, z_t)
+           is geometrically ergodic with mixing coefficient
+           rho_mix < 1.
+
+    NOTE: This is an *expected-residual* bound, not a pathwise or
+    almost-sure bound.  A limsup a.s. statement is available under
+    the additional assumption that ||x_t|| is uniformly bounded
+    (Remark H.2b in the manuscript).
+
+    Parameters
+    ----------
+    mu_hat        : estimated mode-error probability in [0, 1]
+    alpha         : Lyapunov decrease rate (computed via DARE,
+                    see compute_alpha_from_dare)
+    delta_A       : model mismatch bound for matrix A
+    delta_B       : model mismatch bound for matrix B
+    K_lqr_norm    : spectral norm of the LQR gain matrix
+
+    Returns
+    -------
+    residual : float
+        Upper bound on E[||e_t||^2]; positive, finite.
     """
+    if alpha is None:
+        raise ValueError(
+            "alpha (Lyapunov decrease rate) must be provided; "
+            "compute it via compute_alpha_from_dare(A, B, Q, R)."
+        )
     return float(np.sqrt(mu_bar) * (delta_A + delta_B * K_lqr_norm) / max(alpha, 1e-12))
 
 

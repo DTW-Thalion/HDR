@@ -1,0 +1,23 @@
+{
+  "state_dim": 8,
+  "obs_dim": 16,
+  "control_dim": 8,
+  "disturbance_dim": 8,
+  "K": 3,
+  "H": 6,
+  "kappa_lo": 0.55,
+  "kappa_hi": 0.75,
+  "pA": 0.70,
+  "qmin": 0.15,
+  "alpha_i": 0.05,
+  "eps_safe": 0.01,
+  "rho_reference": [0.72, 0.96, 0.55],
+  "steps_per_day": 48,
+  "dt_minutes": 30,
+  "default_burden_budget": 28.0,
+  "R_brier_max": 0.05,
+  "sigma_dither": 0.08,
+  "missing_fraction_target": 0.516,
+  "_comment_alpha": "Lyapunov decrease rate; null = derived at runtime from DARE. See compute_alpha_from_dare in control/lqr.py.",
+  "alpha_decay_rate": null
+}
