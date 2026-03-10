@@ -11,8 +11,8 @@
 
 | # | Claim | Stage(s) | Notes |
 |---|-------|----------|-------|
-| 1 | **ICI correctly identifies when Mode A guarantees hold** (v4.3: "Non-oracle inference adequate for control") | 03b, 04 | mode_a_guarantee_fraction; ICI condition (i) flag |
-| 2 | Mode A improves over baselines without exceeding safety budget | 04 | Gains vs OL and pooled; safety delta within ISS bound |
+| 1 | **ICI correctly identifies when Mode A guarantees hold** (v4.3: "Non-oracle inference adequate for control") | 03b, 04 | `hdr_vs_pooled_estimated_gain_maladaptive >= +0.03`; `hdr_maladaptive_win_rate >= 0.70` |
+| 2 | Mode A improves over baselines without exceeding safety budget | 04 | `hdr_vs_pooled_estimated_gain_maladaptive >= +0.03`; `hdr_maladaptive_win_rate >= 0.70`; safety delta within ISS bound |
 | 3 | τ̃ tracks true recovery burden (Spearman ρ ≥ 0.70) | 01 | τ̃ rank correlation ≥ 0.70 |
 | 4 | Chance-constraint tightening calibrated in Gaussian settings | 01, 04 | Abs error ≤ 0.015; heavy-tail degradation < 0.05 |
 | 5 | Mode error degradation consistent with √μ̄ ISS scaling (v4.3: "√μ̄ degradation") | 01, 04 | Continuous μ̄ sweep; γ(μ̄) monotone |
@@ -34,5 +34,11 @@
 | 14 | Compound bound correctly predicts regime boundary | 01, 03, 07 | Formula verified; HDR params flagged; boundary sweep matches |
 
 ---
+
+---
+
+## Notes
+
+**Claims 1 and 2** are evaluated on maladaptive-basin episodes (basin index 1, rho=0.96) because HDR is a remediation framework. The fair baseline is `pooled_lqr_estimated` (IMM x_hat), not oracle-state `pooled_lqr`.
 
 *All results are in silico only. No biological or clinical validity is implied.*
