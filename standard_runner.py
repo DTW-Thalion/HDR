@@ -699,40 +699,56 @@ def stage04_mode_a(episodes: list[dict]) -> None:
         obs_rng = np.random.default_rng(cfg["seeds"][0] + 6000 + ep_idx)
         mask_sched = observation_schedule(T, m_obs, obs_rng, profile_name=cfg["profile_name"])
 
-        # --- Phase 1: estimation-based policies (shared IMM filter) ---
-        imm_filt = IMMFilter.for_hard_regime(sim_model)
+        # --- Phase 1: estimation-based policies (independent IMM filters) ---
+        # Each policy drives its own IMM filter from its own trajectory's observations.
+        # Missingness pattern (mask_sched) and process noise are shared; observation
+        # noise seed is shared per timestep so noise structure is identical.
+        imm_filt_hdr = IMMFilter.for_hard_regime(sim_model)
+        imm_filt_pe = IMMFilter.for_hard_regime(sim_model)
         x_hdr = x_init.copy()
         x_pe = x_init.copy()
         cost_hdr, cost_pe = 0.0, 0.0
         viol_hdr, viol_pe = 0, 0
         used_burden_hdr, used_burden_pe = 0.0, 0.0
         u_prev_hdr = np.zeros(m_u)
+        u_prev_pe = np.zeros(m_u)
 
         for t in range(T):
-            # Observation generated from hdr_main's trajectory
-            obs_rng_t = np.random.default_rng(cfg["seeds"][0] + 7000 + ep_idx * T + t)
-            R_t = heteroskedastic_R(basin_obj.R, x_hdr, mask_sched[t], t)
-            y_t = generate_observation(x_hdr, basin_obj.C, basin_obj.c, R_t, mask_sched[t], obs_rng_t)
-            mask_t = (~np.isnan(y_t)).astype(int)
-            y_clean = np.where(np.isnan(y_t), 0.0, y_t)
-            imm_state = imm_filt.step(y_clean, mask_t, u_prev_hdr)
-            x_hat = imm_state.mixed_mean
-            P_hat_sim = imm_state.mixed_cov
-            if ep_idx == 0 and t < 3:
-                ep0_xhats.append(x_hat.copy())
+            base_seed_t = cfg["seeds"][0] + 7000 + ep_idx * T + t
+            # HDR filter: observations generated from x_hdr
+            obs_rng_t_hdr = np.random.default_rng(base_seed_t)
+            R_t_hdr = heteroskedastic_R(basin_obj.R, x_hdr, mask_sched[t], t)
+            y_t_hdr = generate_observation(x_hdr, basin_obj.C, basin_obj.c, R_t_hdr, mask_sched[t], obs_rng_t_hdr)
+            mask_t_hdr = (~np.isnan(y_t_hdr)).astype(int)
+            y_clean_hdr = np.where(np.isnan(y_t_hdr), 0.0, y_t_hdr)
+            imm_state_hdr = imm_filt_hdr.step(y_clean_hdr, mask_t_hdr, u_prev_hdr)
+            x_hat_hdr = imm_state_hdr.mixed_mean
+            P_hat_hdr = imm_state_hdr.mixed_cov
 
-            # hdr_main: MPC on estimated basin
-            est_bi = imm_state.map_mode
+            # PE filter: observations generated from x_pe (same noise seed → same noise realization)
+            obs_rng_t_pe = np.random.default_rng(base_seed_t)
+            R_t_pe = heteroskedastic_R(basin_obj.R, x_pe, mask_sched[t], t)
+            y_t_pe = generate_observation(x_pe, basin_obj.C, basin_obj.c, R_t_pe, mask_sched[t], obs_rng_t_pe)
+            mask_t_pe = (~np.isnan(y_t_pe)).astype(int)
+            y_clean_pe = np.where(np.isnan(y_t_pe), 0.0, y_t_pe)
+            imm_state_pe = imm_filt_pe.step(y_clean_pe, mask_t_pe, u_prev_pe)
+            x_hat_pe = imm_state_pe.mixed_mean
+
+            if ep_idx == 0 and t < 3:
+                ep0_xhats.append(x_hat_hdr.copy())
+
+            # hdr_main: MPC on estimated basin using its own filter
+            est_bi = imm_state_hdr.map_mode
             est_basin = sim_model.basins[est_bi]
             est_target = build_target_set(est_bi, cfg)
             mpc_res = solve_mode_a(
-                x_hat, P_hat_sim, est_basin, est_target,
+                x_hat_hdr, P_hat_hdr, est_basin, est_target,
                 kappa_hat=0.6, config=cfg, step=t, used_burden=used_burden_hdr,
             )
             u_hdr = mpc_res.u
 
-            # pooled_lqr_estimated: same x_hat, pooled LQR gain
-            u_pe = -K_pooled @ x_hat
+            # pooled_lqr_estimated: uses its own filter's x_hat
+            u_pe = -K_pooled @ x_hat_pe
             u_pe, _ = apply_control_constraints(u_pe, cfg, step=t, used_burden=used_burden_pe)
 
             # Costs
@@ -752,6 +768,7 @@ def stage04_mode_a(episodes: list[dict]) -> None:
             used_burden_hdr += float(np.sum(np.abs(u_hdr)))
             used_burden_pe += float(np.sum(np.abs(u_pe)))
             u_prev_hdr = u_hdr.copy()
+            u_prev_pe = u_pe.copy()
 
         ep_costs["hdr_main"].append(cost_hdr)
         ep_costs["pooled_lqr_estimated"].append(cost_pe)

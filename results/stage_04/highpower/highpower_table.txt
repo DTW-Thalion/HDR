@@ -1,26 +1,26 @@
 ╔══════════════════════════════════════════════════════════════╗
-║  BENCHMARK A — HIGH-POWER RESULTS (20 seeds × 20 episodes)  ║
+║  BENCHMARK A — HIGH-POWER RESULTS (20 seeds × 30 episodes)  ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  Maladaptive episodes (basin 1, rho=0.96)                   ║
-║  N_maladaptive : 123                                        ║
+║  N_maladaptive : 179                                        ║
 ║                                                              ║
 ║  Mean gain vs pooled_lqr_estimated                          ║
-║    Point estimate : +0.0283                               ║
-║    95% CI (mean)  : [+0.0210, +0.0355]                    ║
-║    90% CI (mean)  : [+0.0221, +0.0344]                    ║
-║    95% CI (median): [+0.0163, +0.0352]                    ║
+║    Point estimate : +0.0369                               ║
+║    95% CI (mean)  : [+0.0313, +0.0424]                    ║
+║    90% CI (mean)  : [+0.0322, +0.0415]                    ║
+║    95% CI (median): [+0.0312, +0.0443]                    ║
 ║                                                              ║
-║  Win rate : 0.772                                       ║
-║  Safety Delta : +0.0004                                  ║
+║  Win rate : 0.838                                       ║
+║  Safety Delta : -0.0001                                  ║
 ║                                                              ║
 ║  Criterion (+3% lower bound, 95% CI mean):                  ║
-║    FAILED — CI lower bound +0.0210 < +0.030                  ║
+║    PASSED — CI lower bound +0.0313 >= +0.030                 ║
 ║                                                              ║
 ║  Per-seed stability                                          ║
-║    Min seed gain : -0.0086                               ║
-║    Max seed gain : +0.0573                               ║
-║    Std seed gain : 0.0165                               ║
-║    Seeds >= +0.03 : 8/20                                ║
+║    Min seed gain : -0.0033                               ║
+║    Max seed gain : +0.0784                               ║
+║    Std seed gain : 0.0191                               ║
+║    Seeds >= +0.03 : 11/20                                ║
 ╚══════════════════════════════════════════════════════════════╝
 
 PROFILE COMPARISON — Benchmark A Maladaptive Gain
@@ -28,5 +28,5 @@ PROFILE COMPARISON — Benchmark A Maladaptive Gain
 Profile       Seeds  Ep/seed   N_mal  Mean gain  Win rate
 standard        2      12       ~11   +0.0574    0.909
 extended        3      20       ~15   +0.0357    0.800
-highpower      20      20       123   +0.0283    0.772
+highpower      20      30       179   +0.0369    0.838
 ──────────────────────────────────────────────────────────────
