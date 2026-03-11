@@ -30,7 +30,7 @@ MANIFEST_PATH = ROOT / "run_all_manifest.json"
 
 # ── Stage metadata ─────────────────────────────────────────────────────────────
 
-STAGE_SEQUENCE = ["01", "02", "03", "03b", "03c", "04", "05", "06", "07"]
+STAGE_SEQUENCE = ["01", "02", "03", "03b", "03c", "04", "05", "06", "07", "08", "09", "10", "11"]
 
 STAGE_LABELS = {
     "01":  "Stage 01 — Mathematical Checks",
@@ -42,6 +42,10 @@ STAGE_LABELS = {
     "05":  "Stage 05 — Mode B Validation",
     "06":  "Stage 06 — State Coherence",
     "07":  "Stage 07 — Robustness Sweeps",
+    "08":  "Stage 08 — Ablation Study",
+    "09":  "Stage 09 — Baseline Comparison",
+    "10":  "Stage 10 — Mode B FP/FN Sweep",
+    "11":  "Stage 11 — Riccati Invariant Set",
 }
 
 # Stages that must run before a given stage (dependency order)
@@ -98,8 +102,42 @@ def resolve_with_deps(requested: list[str]) -> list[str]:
 
 # ── Stage dispatch ─────────────────────────────────────────────────────────────
 
+def _call_stage_08(fast: bool = False) -> None:
+    """Run Stage 08 ablation study."""
+    from hdr_validation.stages.stage_08_ablation import run_stage_08
+    n_seeds = 2 if fast else 20
+    n_ep = 3 if fast else 30
+    T = 32 if fast else 256
+    run_stage_08(n_seeds=n_seeds, n_ep=n_ep, T=T, fast_mode=False)
+
+
+def _call_stage_09(fast: bool = False) -> None:
+    """Run Stage 09 baseline comparison."""
+    from hdr_validation.stages.stage_09_baselines import run_stage_09
+    n_seeds = 2 if fast else 20
+    n_ep = 3 if fast else 30
+    T = 32 if fast else 256
+    run_stage_09(n_seeds=n_seeds, n_ep=n_ep, T=T, fast_mode=False)
+
+
+def _call_stage_10(fast: bool = False) -> None:
+    """Run Stage 10 Mode B FP/FN sweep."""
+    from hdr_validation.stages.stage_10_mode_b_sweep import run_stage_10
+    N_sim = 200 if fast else 5000
+    run_stage_10(N_sim=N_sim, T=50, fast_mode=False)
+
+
+def _call_stage_11(fast: bool = False) -> None:
+    """Run Stage 11 Riccati invariant set verification."""
+    from hdr_validation.stages.stage_11_invariant_set import run_stage_11
+    n_seeds = 2 if fast else 5
+    T = 32 if fast else 128
+    run_stage_11(n_seeds=n_seeds, T=T, fast_mode=False)
+
+
 def call_stage(mod: Any, stage_id: str, state: dict) -> None:
     """Call the appropriate stage function from the runner module."""
+    fast = state.get("fast_mode", False)
     if stage_id == "01":
         mod.stage01_math()
     elif stage_id == "02":
@@ -118,6 +156,14 @@ def call_stage(mod: Any, stage_id: str, state: dict) -> None:
         mod.stage06_coherence()
     elif stage_id == "07":
         mod.stage07_robustness()
+    elif stage_id == "08":
+        _call_stage_08(fast=fast)
+    elif stage_id == "09":
+        _call_stage_09(fast=fast)
+    elif stage_id == "10":
+        _call_stage_10(fast=fast)
+    elif stage_id == "11":
+        _call_stage_11(fast=fast)
     else:
         raise ValueError(f"Unknown stage: {stage_id!r}")
 
@@ -130,6 +176,7 @@ def run_profile(
     force: bool,
     skip_done: bool,
     manifest: dict,
+    fast: bool = False,
 ) -> dict[str, list[dict]]:
     """
     Run the requested stages for a profile.
@@ -154,8 +201,13 @@ def run_profile(
     print(f"  Stages:  {', '.join(full_sequence)}")
     print(f"{'#'*60}")
 
-    state: dict[str, Any] = {"episodes": None, "stage03_data": None}
+    # Stages 08-11 run with fast_mode=True for smoke profile or --fast flag
+    fast_mode = fast or profile in ("smoke",)
+    state: dict[str, Any] = {"episodes": None, "stage03_data": None, "fast_mode": fast_mode}
     stage_results: dict[str, list[dict]] = {}
+
+    # Stages that are profile-independent (have their own simulation logic)
+    INDEPENDENT_STAGES = {"08", "09", "10", "11"}
 
     for stage_id in full_sequence:
         label = STAGE_LABELS[stage_id]
@@ -175,6 +227,7 @@ def run_profile(
         # Snapshot results count before stage to isolate this stage's records
         idx_before = len(mod.results)
         t0 = time.perf_counter()
+        stage_exception = None
 
         try:
             call_stage(mod, stage_id, state)
@@ -182,12 +235,24 @@ def run_profile(
             print(f"  Elapsed: {elapsed:.2f}s")
             mark_done(manifest, profile, stage_id)
             save_manifest(manifest)
-        except Exception:
+        except Exception as exc:
             elapsed = time.perf_counter() - t0
             traceback.print_exc()
             print(f"  [ERROR] Stage {stage_id} raised an exception after {elapsed:.2f}s")
             mark_failed(manifest, profile, stage_id)
             save_manifest(manifest)
+            stage_exception = exc
+
+        # For profile-independent stages (08-11), add a synthetic result record
+        # since they don't append to mod.results directly
+        if stage_id in INDEPENDENT_STAGES:
+            mod.results.append({
+                "stage": stage_id,
+                "check": "stage_execution",
+                "passed": stage_exception is None,
+                "value": "OK" if stage_exception is None else str(stage_exception),
+                "note": f"Profile-independent stage {stage_id}",
+            })
 
         stage_results[stage_id] = list(mod.results[idx_before:])
 
@@ -261,6 +326,10 @@ def parse_args() -> argparse.Namespace:
         "--skip-done", action="store_true",
         help="Skip stages already marked done in manifest",
     )
+    parser.add_argument(
+        "--fast", action="store_true",
+        help="Run stages 08-11 with reduced parameters (n_seeds=2, n_ep=3, T=32) for smoke testing",
+    )
     return parser.parse_args()
 
 
@@ -291,6 +360,7 @@ def main() -> None:
             force=args.force,
             skip_done=args.skip_done,
             manifest=manifest,
+            fast=args.fast,
         )
 
     n_fail = print_summary(all_results)
