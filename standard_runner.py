@@ -605,6 +605,29 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     record("stage04", "Mode A produces non-zero control",
            nonzero > 0, f"{nonzero}/{total_calls} calls")
 
+    # 04.3b — Mode A active fraction from far states
+    rng_far = np.random.default_rng(888)
+    directions = rng_far.normal(size=(20, n))
+    directions /= np.linalg.norm(directions, axis=1, keepdims=True)
+    radii = rng_far.uniform(1.5, 3.0, size=20)
+    far_states = directions * radii[:, None]
+
+    basin_far = eval_model.basins[1]   # maladaptive basin (rho=0.96)
+    target_far = build_target_set(1, cfg)
+    P_hat_far = np.eye(n) * 0.2
+    far_u_norms = []
+    for x_far_i in far_states:
+        res_far = solve_mode_a(x_far_i, P_hat_far, basin_far, target_far,
+                               kappa_hat=0.65, config=cfg, step=0)
+        far_u_norms.append(float(np.linalg.norm(res_far.u)))
+
+    active_fraction = sum(1 for v in far_u_norms if v > 0.05) / 20
+    mean_u_norm_far = float(np.mean(far_u_norms))
+    record("stage04",
+           "Mode A active fraction >= 0.75 from far states (||x|| in [1.5, 3.0], basin 1)",
+           active_fraction >= 0.75,
+           f"active={active_fraction:.2f} mean_u={mean_u_norm_far:.4f}")
+
     # 04.4 Maladaptive basin (rho≈0.96)
     basin_mal = eval_model.basins[1]
     target_mal = build_target_set(1, cfg)
@@ -1108,6 +1131,16 @@ def stage04_mode_a(episodes: list[dict]) -> None:
            ci_passes_criterion,
            f"CI=[{ci_lo:+.4f}, {ci_hi:+.4f}]")
 
+    # 04.13 — Adaptive-basin episode count documented
+    n_adaptive = sum(1 for b in ep_basins if b != 1)
+    record("stage04",
+           "Adaptive-basin N documented (n_adaptive)",
+           True,
+           f"n_adaptive={n_adaptive}",
+           note=("UNDERPOWERED: n_adaptive < 20, no performance claims valid for adaptive basins"
+                 if n_adaptive < 20 else
+                 "n_adaptive >= 20"))
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Stage 05 — Mode B validation (seed-independent, more MC rollouts)
@@ -1373,23 +1406,68 @@ def stage07_robustness() -> None:
         record("stage07", f"Mismatch δ={mismatch} Mode A finite",
                bool(np.all(np.isfinite(res.u))), f"‖u‖={np.linalg.norm(res.u):.4f}")
 
-    # 07.4 Missing data sweep: IMM remains stable
+    # 07.4 Missing data / inference quality checks (replaced trivial sweep)
     from hdr_validation.inference.imm import IMMFilter
-    for p_miss in [0.0, 0.3, 0.6, 0.9]:
-        rng = np.random.default_rng(7)
-        eval_model = make_evaluation_model(cfg, rng)
-        filt = IMMFilter(eval_model)
-        m_obs = cfg["obs_dim"]
-        for _ in range(20):
-            y = rng.normal(size=m_obs)
-            mask = (rng.uniform(size=m_obs) > p_miss).astype(int)
-            y = np.where(mask.astype(bool), y, np.nan)
-            y_clean = np.where(np.isnan(y), 0.0, y)
-            state = filt.step(y_clean, mask, np.zeros(cfg["control_dim"]))
-        probs_ok = bool(np.all(np.isfinite(state.mode_probs)) and
-                        abs(state.mode_probs.sum() - 1.0) < 1e-4)
-        record("stage07", f"IMM stable p_miss={p_miss}", probs_ok,
-               f"probs={[f'{p:.3f}' for p in state.mode_probs]}")
+
+    # 07.4a — Numerical stability check (p_miss=0.3, 20 steps, uniform prior)
+    # This is explicitly a NUMERICAL STABILITY check only — it does NOT test
+    # inference quality. The only claim is that the filter does not NaN or diverge.
+    rng_74a = np.random.default_rng(7)
+    eval_model_74a = make_evaluation_model(cfg, rng_74a)
+    filt_74a = IMMFilter(eval_model_74a)
+    m_obs = cfg["obs_dim"]
+    for _ in range(20):
+        y_74a = rng_74a.normal(size=m_obs)
+        mask_74a = (rng_74a.uniform(size=m_obs) > 0.3).astype(int)
+        y_74a = np.where(mask_74a.astype(bool), y_74a, np.nan)
+        y_clean_74a = np.where(np.isnan(y_74a), 0.0, y_74a)
+        state_74a = filt_74a.step(y_clean_74a, mask_74a, np.zeros(cfg["control_dim"]))
+    probs_ok_74a = bool(np.all(np.isfinite(state_74a.mode_probs)) and
+                        abs(state_74a.mode_probs.sum() - 1.0) < 1e-4)
+    record("stage07",
+           "IMM numerical stability p_miss=0.3 (probs finite and sum to 1)",
+           probs_ok_74a,
+           f"probs={[f'{p:.3f}' for p in state_74a.mode_probs]}")
+
+    # 07.4b — Posterior entropy under non-maladaptive observations
+    # A passing result means meaningful uncertainty is retained or the filter
+    # has correctly identified a different basin after 50 non-maladaptive steps.
+    rng_74b = np.random.default_rng(74)
+    eval_model_74b = make_evaluation_model(cfg, rng_74b)
+    filt_74b = IMMFilter(eval_model_74b)
+    ep_74b = _generate_episode(cfg, rng_74b, basin_idx=2)
+    for t in range(50):
+        y_t = ep_74b["y"][t]
+        mask_t = (~np.isnan(y_t)).astype(int)
+        y_clean = np.where(np.isnan(y_t), 0.0, y_t)
+        state_74b = filt_74b.step(y_clean, mask_t, np.zeros(cfg["control_dim"]))
+    mode_probs_74b = state_74b.mode_probs
+    H_74b = float(-np.sum(mode_probs_74b * np.log(mode_probs_74b + 1e-12)))
+    record("stage07",
+           "IMM posterior entropy > 0.3 nats after 50 non-maladaptive steps",
+           H_74b > 0.3,
+           f"H={H_74b:.4f} probs={[f'{p:.3f}' for p in mode_probs_74b]}")
+
+    # 07.4c — Mode recovery from wrong-prior initialisation
+    # Filter biased toward basin 2 should identify basin-1 signal within 30 steps.
+    rng_74c = np.random.default_rng(74)
+    eval_model_74c = make_evaluation_model(cfg, rng_74c)
+    filt_74c = IMMFilter(eval_model_74c)
+    # Bias toward basin 2: strongly wrong prior
+    wrong_prior = np.array([0.05, 0.05, 0.90])
+    wrong_prior = wrong_prior / wrong_prior.sum()
+    filt_74c.state.mode_probs = wrong_prior
+    ep_74c = _generate_episode(cfg, rng_74c, basin_idx=1)
+    for t in range(30):
+        y_t = ep_74c["y"][t]
+        # p_miss=0.0: treat all observations as present regardless of missingness
+        mask_t = np.ones(cfg["obs_dim"], dtype=int)
+        y_clean = np.where(np.isnan(y_t), 0.0, y_t)
+        state_74c = filt_74c.step(y_clean, mask_t, np.zeros(cfg["control_dim"]))
+    record("stage07",
+           "IMM recovers basin-1 MAP mode within 30 steps from wrong prior",
+           state_74c.map_mode == 1,
+           f"map_mode={state_74c.map_mode} probs={[f'{p:.3f}' for p in state_74c.mode_probs]}")
 
     # 07.5 Both seeds produce consistent Mode A output
     for seed in cfg["seeds"]:
@@ -1434,6 +1512,30 @@ def stage07_robustness() -> None:
            best_w3_tib >= 0.60,
            f"peak_tib={best_w3_tib:.3f} at "
            f"w3={max(tib_by_w3, key=tib_by_w3.get):.2f}")
+
+    # 07.8 — Model mismatch bound covers empirical p90 delta_A for basin 1
+    import json as _json_07
+    _mismatch_path = ROOT / "results" / "stage_04" / "highpower" / "mismatch_audit.json"
+    if not _mismatch_path.exists():
+        record("stage07",
+               "Mismatch bound audit file present",
+               False,
+               "mismatch_audit.json not found — run analyse_mismatch.py first")
+    else:
+        with open(_mismatch_path) as _f:
+            _mismatch_data = _json_07.load(_f)
+        _basin1_p90 = float(_mismatch_data["basin_1_p90_vs_bound"]["basin_1_p90"])
+        _bound = float(cfg["model_mismatch_bound"])
+        _bound_covers_p90 = _bound >= _basin1_p90
+        record("stage07",
+               "Mismatch audit: basin-1 p90 delta_A reported",
+               True,
+               f"basin_1_p90={_basin1_p90:.4f} bound={_bound:.4f}")
+        record("stage07",
+               "Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity)",
+               _bound_covers_p90,
+               f"{'OK' if _bound_covers_p90 else 'VIOLATED'}: {_bound:.3f} vs p90={_basin1_p90:.3f}",
+               note="FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
