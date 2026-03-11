@@ -7,11 +7,70 @@ Implements the three ICI conditions from Section 9 and the quantified ISS bound
 Brier reliability calibration (Definition 8.2), and posterior calibration adjustment
 (Definition 8.1 / p_A^robust).
 
+Also implements mu_erg (ergodic average mode-error rate, Assumption H.2a) as distinct
+from mu_hat (supremum bound, Definition 10.1). By definition mu_erg <= mu_hat.
+
 All functions are pure numpy; no cvxpy or LMI solvers required.
 """
 from __future__ import annotations
 
+import logging
+import warnings
+
 import numpy as np
+
+logger = logging.getLogger(__name__)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Assumption H.2a — Ergodic Average Mode-Error Rate (mu_erg)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def compute_mu_erg(classification_history: list[bool]) -> float:
+    """Compute the ergodic average mode-error rate mu_erg.
+
+    mu_erg = (1/T) sum_t 1[z_hat_t != z_t]
+
+    This is the empirical estimate of the stationary misclassification rate.
+    It is distinct from mu_hat = sup_t mu_t, which is a uniform upper bound
+    used in the ISS residual formula. By definition mu_erg <= mu_hat.
+
+    Parameters
+    ----------
+    classification_history : list[bool]
+        List of booleans; True = misclassified at step t (z_hat_t != z_t).
+
+    Returns
+    -------
+    float
+        Scalar in [0, 1].
+    """
+    if len(classification_history) == 0:
+        return 0.0
+    arr = np.asarray(classification_history, dtype=float)
+    return float(np.mean(arr))
+
+
+def check_mu_erg_vs_mu_hat(mu_erg: float, mu_hat: float) -> None:
+    """Assert that mu_erg <= mu_hat (ergodic average cannot exceed supremum bound).
+
+    Logs a warning (does not raise) if violated — it means mu_hat was underestimated.
+
+    Parameters
+    ----------
+    mu_erg : float
+        Empirical ergodic average mode-error rate.
+    mu_hat : float
+        Design-parameter upper bound (supremum) on mode-error rate.
+    """
+    if mu_erg > mu_hat + 1e-9:
+        msg = (
+            f"mu_erg ({mu_erg:.6f}) > mu_hat ({mu_hat:.6f}): "
+            f"mu_hat was underestimated. The ergodic average cannot exceed the "
+            f"supremum bound by definition; this indicates mu_hat should be increased."
+        )
+        warnings.warn(msg, stacklevel=2)
+        logger.warning(msg)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -296,24 +355,54 @@ def compute_ici_state(
     R_brier_max: float,
     T_k_eff_per_basin: list[float],
     omega_min: float,
+    classification_history: list[bool] | None = None,
 ) -> dict:
     """Compute the full ICI state vector (Algorithm 1, Step 5 in v5.0).
+
+    Parameters
+    ----------
+    mu_hat : float
+        Supremum bound on mode-error probability (Definition 10.1: mu_hat = sup_t mu_t).
+        Used as the design-parameter upper bound in the ISS residual formula.
+    mu_bar_required : float
+        Maximum allowable mode-error probability for ISS guarantee.
+    R_brier : float
+        Brier reliability component (calibration error).
+    R_brier_max : float
+        Maximum allowable Brier reliability.
+    T_k_eff_per_basin : list[float]
+        Effective sample count per basin.
+    omega_min : float
+        Regime boundary threshold.
+    classification_history : list[bool] or None
+        History of misclassification indicators for computing mu_erg.
+        If None, mu_erg is not computed (set to NaN).
 
     Returns
     -------
     ici_state dict with:
-      condition_i   : μ̂ ≥ μ̄_required  → Mode C recommended
-      condition_ii  : R_Brier ≥ R_max  → Mode C recommended
-      condition_iii : any T_k_eff < ω_min → Mode C recommended
+      condition_i        : μ̂ ≥ μ̄_required  → Mode C recommended
+      condition_ii       : R_Brier ≥ R_max  → Mode C recommended
+      condition_iii      : any T_k_eff < ω_min → Mode C recommended
       mode_c_recommended : any condition True
       worst_basin_idx    : basin with smallest T_k_eff
       worst_T_k_eff      : smallest T_k_eff value
+      mu_erg             : empirical ergodic average mode-error rate (Assumption H.2a)
+                           distinct from mu_hat (supremum bound, Definition 10.1)
     """
     cond_i = bool(mu_hat >= mu_bar_required)
     cond_ii = bool(R_brier >= R_brier_max)
     worst_k = int(np.argmin(T_k_eff_per_basin)) if T_k_eff_per_basin else 0
     worst_T = float(T_k_eff_per_basin[worst_k]) if T_k_eff_per_basin else float("nan")
     cond_iii = bool(worst_T < omega_min)
+
+    # Compute mu_erg (ergodic average) if history is provided
+    if classification_history is not None:
+        mu_erg = compute_mu_erg(classification_history)
+        check_mu_erg_vs_mu_hat(mu_erg, mu_hat)
+    else:
+        mu_erg = float("nan")
+
     return {
         "condition_i": cond_i,
         "condition_ii": cond_ii,
@@ -322,6 +411,7 @@ def compute_ici_state(
         "worst_basin_idx": worst_k,
         "worst_T_k_eff": worst_T,
         "mu_hat": mu_hat,
+        "mu_erg": mu_erg,
         "mu_bar_required": mu_bar_required,
         "R_brier": R_brier,
         "R_brier_max": R_brier_max,
