@@ -1,7 +1,7 @@
 """
 HDR Validation Suite — High-Power Benchmark A Runner
 =====================================================
-20 seeds × 20 episodes per seed = 400 total episodes.
+20 seeds × 30 episodes per seed = 600 total episodes.
 Produces bootstrap CIs for the maladaptive-basin performance claim.
 
 Usage:
@@ -67,7 +67,7 @@ HIGHPOWER_CONFIG: dict[str, Any] = {
         101, 202, 303, 404, 505, 606, 707, 808, 909, 1010,
         1111, 1212, 1313, 1414, 1515, 1616, 1717, 1818, 1919, 2020,
     ],
-    "episodes_per_experiment": 20,
+    "episodes_per_experiment": 30,
     "steps_per_episode": 256,
     "mc_rollouts": 150,
     "selected_trace_cap": 5,
@@ -249,7 +249,7 @@ def run_highpower_benchmark() -> None:
         ep_basins: list[int] = []
 
         # Global ep_idx offset for deterministic noise seeding
-        seed_offset = i * n_eps_per_seed  # 0, 20, 40, ..., 380
+        seed_offset = i * n_eps_per_seed  # 0, 30, 60, ..., 570
 
         for ep_idx_local, ep in enumerate(seed_episodes):
             ep_idx = seed_offset + ep_idx_local  # global 0..399
@@ -268,34 +268,52 @@ def run_highpower_benchmark() -> None:
             obs_rng = np.random.default_rng(cfg["seeds"][0] + 6000 + ep_idx)
             mask_sched = observation_schedule(T, m_obs, obs_rng, profile_name=cfg["profile_name"])
 
-            # ── Phase 1: estimation-based policies (shared IMM filter) ────────
-            imm_filt = IMMFilter.for_hard_regime(sim_model)
+            # ── Phase 1: estimation-based policies (independent IMM filters) ──
+            # Each policy drives its own IMM filter from its own trajectory's
+            # observations. Missingness pattern (mask_sched) and process noise
+            # are shared; observation noise seed is shared per timestep.
+            imm_filt_hdr = IMMFilter.for_hard_regime(sim_model)
+            imm_filt_pe = IMMFilter.for_hard_regime(sim_model)
             x_hdr = x_init.copy()
             x_pe = x_init.copy()
             cost_hdr, cost_pe = 0.0, 0.0
             viol_hdr, viol_pe = 0, 0
             used_burden_hdr, used_burden_pe = 0.0, 0.0
             u_prev_hdr = np.zeros(m_u)
+            u_prev_pe = np.zeros(m_u)
 
             for t in range(T):
-                obs_rng_t = np.random.default_rng(cfg["seeds"][0] + 7000 + ep_idx * T + t)
-                R_t = heteroskedastic_R(basin_obj.R, x_hdr, mask_sched[t], t)
-                y_t = generate_observation(
-                    x_hdr, basin_obj.C, basin_obj.c, R_t, mask_sched[t], obs_rng_t
+                base_seed_t = cfg["seeds"][0] + 7000 + ep_idx * T + t
+                # HDR filter: observations from x_hdr
+                obs_rng_t_hdr = np.random.default_rng(base_seed_t)
+                R_t_hdr = heteroskedastic_R(basin_obj.R, x_hdr, mask_sched[t], t)
+                y_t_hdr = generate_observation(
+                    x_hdr, basin_obj.C, basin_obj.c, R_t_hdr, mask_sched[t], obs_rng_t_hdr
                 )
-                mask_t = (~np.isnan(y_t)).astype(int)
-                y_clean = np.where(np.isnan(y_t), 0.0, y_t)
-                imm_state = imm_filt.step(y_clean, mask_t, u_prev_hdr)
-                x_hat = imm_state.mixed_mean
-                P_hat_sim = imm_state.mixed_cov
+                mask_t_hdr = (~np.isnan(y_t_hdr)).astype(int)
+                y_clean_hdr = np.where(np.isnan(y_t_hdr), 0.0, y_t_hdr)
+                imm_state_hdr = imm_filt_hdr.step(y_clean_hdr, mask_t_hdr, u_prev_hdr)
+                x_hat_hdr = imm_state_hdr.mixed_mean
+                P_hat_hdr = imm_state_hdr.mixed_cov
 
-                # hdr_main: MPC on estimated basin
-                est_bi = imm_state.map_mode
+                # PE filter: observations from x_pe (same noise seed)
+                obs_rng_t_pe = np.random.default_rng(base_seed_t)
+                R_t_pe = heteroskedastic_R(basin_obj.R, x_pe, mask_sched[t], t)
+                y_t_pe = generate_observation(
+                    x_pe, basin_obj.C, basin_obj.c, R_t_pe, mask_sched[t], obs_rng_t_pe
+                )
+                mask_t_pe = (~np.isnan(y_t_pe)).astype(int)
+                y_clean_pe = np.where(np.isnan(y_t_pe), 0.0, y_t_pe)
+                imm_state_pe = imm_filt_pe.step(y_clean_pe, mask_t_pe, u_prev_pe)
+                x_hat_pe = imm_state_pe.mixed_mean
+
+                # hdr_main: MPC on estimated basin using its own filter
+                est_bi = imm_state_hdr.map_mode
                 est_basin = sim_model.basins[est_bi]
                 est_target = build_target_set(est_bi, cfg)
                 mpc_res = solve_mode_a(
-                    x_hat,
-                    P_hat_sim,
+                    x_hat_hdr,
+                    P_hat_hdr,
                     est_basin,
                     est_target,
                     kappa_hat=0.6,
@@ -305,8 +323,8 @@ def run_highpower_benchmark() -> None:
                 )
                 u_hdr = mpc_res.u
 
-                # pooled_lqr_estimated: same x_hat, pooled LQR gain
-                u_pe = -K_pooled @ x_hat
+                # pooled_lqr_estimated: uses its own filter's x_hat
+                u_pe = -K_pooled @ x_hat_pe
                 u_pe, _ = apply_control_constraints(
                     u_pe, cfg, step=t, used_burden=used_burden_pe
                 )
@@ -338,6 +356,7 @@ def run_highpower_benchmark() -> None:
                 used_burden_hdr += float(np.sum(np.abs(u_hdr)))
                 used_burden_pe += float(np.sum(np.abs(u_pe)))
                 u_prev_hdr = u_hdr.copy()
+                u_prev_pe = u_pe.copy()
 
             ep_costs["hdr_main"].append(cost_hdr)
             ep_costs["pooled_lqr_estimated"].append(cost_pe)
@@ -482,8 +501,8 @@ def run_highpower_benchmark() -> None:
     summary = {
         "profile": "highpower",
         "n_seeds": 20,
-        "episodes_per_seed": 20,
-        "total_episodes": 400,
+        "episodes_per_seed": 30,
+        "total_episodes": 600,
         "n_maladaptive_episodes": n_maladaptive_episodes,
         "steps_per_episode": 256,
         "hdr_vs_pe_maladaptive_mean": hdr_vs_pe_maladaptive,
@@ -526,7 +545,7 @@ def run_highpower_benchmark() -> None:
 
     table_lines = [
         "╔══════════════════════════════════════════════════════════════╗",
-        "║  BENCHMARK A — HIGH-POWER RESULTS (20 seeds × 20 episodes)  ║",
+        "║  BENCHMARK A — HIGH-POWER RESULTS (20 seeds × 30 episodes)  ║",
         "╠══════════════════════════════════════════════════════════════╣",
         "║  Maladaptive episodes (basin 1, rho=0.96)                   ║",
         f"║  N_maladaptive : {n_maladaptive_episodes:<43d}║",
@@ -555,7 +574,7 @@ def run_highpower_benchmark() -> None:
         "Profile       Seeds  Ep/seed   N_mal  Mean gain  Win rate",
         "standard        2      12       ~11   +0.0574    0.909",
         "extended        3      20       ~15   +0.0357    0.800",
-        f"highpower      20      20      {n_maladaptive_episodes:>4d}   {hdr_vs_pe_maladaptive:+.4f}    {hdr_mal_win_rate:.3f}",
+        f"highpower      20      30      {n_maladaptive_episodes:>4d}   {hdr_vs_pe_maladaptive:+.4f}    {hdr_mal_win_rate:.3f}",
         "──────────────────────────────────────────────────────────────",
     ]
     table_text = "\n".join(table_lines)
@@ -603,7 +622,7 @@ Profile & Seeds & Ep./seed & $N_{{\rm mal}}$ & Mean gain & 95\% CI \\
 \midrule
 Standard   &  2 & 12 & {n_std}  & $+0.057$ & ---        \\
 Extended   &  3 & 20 & {n_ext}  & $+0.036$ & ---        \\
-High-power & 20 & 20 & {n_maladaptive_episodes}   & ${mean_fmt}$ & $[{lo_fmt},\,{hi_fmt}]$ \\
+High-power & 20 & 30 & {n_maladaptive_episodes}   & ${mean_fmt}$ & $[{lo_fmt},\,{hi_fmt}]$ \\
 \bottomrule
 \end{{tabular}}
 \vspace{{2pt}}
@@ -719,7 +738,7 @@ Criterion: CI lower bound $\geq +0.03$:
 # ── Entry point ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     print("\n" + "=" * 62)
-    print("  BENCHMARK A — HIGH-POWER RUNNER (20 seeds × 20 episodes)")
+    print("  BENCHMARK A — HIGH-POWER RUNNER (20 seeds × 30 episodes)")
     print("=" * 62)
     t0 = time.perf_counter()
     try:

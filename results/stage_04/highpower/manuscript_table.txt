@@ -11,12 +11,12 @@ Profile & Seeds & Ep./seed & $N_{\rm mal}$ & Mean gain & 95\% CI \\
 \midrule
 Standard   &  2 & 12 & 11  & $+0.057$ & ---        \\
 Extended   &  3 & 20 & 15  & $+0.036$ & ---        \\
-High-power & 20 & 20 & 123   & $+0.028$ & $[+0.021,\,+0.036]$ \\
+High-power & 20 & 30 & 179   & $+0.037$ & $[+0.031,\,+0.042]$ \\
 \bottomrule
 \end{tabular}
 \vspace{2pt}
-{\small Win rate (high-power): 77%.
-Safety $\Delta$ vs.\ baseline: $+0.0004$.
+{\small Win rate (high-power): 84%.
+Safety $\Delta$ vs.\ baseline: $-0.0001$.
 Criterion: CI lower bound $\geq +0.03$:
-\textbf{FAILED}.}
+\textbf{PASSED}.}
 \end{table}

@@ -1,0 +1,88 @@
+{
+  "author_action_required": true,
+  "note": "If p90 of delta_A_k for basin 1 is below 0.20, the author may consider reducing model_mismatch_bound to the p90 value in a subsequent commit after reviewing this report.",
+  "methodology": "delta_A_k = ||A_true_k - A_nominal_k||_2 / ||A_nominal_k||_2 where A_nominal_k = mean(A_k) across all 20 seeds. Each seed reconstructed with rng(seed + 400) matching the highpower runner.",
+  "n_seeds_loaded": 20,
+  "seeds_loaded": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606,
+    707,
+    808,
+    909,
+    1010,
+    1111,
+    1212,
+    1313,
+    1414,
+    1515,
+    1616,
+    1717,
+    1818,
+    1919,
+    2020
+  ],
+  "model_mismatch_bound_current": 0.2,
+  "overall_stats": {
+    "mean": 0.3156402078233032,
+    "std": 0.033984852871709145,
+    "p50": 0.3074582436231945,
+    "p90": 0.3499746614411975,
+    "p95": 0.38006511388677366,
+    "p99": 0.40910981338901375,
+    "max": 0.41318234903614515,
+    "min": 0.26959952550204197
+  },
+  "basin_stats": {
+    "basin_0_rho_0.72": {
+      "basin_index": 0,
+      "rho_reference": 0.72,
+      "is_maladaptive": false,
+      "n_seeds": 20,
+      "mean": 0.2995648185551606,
+      "std": 0.023022803795325376,
+      "p50": 0.2971671953272847,
+      "p90": 0.3315613153589575,
+      "p95": 0.3390748274973672,
+      "p99": 0.3397871151322735,
+      "max": 0.33996518704100004,
+      "min": 0.26959952550204197
+    },
+    "basin_1_rho_0.96": {
+      "basin_index": 1,
+      "rho_reference": 0.96,
+      "is_maladaptive": true,
+      "n_seeds": 20,
+      "mean": 0.3145863956773502,
+      "std": 0.02721731883463065,
+      "p50": 0.3184458914538463,
+      "p90": 0.34659566718192,
+      "p95": 0.3482601349839882,
+      "p99": 0.36506781175468656,
+      "max": 0.3692697309473612,
+      "min": 0.27222754508006786
+    },
+    "basin_2_rho_0.55": {
+      "basin_index": 2,
+      "rho_reference": 0.55,
+      "is_maladaptive": false,
+      "n_seeds": 20,
+      "mean": 0.33276940923739856,
+      "std": 0.040510992751909294,
+      "p50": 0.323952931170824,
+      "p90": 0.401212877735662,
+      "p95": 0.40662487638398453,
+      "p99": 0.41187085450571304,
+      "max": 0.41318234903614515,
+      "min": 0.2844869850265341
+    }
+  },
+  "basin_1_p90_vs_bound": {
+    "basin_1_p90": 0.34659566718192,
+    "current_bound": 0.2,
+    "p90_below_bound": false
+  }
+}
