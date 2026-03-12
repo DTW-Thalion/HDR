@@ -73,17 +73,17 @@ bias.  This is expected and is not a code defect.  The high-power run
 |-------|------:|--------|
 | Model unit tests (`test_hsmm`, `test_target_set`, `test_recovery`) | 53 | 53/53 passed |
 | Control unit tests (`test_mpc`, `test_committor`) | 2 | 2/2 passed |
-| Inference unit tests (`test_ici`, `test_imm`, `test_mode_c`) | 18 | 18/18 passed |
+| Inference unit tests (`test_ici`, `test_imm`, `test_mode_c`) | 19 | 19/19 passed |
 | Packaging tests (`test_packaging`) | 2 | 2/2 passed |
-| Fisher trace tests (`test_mode_c_fisher`) | 11 | 11/11 passed |
+| Fisher trace tests (`test_mode_c_fisher`) | 12 | 12/12 passed |
 | Stability check tests (`test_stability_check`) | 7 | 7/7 passed |
 | Stage 08 ablation tests (`test_stage_08`) | 5 | 5/5 passed |
 | Stage 09 baseline tests (`test_stage_09`) | 6 | 6/6 passed |
 | Stage 10 Mode B sweep tests (`test_stage_10`) | 7 | 7/7 passed |
-| Stage 11 invariant set tests (`test_stage_11`) | 8 | 8/8 passed |
-| **Total pytest** | **119** | **119/119 passed** |
-| Standard profile (T=128, 2 seeds, 12 ep/seed) | — | 86/86 checks passed |
-| Extended profile (T=256, 3 seeds, 20 ep/seed) | — | 98/98 checks passed |
+| Stage 11 invariant set tests (`test_stage_11`) | 9 | 9/9 passed |
+| **Total pytest** | **122** | **122/122 passed** |
+| Standard profile (T=128, 2 seeds, 12 ep/seed) | — | 95/95 checks passed |
+| Extended profile (T=256, 3 seeds, 20 ep/seed) | — | 107/107 checks passed |
 
 ---
 

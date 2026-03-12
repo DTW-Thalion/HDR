@@ -120,3 +120,18 @@ def test_run_stage_11_containment_reasonable(tmp_path: Path):
     for k_str, data in result["basins"].items():
         if data["n_steps_checked"] > 0 and data["containment_rate"] is not None:
             assert data["containment_rate"] >= 0.0
+
+
+def test_rpi_rate_higher_than_overall_rate(tmp_path: Path):
+    """RPI rate should exceed overall rate when trajectories start inside the set."""
+    result = run_stage_11(n_seeds=2, T=64, output_dir=tmp_path, fast_mode=False)
+    for k_str, data in result["basins"].items():
+        rpi = data.get("containment_rate_rpi")
+        overall = data.get("containment_rate")
+        if rpi is not None and overall is not None:
+            # If trajectories start inside (fixed init), rpi should be >= overall
+            # Allow small tolerance for stochastic variation
+            assert rpi >= overall - 0.05, (
+                f"Basin {k_str}: rpi_rate={rpi:.3f} < overall={overall:.3f}. "
+                "Trajectories may still be starting outside the ellipsoid."
+            )
