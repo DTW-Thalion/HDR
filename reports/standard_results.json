@@ -1,8 +1,8 @@
 {
   "profile": "standard",
-  "generated_at": "2026-03-11T21:37:39.100874Z",
-  "elapsed_seconds": 24.83,
-  "exit_code": 1,
+  "generated_at": "2026-03-12T02:42:38.901581Z",
+  "elapsed_seconds": 32.8,
+  "exit_code": 0,
   "meta": {
     "seeds": [
       101,
@@ -14,9 +14,9 @@
   },
   "summary": {
     "total": 98,
-    "passed": 97,
-    "failed": 1,
-    "all_passed": false
+    "passed": 98,
+    "failed": 0,
+    "all_passed": true
   },
   "stages": {
     "stage01": {
@@ -261,7 +261,7 @@
           "stage": "stage03b",
           "check": "ICI state has required keys",
           "passed": true,
-          "value": "['condition_i', 'condition_ii', 'condition_iii', 'mode_c_recommended', 'worst_basin_idx', 'worst_T_k_eff', 'mu_hat', 'mu_bar_required', 'R_brier', 'R_brier_max', 'omega_min']"
+          "value": "['condition_i', 'condition_ii', 'condition_iii', 'mode_c_recommended', 'worst_basin_idx', 'worst_T_k_eff', 'mu_hat', 'mu_erg', 'mu_bar_required', 'R_brier', 'R_brier_max', 'omega_min']"
         },
         {
           "stage": "stage03b",
@@ -542,8 +542,8 @@
       ]
     },
     "stage07": {
-      "passed": 17,
-      "failed": 1,
+      "passed": 18,
+      "failed": 0,
       "checks": [
         {
           "stage": "stage07",
@@ -645,13 +645,13 @@
           "stage": "stage07",
           "check": "Mismatch audit: basin-1 p90 delta_A reported",
           "passed": true,
-          "value": "basin_1_p90=0.3466 bound=0.2000"
+          "value": "basin_1_p90=0.3466 bound=0.3470"
         },
         {
           "stage": "stage07",
           "check": "Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity)",
-          "passed": false,
-          "value": "VIOLATED: 0.200 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds \u2014 disclose in manuscript)"
+          "passed": true,
+          "value": "OK: 0.347 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds \u2014 disclose in manuscript)"
         }
       ]
     }

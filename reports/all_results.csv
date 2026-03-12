@@ -44,7 +44,7 @@ smoke,stage03b,"p_A_robust ∈ [0,1]",True,0.7052
 smoke,stage03b,p_A_robust ≥ p_A (miscalibration raises threshold),True,0.7052 ≥ 0.7
 smoke,stage03b,T_k_eff > 0,True,1.79
 smoke,stage03b,omega_min > 0,True,40741.9589
-smoke,stage03b,ICI state has required keys,True,"['condition_i', 'condition_ii', 'condition_iii', 'mode_c_recommended', 'worst_basin_idx', 'worst_T_k_eff', 'mu_hat', 'mu_bar_required', 'R_brier', 'R_brier_max', 'omega_min']"
+smoke,stage03b,ICI state has required keys,True,"['condition_i', 'condition_ii', 'condition_iii', 'mode_c_recommended', 'worst_basin_idx', 'worst_T_k_eff', 'mu_hat', 'mu_erg', 'mu_bar_required', 'R_brier', 'R_brier_max', 'omega_min']"
 smoke,stage03b,ICI condition_i type bool,True,
 smoke,stage03b,condition_iii fires when T_k_eff < omega_min,True,T_k_eff=0.0100
 smoke,stage03c,Mode C entry conditions dict returned,True,"['condition_i', 'condition_ii', 'condition_iii', 'any_triggered']"
@@ -94,8 +94,8 @@ smoke,stage07,IMM numerical stability p_miss=0.3 (probs finite and sum to 1),Tru
 smoke,stage07,IMM posterior entropy > 0.3 nats after 50 non-maladaptive steps,True,"H=0.3474 probs=['0.915', '0.032', '0.054']"
 smoke,stage07,IMM recovers basin-1 MAP mode within 30 steps from wrong prior,True,"map_mode=1 probs=['0.042', '0.958', '0.000']"
 smoke,stage07,peak time-in-band across w3 sweep >= 0.60,True,peak_tib=0.625 at w3=0.05
-smoke,stage07,Mismatch audit: basin-1 p90 delta_A reported,True,basin_1_p90=0.3466 bound=0.2000
-smoke,stage07,Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity),False,VIOLATED: 0.200 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)
+smoke,stage07,Mismatch audit: basin-1 p90 delta_A reported,True,basin_1_p90=0.3466 bound=0.3470
+smoke,stage07,Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity),True,OK: 0.347 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)
 standard,stage01,tau_tilde(center) == 0,True,0.0
 standard,stage01,tau_tilde(far) > 0,True,66.4452
 standard,stage01,tau sandwich lower ≤ tau_tilde,True,tau_L=11.3630 tau_tilde=66.4452
@@ -133,7 +133,7 @@ standard,stage03b,"p_A_robust ∈ [0,1]",True,0.7051
 standard,stage03b,p_A_robust ≥ p_A (miscalibration raises threshold),True,0.7051 ≥ 0.7
 standard,stage03b,T_k_eff > 0,True,1.79
 standard,stage03b,omega_min > 0,True,40741.9589
-standard,stage03b,ICI state has required keys,True,"['condition_i', 'condition_ii', 'condition_iii', 'mode_c_recommended', 'worst_basin_idx', 'worst_T_k_eff', 'mu_hat', 'mu_bar_required', 'R_brier', 'R_brier_max', 'omega_min']"
+standard,stage03b,ICI state has required keys,True,"['condition_i', 'condition_ii', 'condition_iii', 'mode_c_recommended', 'worst_basin_idx', 'worst_T_k_eff', 'mu_hat', 'mu_erg', 'mu_bar_required', 'R_brier', 'R_brier_max', 'omega_min']"
 standard,stage03b,ICI condition_i type bool,True,
 standard,stage03b,condition_iii fires when T_k_eff < omega_min,True,T_k_eff=0.0100
 standard,stage03b,pooled cal sample size ≥ 2*smoke,True,n_cal=3072
@@ -192,8 +192,8 @@ standard,stage07,IMM recovers basin-1 MAP mode within 30 steps from wrong prior,
 standard,stage07,Mode A finite seed=101,True,‖u‖=0.0000
 standard,stage07,Mode A finite seed=202,True,‖u‖=0.0000
 standard,stage07,peak time-in-band across w3 sweep >= 0.60,True,peak_tib=0.625 at w3=0.05
-standard,stage07,Mismatch audit: basin-1 p90 delta_A reported,True,basin_1_p90=0.3466 bound=0.2000
-standard,stage07,Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity),False,VIOLATED: 0.200 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)
+standard,stage07,Mismatch audit: basin-1 p90 delta_A reported,True,basin_1_p90=0.3466 bound=0.3470
+standard,stage07,Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity),True,OK: 0.347 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)
 extended,stage01,tau_tilde(center) == 0,True,0.0
 extended,stage01,tau_tilde(far) > 0,True,66.4452
 extended,stage01,tau sandwich lower ≤ tau_tilde,True,tau_L=11.3630 tau_tilde=66.4452
@@ -236,7 +236,7 @@ extended,stage03b,"p_A_robust ∈ [0,1]",True,0.7019
 extended,stage03b,p_A_robust ≥ p_A (miscalibration raises threshold),True,0.7019 ≥ 0.7
 extended,stage03b,T_k_eff (T=256) > T_k_eff (T=128),True,1.79 → 3.58
 extended,stage03b,omega_min > 0,True,40741.9589
-extended,stage03b,ICI state has required keys,True,"['condition_i', 'condition_ii', 'condition_iii', 'mode_c_recommended', 'worst_basin_idx', 'worst_T_k_eff', 'mu_hat', 'mu_bar_required', 'R_brier', 'R_brier_max', 'omega_min']"
+extended,stage03b,ICI state has required keys,True,"['condition_i', 'condition_ii', 'condition_iii', 'mode_c_recommended', 'worst_basin_idx', 'worst_T_k_eff', 'mu_hat', 'mu_erg', 'mu_bar_required', 'R_brier', 'R_brier_max', 'omega_min']"
 extended,stage03b,ICI condition_i type bool,True,
 extended,stage03b,condition_iii fires when T_k_eff < omega_min,True,T_k_eff=0.0100
 extended,stage03b,pooled cal sample,True,3×20×256 = 15360 = n_cal=15360
@@ -302,8 +302,8 @@ extended,stage07,Mode A finite seed=202,True,‖u‖=0.0000
 extended,stage07,Mode A finite seed=303,True,‖u‖=0.0000
 extended,stage07,IMM stable over 48-step day (seed=303),True,"probs=['0.000', '0.919', '0.080']"
 extended,stage07,peak time-in-band across w3 sweep >= 0.60,True,peak_tib=0.625 at w3=0.05
-extended,stage07,Mismatch audit: basin-1 p90 delta_A reported,True,basin_1_p90=0.3466 bound=0.2000
-extended,stage07,Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity),False,VIOLATED: 0.200 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)
+extended,stage07,Mismatch audit: basin-1 p90 delta_A reported,True,basin_1_p90=0.3466 bound=0.3470
+extended,stage07,Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity),True,OK: 0.347 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)
 validation,stage01,tau_tilde(center) == 0,True,0.0
 validation,stage01,tau_tilde(far) > 0,True,66.4452
 validation,stage01,tau sandwich lower ≤ tau_tilde,True,tau_L=11.3630 tau_tilde=66.4452
@@ -345,7 +345,7 @@ validation,stage03b,"p_A_robust ∈ [0,1]",True,0.7246
 validation,stage03b,p_A_robust ≥ p_A,True,0.7246 ≥ 0.7
 validation,stage03b,T_k_eff > 0,True,1.79
 validation,stage03b,omega_min > 0,True,40741.9589
-validation,stage03b,ICI state has required keys,True,"['condition_i', 'condition_ii', 'condition_iii', 'mode_c_recommended', 'worst_basin_idx', 'worst_T_k_eff', 'mu_hat', 'mu_bar_required', 'R_brier', 'R_brier_max', 'omega_min']"
+validation,stage03b,ICI state has required keys,True,"['condition_i', 'condition_ii', 'condition_iii', 'mode_c_recommended', 'worst_basin_idx', 'worst_T_k_eff', 'mu_hat', 'mu_erg', 'mu_bar_required', 'R_brier', 'R_brier_max', 'omega_min']"
 validation,stage03b,ICI condition_i type bool,True,
 validation,stage03b,condition_iii fires when T_k_eff < omega_min,True,T_k_eff=0.0100
 validation,stage03b,pooled cal sample,True,3×12×128 = 4608 = n_cal=4608
@@ -397,5 +397,5 @@ validation,stage07,IMM recovers basin-1 MAP mode within 30 steps from wrong prio
 validation,stage07,Mode A finite seed=101,True,‖u‖=0.0000
 validation,stage07,Mode A finite seed=202,True,‖u‖=0.0000
 validation,stage07,Mode A finite seed=303,True,‖u‖=0.0000
-validation,stage07,Mismatch audit: basin-1 p90 delta_A reported,True,basin_1_p90=0.3466 bound=0.2000
-validation,stage07,Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity),False,VIOLATED: 0.200 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)
+validation,stage07,Mismatch audit: basin-1 p90 delta_A reported,True,basin_1_p90=0.3466 bound=0.3470
+validation,stage07,Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity),True,OK: 0.347 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)

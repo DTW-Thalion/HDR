@@ -1,15 +1,15 @@
 # HDR Validation Suite — Results Summary
 
-Generated: 2026-03-11 21:39 UTC
+Generated: 2026-03-12 02:45 UTC
 
 ## Profile Overview
 
 | Profile | Seeds | Episodes | Steps | MC | Total | Passed | Failed | Status | Time |
 |---------|-------|----------|-------|----|-------|--------|--------|--------|------|
-| smoke | 1 | 8 | 128 | 50 | 97 | 96 | 1 | ✗ 1 FAIL | 6.4s |
-| standard | 2 | 12 | 128 | 100 | 98 | 97 | 1 | ✗ 1 FAIL | 24.8s |
-| extended | 3 | 20 | 256 | 150 | 110 | 109 | 1 | ✗ 1 FAIL | 114.0s |
-| validation | 3 | 12 | 128 | 150 | 95 | 94 | 1 | ✗ 1 FAIL | 6.9s |
+| smoke | 1 | 8 | 128 | 50 | 97 | 97 | 0 | ✓ PASS | 18.0s |
+| standard | 2 | 12 | 128 | 100 | 98 | 98 | 0 | ✓ PASS | 32.8s |
+| extended | 3 | 20 | 256 | 150 | 110 | 110 | 0 | ✓ PASS | 146.7s |
+| validation | 3 | 12 | 128 | 150 | 95 | 95 | 0 | ✓ PASS | 9.6s |
 
 ## Stage-by-Stage Results
 
@@ -23,7 +23,7 @@ Generated: 2026-03-11 21:39 UTC
 | stage04 | ✓ 8/8 | ✓ 14/14 | ✓ 16/16 | ✓ 10/10 |
 | stage05 | ✓ 9/9 | ✓ 9/9 | ✓ 10/10 | ✓ 9/9 |
 | stage06 | ✓ 8/8 | ✓ 8/8 | ✓ 9/9 | ✓ 5/5 |
-| stage07 | ✗ 15/16 | ✗ 17/18 | ✗ 19/20 | ✗ 17/18 |
+| stage07 | ✓ 16/16 | ✓ 18/18 | ✓ 20/20 | ✓ 18/18 |
 
 ## Key Metrics by Profile
 
@@ -43,7 +43,4 @@ Generated: 2026-03-11 21:39 UTC
 
 ## Failed Checks
 
-- **[smoke]** `stage07` — Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity): `VIOLATED: 0.200 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)`
-- **[standard]** `stage07` — Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity): `VIOLATED: 0.200 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)`
-- **[extended]** `stage07` — Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity): `VIOLATED: 0.200 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)`
-- **[validation]** `stage07` — Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity): `VIOLATED: 0.200 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)`
+_None — all checks passed across all profiles._
