@@ -1,0 +1,43 @@
+{
+  "variants": {
+    "hdr_full": {
+      "mean_gain": 0.0,
+      "ci_lo": 0.0,
+      "ci_hi": 0.0,
+      "win_rate": 0.0,
+      "N_mal": 1
+    },
+    "mpc_only": {
+      "mean_gain": 0.0,
+      "ci_lo": 0.0,
+      "ci_hi": 0.0,
+      "win_rate": 0.0,
+      "N_mal": 1
+    },
+    "mpc_plus_surrogate": {
+      "mean_gain": 0.0,
+      "ci_lo": 0.0,
+      "ci_hi": 0.0,
+      "win_rate": 0.0,
+      "N_mal": 1
+    },
+    "mpc_plus_coherence": {
+      "mean_gain": 0.0,
+      "ci_lo": 0.0,
+      "ci_hi": 0.0,
+      "win_rate": 0.0,
+      "N_mal": 1
+    },
+    "hdr_no_calib": {
+      "mean_gain": 0.0,
+      "ci_lo": 0.0,
+      "ci_hi": 0.0,
+      "win_rate": 0.0,
+      "N_mal": 1
+    }
+  },
+  "n_seeds": 2,
+  "n_ep_per_seed": 3,
+  "T": 32,
+  "total_maladaptive_episodes": 0
+}

@@ -171,7 +171,7 @@ def solve_mode_a(
     # the feedback to maintain stability across the mismatch envelope.
     try:
         from .lqr import dlqr_robust
-        mismatch_bound = float(config.get("model_mismatch_bound", 0.20))
+        mismatch_bound = float(config.get("model_mismatch_bound", 0.347))
         _, P_terminal = dlqr_robust(basin.A, basin.B, Q_eff, R_eff, mismatch_bound=mismatch_bound)
     except Exception:
         try:

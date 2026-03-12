@@ -1,0 +1,36 @@
+{
+  "basins": {
+    "0": {
+      "c_k": 0.839,
+      "containment_rate": 0.6375,
+      "mean_lyapunov_value": 0.8096,
+      "max_lyapunov_value": 3.2523,
+      "n_steps_checked": 160,
+      "proposition_8_4_criterion_met": false,
+      "rho_basin": 0.72
+    },
+    "1": {
+      "c_k": 5.3952,
+      "containment_rate": 0.7812,
+      "mean_lyapunov_value": 4.0982,
+      "max_lyapunov_value": 13.7079,
+      "n_steps_checked": 64,
+      "proposition_8_4_criterion_met": false,
+      "rho_basin": 0.96
+    },
+    "2": {
+      "c_k": 0.7459,
+      "containment_rate": 0.5,
+      "mean_lyapunov_value": 0.7786,
+      "max_lyapunov_value": 2.2863,
+      "n_steps_checked": 32,
+      "proposition_8_4_criterion_met": false,
+      "rho_basin": 0.55
+    }
+  },
+  "containment_threshold": 0.9,
+  "n_sigma_disturbance": 3.0,
+  "n_seeds": 2,
+  "T": 32,
+  "note": "Lyapunov level-set RPI approximation per Proposition 8.4 (revised paper)"
+}
