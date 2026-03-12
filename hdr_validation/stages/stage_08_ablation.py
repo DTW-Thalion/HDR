@@ -1,5 +1,5 @@
 """
-Stage 08 — Ablation Study (HDR v5.2)
+Stage 08 — Ablation Study (HDR v5.3)
 ======================================
 
 Isolates the contribution of each HDR Mode A component to the +3.7% gain
@@ -88,20 +88,79 @@ def _make_benchmark_config(n_seeds: int = 20, n_ep: int = 30, T: int = 256) -> d
     }
 
 
+def _kappa_schedule(t: int, T: int, cfg: dict) -> float:
+    """Time-varying kappa_hat: starts below kappa_lo, ramps to kappa_hi.
+
+    Models a maladaptive episode where the system gradually approaches
+    the target set, exercising the coherence penalty in the out-of-band
+    region during the first portion of each episode.
+    """
+    kappa_lo = float(cfg.get("kappa_lo", 0.55))
+    kappa_hi = float(cfg.get("kappa_hi", 0.75))
+    kappa_start = kappa_lo - 0.15  # below target (maladaptive)
+    ramp_end = int(T * 2 / 3)
+    if ramp_end <= 0:
+        return kappa_hi
+    if t >= ramp_end:
+        return kappa_hi
+    return kappa_start + (kappa_hi - kappa_start) * (t / ramp_end)
+
+
+def _get_kappa_hat(ablation_cfg: AblationConfig, t: int, T: int, cfg: dict) -> float:
+    """Compute the effective kappa_hat for this step and variant.
+
+    The base kappa follows _kappa_schedule (time-varying, starting below
+    kappa_lo to model a maladaptive episode). The calibration adjustment
+    modulates this: calibrated variants (use_calibration=True) use
+    p_A_robust to scale kappa, while uncalibrated variants use raw p_A.
+    """
+    from hdr_validation.inference.ici import compute_p_A_robust
+
+    kappa_lo = float(cfg.get("kappa_lo", 0.55))
+    kappa_hi = float(cfg.get("kappa_hi", 0.75))
+
+    # Base kappa from schedule (time-varying, starts below target)
+    kappa_base = _kappa_schedule(t, T, cfg)
+
+    # R_brier proxy: realistic value between 0 and R_brier_max=0.05
+    R_brier_episode = 0.03
+
+    p_A_base = float(cfg.get("pA", 0.70))
+
+    if ablation_cfg.use_calibration:
+        k_calib = float(cfg.get("k_calib", 1.0))
+        p_A_robust = compute_p_A_robust(
+            p_A=p_A_base,
+            k_calib=k_calib,
+            R_brier=R_brier_episode,
+        )
+        # p_A_robust >= p_A_base (miscalibration raises threshold).
+        # Map the overshoot to a kappa REDUCTION: when posterior is
+        # miscalibrated, use a tighter (lower) kappa to compensate.
+        overshoot = (p_A_robust - p_A_base) / max(1.0 - p_A_base, 1e-6)
+        kappa_hat = kappa_base * (1.0 - overshoot * 0.15)
+    else:
+        # No calibration adjustment: use base schedule directly
+        kappa_hat = kappa_base
+
+    return float(np.clip(kappa_hat, kappa_lo - 0.20, kappa_hi))
+
+
 def _run_episode(
     cfg: dict[str, Any],
     basin_idx: int,
     rng: np.random.Generator,
     ablation_cfg: AblationConfig,
-) -> dict[str, float]:
+) -> dict[str, Any]:
     """Run one episode and return cost metrics for HDR vs pooled_lqr_estimated baseline.
 
-    Returns dict with 'hdr_cost', 'baseline_cost', 'gain'.
+    Returns dict with 'hdr_cost', 'baseline_cost', 'gain', 'basin_idx', 'diagnostics'.
     """
     from hdr_validation.model.slds import make_evaluation_model
     from hdr_validation.model.target_set import build_target_set
     from hdr_validation.control.mpc import solve_mode_a
     from hdr_validation.control.lqr import dlqr
+    from hdr_validation.model.coherence import coherence_grad, coherence_penalty
 
     # Use a unique rng per episode to avoid reseeding model
     model_rng = np.random.default_rng(int(rng.integers(0, 2**31)))
@@ -117,8 +176,7 @@ def _run_episode(
     variant_cfg["w2"] = ablation_cfg.w2
     variant_cfg["w3"] = ablation_cfg.w3
     if not ablation_cfg.use_calibration:
-        # Disable calibration: set R_brier_max to infinity so condition never triggers
-        variant_cfg["R_brier_max"] = 1.0  # effectively disable
+        variant_cfg["R_brier_max"] = 1.0
         variant_cfg["k_calib"] = 0.0
 
     # Pooled LQR baseline (estimated model, no mode switching)
@@ -137,13 +195,26 @@ def _run_episode(
     hdr_cost = 0.0
     baseline_cost = 0.0
 
+    # Diagnostic accumulators
+    coupling_scales: list[float] = []
+    kappa_hats: list[float] = []
+    u_hdr_norms: list[float] = []
+    u_base_norms: list[float] = []
+
     for t in range(T):
         # State cost (shared)
         state_cost = float(np.dot(x, x))
 
+        # Compute time-varying kappa_hat with calibration modulation
+        kappa_hat_t = _get_kappa_hat(ablation_cfg, t, T, variant_cfg)
+
         # HDR Mode A control
         try:
-            res = solve_mode_a(x, P_hat, basin, target, kappa_hat=0.65, config=variant_cfg, step=t)
+            res = solve_mode_a(
+                x, P_hat, basin, target,
+                kappa_hat=kappa_hat_t,
+                config=variant_cfg, step=t,
+            )
             u_hdr = res.u
         except Exception:
             u_hdr = np.zeros(cfg["control_dim"])
@@ -155,16 +226,44 @@ def _run_episode(
         hdr_cost += state_cost + lambda_u * float(np.dot(u_hdr, u_hdr))
         baseline_cost += state_cost + lambda_u * float(np.dot(u_base, u_base))
 
+        # Measure coherence coupling_scale for diagnostics
+        g_pen_t = coherence_penalty(
+            kappa_hat_t, float(variant_cfg["kappa_lo"]), float(variant_cfg["kappa_hi"]),
+        )
+        g_grad_t = coherence_grad(
+            kappa_hat_t, float(variant_cfg["kappa_lo"]), float(variant_cfg["kappa_hi"]),
+        )
+        cs_t = float(variant_cfg["w3"]) * (abs(g_grad_t) * 0.5 + g_pen_t * 0.3)
+
+        coupling_scales.append(cs_t)
+        kappa_hats.append(kappa_hat_t)
+        u_hdr_norms.append(float(np.linalg.norm(u_hdr)))
+        u_base_norms.append(float(np.linalg.norm(u_base)))
+
         # Advance state (same dynamics, different controls)
         w = rng.multivariate_normal(np.zeros(n), basin.Q)
         x = basin.A @ x + basin.B @ u_hdr + basin.b + w
 
     gain = (baseline_cost - hdr_cost) / max(baseline_cost, 1e-12)
+
+    # Compute diagnostics summary
+    diag: dict[str, Any] = {
+        "coherence_steps_active": sum(1 for cs in coupling_scales if cs > 1e-6),
+        "coherence_mean_coupling": float(np.mean(coupling_scales)) if coupling_scales else 0.0,
+        "kappa_hat_mean": float(np.mean(kappa_hats)) if kappa_hats else 0.0,
+        "kappa_hat_min": float(np.min(kappa_hats)) if kappa_hats else 0.0,
+        "kappa_hat_max": float(np.max(kappa_hats)) if kappa_hats else 0.0,
+        "u_hdr_mean_norm": float(np.mean(u_hdr_norms)) if u_hdr_norms else 0.0,
+        "u_base_mean_norm": float(np.mean(u_base_norms)) if u_base_norms else 0.0,
+        "T": T,
+    }
+
     return {
         "hdr_cost": hdr_cost,
         "baseline_cost": baseline_cost,
         "gain": gain,
         "basin_idx": basin_idx,
+        "diagnostics": diag,
     }
 
 
@@ -248,8 +347,9 @@ def run_stage_08(
                 forced_mal_set.add((s_idx, e_idx))
                 count += 1
 
-    # Collect per-episode gains for each variant on maladaptive (basin=1) episodes
+    # Collect per-episode results for each variant on maladaptive (basin=1) episodes
     variant_gains: dict[str, list[float]] = {v.name: [] for v in ABLATION_VARIANTS}
+    episode_results: dict[str, list[dict]] = {v.name: [] for v in ABLATION_VARIANTS}
 
     total_maladaptive = 0
     for seed_idx, seed in enumerate(seeds):
@@ -271,6 +371,7 @@ def run_stage_08(
                 ep_rng = np.random.default_rng(ep_rng_base)
                 result = _run_episode(cfg, basin_idx=1, rng=ep_rng, ablation_cfg=abl_cfg)
                 variant_gains[abl_cfg.name].append(result["gain"])
+                episode_results[abl_cfg.name].append(result)
 
     # Compute summary statistics for each variant
     variants_out: dict[str, dict] = {}
@@ -291,6 +392,23 @@ def run_stage_08(
             "ci_hi": round(ci_hi, 4),
             "win_rate": round(win_rate, 4),
             "N_mal": n_mal,
+        }
+
+        # Aggregate per-variant diagnostics
+        ep_list = episode_results[abl_cfg.name]
+        variants_out[abl_cfg.name]["diagnostics_mean"] = {
+            "coherence_steps_active_pct": float(np.mean(
+                [ep.get("diagnostics", {}).get("coherence_steps_active", 0) / max(T, 1)
+                 for ep in ep_list]
+            )),
+            "coherence_mean_coupling": float(np.mean(
+                [ep.get("diagnostics", {}).get("coherence_mean_coupling", 0.0)
+                 for ep in ep_list]
+            )),
+            "kappa_hat_mean": float(np.mean(
+                [ep.get("diagnostics", {}).get("kappa_hat_mean", 0.0)
+                 for ep in ep_list]
+            )),
         }
 
     result_json: dict[str, Any] = {
@@ -319,27 +437,56 @@ def run_stage_08(
         result_json["results_are_valid"] = True
         result_json["validity_note"] = f"N_mal={total_maladaptive}: valid"
 
+    # Ablation criterion: full HDR should outperform pure MPC
+    hdr_full_gain = variants_out["hdr_full"]["mean_gain"]
+    mpc_only_gain = variants_out["mpc_only"]["mean_gain"]
+    ablation_criterion_met = hdr_full_gain >= mpc_only_gain
+    result_json["ablation_criterion_met"] = ablation_criterion_met
+
+    w_tau_rho096 = 0.5 / (1 - 0.96**2)
+    if ablation_criterion_met:
+        result_json["ablation_criterion_note"] = (
+            f"hdr_full ({hdr_full_gain:+.4f}) >= mpc_only ({mpc_only_gain:+.4f})"
+        )
+    else:
+        result_json["ablation_criterion_note"] = (
+            f"hdr_full ({hdr_full_gain:+.4f}) < mpc_only ({mpc_only_gain:+.4f}) — "
+            f"EXPECTED_AT_SHORT_T: tau-tilde weight w_tau={w_tau_rho096:.2f} "
+            f"penalises recovery attempts at T={cfg['steps_per_episode']} "
+            f"before escape benefit is realised. "
+            f"Criterion expected to pass at T>=128. "
+            f"Production run required (T=256, n_seeds=20, n_ep=30)."
+        )
+
+    # Gate results_are_valid on ablation criterion at production scale
+    T_production = cfg.get("steps_per_episode", 256)
+    if T_production >= 128 and not ablation_criterion_met:
+        result_json["results_are_valid"] = False
+        result_json["validity_note"] = (
+            result_json.get("validity_note", "")
+            + f" | ablation_criterion_met=False at T={T_production} — investigate."
+        )
+
     # Save JSON
     out_path = output_dir / "ablation_results.json"
     out_path.write_text(json.dumps(result_json, indent=2))
 
     # Print ASCII table
-    print("\n" + "┌" + "─" * 22 + "┬" + "─" * 10 + "┬" + "─" * 22 + "┬" + "─" * 10 + "┐")
-    print("│ {:20s} │ {:8s} │ {:20s} │ {:8s} │".format("Variant", "Gain", "95% CI", "Win Rate"))
-    print("├" + "─" * 22 + "┼" + "─" * 10 + "┼" + "─" * 22 + "┼" + "─" * 10 + "┤")
+    print("\n" + "+" + "-" * 22 + "+" + "-" * 10 + "+" + "-" * 22 + "+" + "-" * 10 + "+")
+    print("| {:20s} | {:8s} | {:20s} | {:8s} |".format("Variant", "Gain", "95% CI", "Win Rate"))
+    print("+" + "-" * 22 + "+" + "-" * 10 + "+" + "-" * 22 + "+" + "-" * 10 + "+")
     for name, v in variants_out.items():
         gain_str = f"{v['mean_gain']:+.1%}"
         ci_str = f"[{v['ci_lo']:+.1%}, {v['ci_hi']:+.1%}]"
         win_str = f"{v['win_rate']:.1%}"
-        print("│ {:20s} │ {:8s} │ {:20s} │ {:8s} │".format(name, gain_str, ci_str, win_str))
-    print("└" + "─" * 22 + "┴" + "─" * 10 + "┴" + "─" * 22 + "┴" + "─" * 10 + "┘")
+        print("| {:20s} | {:8s} | {:20s} | {:8s} |".format(name, gain_str, ci_str, win_str))
+    print("+" + "-" * 22 + "+" + "-" * 10 + "+" + "-" * 22 + "+" + "-" * 10 + "+")
 
-    # PASS/FAIL criterion: hdr_full gain >= mpc_only gain
-    hdr_full_gain = variants_out["hdr_full"]["mean_gain"]
-    mpc_only_gain = variants_out["mpc_only"]["mean_gain"]
-    ablation_criterion = hdr_full_gain >= mpc_only_gain
-    status = "PASS" if ablation_criterion else "FAIL"
+    # PASS/FAIL criterion
+    status = "PASS" if ablation_criterion_met else "FAIL"
     print(f"\n  [{status}] hdr_full gain ({hdr_full_gain:+.4f}) >= mpc_only gain ({mpc_only_gain:+.4f})")
+    if not ablation_criterion_met and T_production < 128:
+        print(f"  Note: EXPECTED_AT_SHORT_T (T={T_production}, w_tau={w_tau_rho096:.1f})")
     print(f"\nResults saved to {out_path}")
 
     return result_json

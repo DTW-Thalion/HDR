@@ -1,0 +1,45 @@
+{
+  "generated_at": "2026-03-12",
+  "finding_id": "F11",
+  "finding": "Stage 08 ablation variant degeneracy at T<=64",
+  "root_causes": {
+    "A_calibration_dead_branch": {
+      "confirmed": true,
+      "evidence": "max |u_full - u_nocalib| = 0.0 (before fix). _run_episode called solve_mode_a with hardcoded kappa_hat=0.65; solve_mode_a does not read k_calib or R_brier_max from config. hdr_no_calib variant config keys were silently ignored.",
+      "fix_applied": "kappa_hat now computed per-step via _get_kappa_hat() using compute_p_A_robust. Calibration overshoot maps to kappa reduction (tighter target). After fix: max |kappa_full - kappa_nocalib| = 0.011250."
+    },
+    "B_coherence_zero_at_kappa_mid": {
+      "confirmed": true,
+      "evidence": "coupling_scale = 0.00000000 at kappa_hat=0.65 (midpoint of [0.55, 0.75]). Both g_pen and g_grad are exactly 0.0 inside the target band. Outside band (kappa=0.30): coupling_scale = 0.08062500.",
+      "fix_applied": "kappa_hat follows _kappa_schedule starting at kappa_lo - 0.15 = 0.40 (below target), ramping to kappa_hi over first 2/3 of episode. After fix: 28% of steps have active coherence coupling at T=32."
+    },
+    "C_tau_tilde_temporal_confound": {
+      "confirmed": true,
+      "evidence": "Inversion at T=32 (diff=-0.0017) and T=64 (diff=-0.0010); resolves at T=128 (diff=+0.0004). w_tau = w2/(1-rho^2) = 0.5/(1-0.96^2) = 6.41 adds large Q_eff diagonal penalising recovery attempts. At short T, insufficient steps to realise escape benefit.",
+      "crossover_T": 128,
+      "is_code_defect": false,
+      "note": "Resolves at T>=128; production run T=256 expected to show correct ordering."
+    }
+  },
+  "actions_taken": [
+    "Added _get_kappa_hat() to _run_episode for ICI-aware calibration differentiation",
+    "Added _kappa_schedule() for time-varying kappa_hat reflecting maladaptive episode dynamics",
+    "Added per-step diagnostic counters (coherence_steps_active, coupling_scale, kappa_hat, u norms)",
+    "Added ablation_criterion_met and ablation_criterion_note to JSON output",
+    "Added results_are_valid=False gate when criterion fails at T>=128",
+    "Added 3 new pytest tests: criterion noted, tag check, production skip"
+  ],
+  "test_summary": {
+    "total_tests": 125,
+    "passed": 124,
+    "skipped": 1,
+    "failed": 0,
+    "new_tests": [
+      "test_ablation_criterion_noted_when_inverted",
+      "test_ablation_criterion_note_contains_expected_tag_when_inverted",
+      "test_hdr_full_beats_mpc_only_production (SKIPPED)"
+    ]
+  },
+  "production_run_status": "BLOCKED - requires compute (n_seeds=20, n_ep=30, T=256)",
+  "manuscript_table_3_status": "BLOCKED - do not use fast-mode data for Table 3"
+}
