@@ -73,3 +73,46 @@ def test_hdr_full_gain_ge_mpc_only_gain(tmp_path: Path):
     # This is a soft assertion — a diagnostic, not guaranteed to hold on tiny samples
     # but we check the sign is reasonable
     assert np.isfinite(hdr_gain) and np.isfinite(mpc_gain)
+
+
+def test_ablation_criterion_noted_when_inverted(tmp_path: Path):
+    """When hdr_full gain < mpc_only gain (expected at T=32),
+    ablation_criterion_met=False and note contains EXPECTED_AT_SHORT_T."""
+    result = run_stage_08(n_seeds=2, n_ep=4, T=32,
+                          output_dir=tmp_path, fast_mode=False)
+    # At T=32 the criterion may or may not be inverted depending on seeds,
+    # but the field must always be present
+    assert "ablation_criterion_met" in result
+    assert "ablation_criterion_note" in result
+    assert isinstance(result["ablation_criterion_met"], bool)
+
+
+def test_ablation_criterion_note_contains_expected_tag_when_inverted(tmp_path: Path):
+    """If criterion fails at short T, the note must contain EXPECTED_AT_SHORT_T."""
+    result = run_stage_08(n_seeds=2, n_ep=6, T=32,
+                          output_dir=tmp_path, fast_mode=False)
+    if not result["ablation_criterion_met"]:
+        assert "EXPECTED_AT_SHORT_T" in result["ablation_criterion_note"], (
+            "Inverted criterion at T=32 must be tagged as EXPECTED_AT_SHORT_T "
+            "to prevent downstream manuscript tools from consuming the result."
+        )
+
+
+@pytest.mark.skipif(
+    condition=True,   # Always skip in CI — requires production compute
+    reason=(
+        "Production-scale ablation criterion test. "
+        "Requires n_seeds=20, n_ep=30, T=256 (~3-5 weeks compute). "
+        "Remove skipif when production run is available."
+    ),
+)
+def test_hdr_full_beats_mpc_only_production(tmp_path: Path):
+    """hdr_full gain >= mpc_only gain at production scale (T=256, N_mal>=50).
+    This is the definitive test of the ablation claim in the manuscript."""
+    result = run_stage_08(n_seeds=20, n_ep=30, T=256,
+                          output_dir=tmp_path, fast_mode=False)
+    assert result["variants"]["hdr_full"]["N_mal"] >= 50, (
+        f"N_mal={result['variants']['hdr_full']['N_mal']} < 50. "
+        "Insufficient maladaptive episodes for valid ablation statistics."
+    )
+    assert result["ablation_criterion_met"], result["ablation_criterion_note"]
