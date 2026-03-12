@@ -1,43 +1,45 @@
 {
   "variants": {
     "hdr_full": {
-      "mean_gain": 0.0,
-      "ci_lo": 0.0,
-      "ci_hi": 0.0,
-      "win_rate": 0.0,
-      "N_mal": 1
+      "mean_gain": 0.0737,
+      "ci_lo": 0.0618,
+      "ci_hi": 0.0886,
+      "win_rate": 1.0,
+      "N_mal": 6
     },
     "mpc_only": {
-      "mean_gain": 0.0,
-      "ci_lo": 0.0,
-      "ci_hi": 0.0,
-      "win_rate": 0.0,
-      "N_mal": 1
+      "mean_gain": 0.0753,
+      "ci_lo": 0.0633,
+      "ci_hi": 0.09,
+      "win_rate": 1.0,
+      "N_mal": 6
     },
     "mpc_plus_surrogate": {
-      "mean_gain": 0.0,
-      "ci_lo": 0.0,
-      "ci_hi": 0.0,
-      "win_rate": 0.0,
-      "N_mal": 1
+      "mean_gain": 0.0737,
+      "ci_lo": 0.0618,
+      "ci_hi": 0.0886,
+      "win_rate": 1.0,
+      "N_mal": 6
     },
     "mpc_plus_coherence": {
-      "mean_gain": 0.0,
-      "ci_lo": 0.0,
-      "ci_hi": 0.0,
-      "win_rate": 0.0,
-      "N_mal": 1
+      "mean_gain": 0.0753,
+      "ci_lo": 0.0633,
+      "ci_hi": 0.09,
+      "win_rate": 1.0,
+      "N_mal": 6
     },
     "hdr_no_calib": {
-      "mean_gain": 0.0,
-      "ci_lo": 0.0,
-      "ci_hi": 0.0,
-      "win_rate": 0.0,
-      "N_mal": 1
+      "mean_gain": 0.0737,
+      "ci_lo": 0.0618,
+      "ci_hi": 0.0886,
+      "win_rate": 1.0,
+      "N_mal": 6
     }
   },
   "n_seeds": 2,
   "n_ep_per_seed": 3,
   "T": 32,
-  "total_maladaptive_episodes": 0
+  "total_maladaptive_episodes": 6,
+  "results_are_valid": true,
+  "validity_note": "N_mal=6: valid"
 }

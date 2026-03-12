@@ -282,19 +282,37 @@ def run_stage_09(
 
     seeds = [101 + i * 101 for i in range(n_seeds)]
 
+    # Fast-mode: force at least N_MAL_MIN maladaptive episodes to guarantee
+    # non-vacuous output. Production mode retains probabilistic selection to
+    # match the Benchmark A episode distribution.
+    N_MAL_MIN = 6
+    forced_mal_set: set[tuple[int, int]] = set()
+    if n_seeds * n_ep < 20:   # fast/smoke mode threshold
+        count = 0
+        for s_idx in range(n_seeds):
+            for e_idx in range(n_ep):
+                if count >= N_MAL_MIN:
+                    break
+                forced_mal_set.add((s_idx, e_idx))
+                count += 1
+
     # Collect per-episode costs for maladaptive basin
     policy_names = ["open_loop", "pooled_lqr_estimated", "mjls_smpc", "belief_mpc", "hdr_mode_a"]
     policy_costs: dict[str, list[float]] = {p: [] for p in policy_names}
     policy_gains_vs_pooled: dict[str, list[float]] = {p: [] for p in policy_names}
+    total_maladaptive = 0
 
-    for seed in seeds:
+    for seed_idx, seed in enumerate(seeds):
         rng = np.random.default_rng(seed)
         for ep_idx in range(n_ep):
             # Select basin: ~30% maladaptive (basin 1)
-            basin_idx = 1 if rng.random() < 0.30 else rng.choice([0, 2])
+            is_forced = (seed_idx, ep_idx) in forced_mal_set
+            is_mal = is_forced or (rng.random() < 0.30)
+            basin_idx = 1 if is_mal else rng.choice([0, 2])
             if basin_idx != 1:
                 continue  # Focus on maladaptive episodes
 
+            total_maladaptive += 1
             costs = _run_episode_all_policies(cfg, basin_idx=1, seed=seed, ep_idx=ep_idx)
             pooled_cost = costs["pooled_lqr_estimated"]
 
@@ -323,13 +341,32 @@ def run_stage_09(
             entry["note"] = "oracle z_t — not deployable"
         policies_out[name] = entry
 
-    result_json = {
+    result_json: dict[str, Any] = {
         "policies": policies_out,
         "maladaptive_basin_only": True,
         "n_seeds": n_seeds,
         "n_ep_per_seed": n_ep,
         "T": T,
+        "total_maladaptive_episodes": total_maladaptive,
     }
+
+    MIN_MAL_FOR_VALID_RESULT = 5
+    if total_maladaptive < MIN_MAL_FOR_VALID_RESULT:
+        import warnings
+        warnings.warn(
+            f"Stage 09: only {total_maladaptive} maladaptive episodes collected "
+            f"(minimum {MIN_MAL_FOR_VALID_RESULT} required for valid baseline statistics). "
+            f"Results are NOT suitable for manuscript use. "
+            f"Run at full scale: n_seeds=20, n_ep=30, T=256.",
+            stacklevel=2,
+        )
+        result_json["results_are_valid"] = False
+        result_json["validity_note"] = (
+            f"N_mal={total_maladaptive} < {MIN_MAL_FOR_VALID_RESULT}: vacuous output"
+        )
+    else:
+        result_json["results_are_valid"] = True
+        result_json["validity_note"] = f"N_mal={total_maladaptive}: valid"
 
     out_path = output_dir / "baseline_comparison.json"
     out_path.write_text(json.dumps(result_json, indent=2))

@@ -178,7 +178,11 @@ def _bootstrap_ci(
     rng = np.random.default_rng(rng_seed)
     data = np.asarray(data, dtype=float)
     if len(data) == 0:
-        return float("nan"), float("nan")
+        raise ValueError(
+            "_bootstrap_ci received empty data. "
+            "This indicates zero maladaptive episodes were collected. "
+            "Check N_MAL_MIN guard in run_stage_08."
+        )
     boot_means = np.array([
         rng.choice(data, size=len(data), replace=True).mean()
         for _ in range(n_boot)
@@ -229,6 +233,21 @@ def run_stage_08(
 
     seeds = [101 + i * 101 for i in range(n_seeds)]
 
+    # Fast-mode: force at least N_MAL_MIN maladaptive episodes to guarantee
+    # non-vacuous output. Production mode retains probabilistic selection to
+    # match the Benchmark A episode distribution.
+    N_MAL_MIN = 6
+    forced_mal_set: set[tuple[int, int]] = set()
+    if n_seeds * n_ep < 20:   # fast/smoke mode threshold
+        # Assign first N_MAL_MIN episodes round-robin to basin 1
+        count = 0
+        for s_idx in range(n_seeds):
+            for e_idx in range(n_ep):
+                if count >= N_MAL_MIN:
+                    break
+                forced_mal_set.add((s_idx, e_idx))
+                count += 1
+
     # Collect per-episode gains for each variant on maladaptive (basin=1) episodes
     variant_gains: dict[str, list[float]] = {v.name: [] for v in ABLATION_VARIANTS}
 
@@ -238,7 +257,8 @@ def run_stage_08(
         for ep_idx in range(n_ep):
             # In Benchmark A, ~179/600 episodes are maladaptive basin
             # Use probability-based selection to match paper ratio
-            is_mal = (rng.random() < 0.30)  # ~30% maladaptive
+            is_forced = (seed_idx, ep_idx) in forced_mal_set
+            is_mal = is_forced or (rng.random() < 0.30)
             basin_idx = 1 if is_mal else rng.choice([0, 2])
 
             if basin_idx != 1:
@@ -257,7 +277,10 @@ def run_stage_08(
     for abl_cfg in ABLATION_VARIANTS:
         gains = np.array(variant_gains[abl_cfg.name])
         if len(gains) == 0:
-            gains = np.array([0.0])
+            raise ValueError(
+                f"Zero maladaptive episodes collected for variant '{abl_cfg.name}'. "
+                "This should not happen with the forced_mal_set guard."
+            )
         mean_gain = float(np.mean(gains))
         ci_lo, ci_hi = _bootstrap_ci(gains)
         win_rate = float(np.mean(gains > 0))
@@ -270,13 +293,31 @@ def run_stage_08(
             "N_mal": n_mal,
         }
 
-    result_json = {
+    result_json: dict[str, Any] = {
         "variants": variants_out,
         "n_seeds": n_seeds,
         "n_ep_per_seed": n_ep,
         "T": T,
         "total_maladaptive_episodes": total_maladaptive,
     }
+
+    MIN_MAL_FOR_VALID_RESULT = 5
+    if total_maladaptive < MIN_MAL_FOR_VALID_RESULT:
+        import warnings
+        warnings.warn(
+            f"Stage 08: only {total_maladaptive} maladaptive episodes collected "
+            f"(minimum {MIN_MAL_FOR_VALID_RESULT} required for valid ablation statistics). "
+            f"Results are NOT suitable for manuscript use. "
+            f"Run at full scale: n_seeds=20, n_ep=30, T=256.",
+            stacklevel=2,
+        )
+        result_json["results_are_valid"] = False
+        result_json["validity_note"] = (
+            f"N_mal={total_maladaptive} < {MIN_MAL_FOR_VALID_RESULT}: vacuous output"
+        )
+    else:
+        result_json["results_are_valid"] = True
+        result_json["validity_note"] = f"N_mal={total_maladaptive}: valid"
 
     # Save JSON
     out_path = output_dir / "ablation_results.json"

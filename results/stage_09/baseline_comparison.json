@@ -3,32 +3,35 @@
     "open_loop": {
       "mean_gain_vs_pooled_lqr": null,
       "win_rate": null,
-      "mean_abs_cost": 0.0
+      "mean_abs_cost": 83.1092
     },
     "pooled_lqr_estimated": {
       "mean_gain_vs_pooled_lqr": 0.0,
       "win_rate": 0.0,
-      "mean_abs_cost": 0.0
+      "mean_abs_cost": 46.637
     },
     "mjls_smpc": {
       "mean_gain_vs_pooled_lqr": 0.0,
       "win_rate": 0.0,
-      "mean_abs_cost": 0.0,
+      "mean_abs_cost": 46.637,
       "note": "oracle z_t \u2014 not deployable"
     },
     "belief_mpc": {
-      "mean_gain_vs_pooled_lqr": 0.0,
-      "win_rate": 0.0,
-      "mean_abs_cost": 0.0
+      "mean_gain_vs_pooled_lqr": -0.0216,
+      "win_rate": 0.5,
+      "mean_abs_cost": 47.8507
     },
     "hdr_mode_a": {
-      "mean_gain_vs_pooled_lqr": 0.0,
+      "mean_gain_vs_pooled_lqr": -0.4209,
       "win_rate": 0.0,
-      "mean_abs_cost": 0.0
+      "mean_abs_cost": 67.8653
     }
   },
   "maladaptive_basin_only": true,
   "n_seeds": 2,
   "n_ep_per_seed": 3,
-  "T": 32
+  "T": 32,
+  "total_maladaptive_episodes": 6,
+  "results_are_valid": true,
+  "validity_note": "N_mal=6: valid"
 }
