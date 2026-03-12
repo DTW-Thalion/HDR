@@ -155,7 +155,7 @@ def _make_benchmark_config(n_seeds: int = 5, T: int = 128) -> dict[str, Any]:
         "eps_safe": 0.01,
         "rho_reference": [0.72, 0.96, 0.55],
         "max_dwell_len": 256,
-        "model_mismatch_bound": 0.20,
+        "model_mismatch_bound": 0.347,
         "kappa_lo": 0.55,
         "kappa_hi": 0.75,
         "pA": 0.70,

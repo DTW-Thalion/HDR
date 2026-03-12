@@ -57,13 +57,13 @@ estimate (+3.6 %, N_mal ≈ 15) are inflated by small-sample positive
 bias.  This is expected and is not a code defect.  The high-power run
 (N_mal = 123) is the authoritative figure.
 
-# HDR Claim Matrix — v5.0
+# HDR Claim Matrix — v5.3
 
-**Framework version:** HDR v5.0
+**Framework version:** HDR v5.3
 **Validation suite version:** `hdr_validation_v5`
 **Claims 1–10:** Inherited and reformulated from v4.3
 **Claims 11–14:** New ICI claims added in v5.0
-**Last updated:** 2026-03-10
+**Last updated:** 2026-03-12
 
 ---
 
@@ -73,9 +73,15 @@ bias.  This is expected and is not a code defect.  The high-power run
 |-------|------:|--------|
 | Model unit tests (`test_hsmm`, `test_target_set`, `test_recovery`) | 53 | 53/53 passed |
 | Control unit tests (`test_mpc`, `test_committor`) | 2 | 2/2 passed |
-| Inference unit tests (`test_ici`, `test_imm`, `test_mode_c`) | 4 | 4/4 passed |
+| Inference unit tests (`test_ici`, `test_imm`, `test_mode_c`) | 18 | 18/18 passed |
 | Packaging tests (`test_packaging`) | 2 | 2/2 passed |
-| **Total pytest** | **61** | **61/61 passed** |
+| Fisher trace tests (`test_mode_c_fisher`) | 11 | 11/11 passed |
+| Stability check tests (`test_stability_check`) | 7 | 7/7 passed |
+| Stage 08 ablation tests (`test_stage_08`) | 5 | 5/5 passed |
+| Stage 09 baseline tests (`test_stage_09`) | 6 | 6/6 passed |
+| Stage 10 Mode B sweep tests (`test_stage_10`) | 7 | 7/7 passed |
+| Stage 11 invariant set tests (`test_stage_11`) | 8 | 8/8 passed |
+| **Total pytest** | **119** | **119/119 passed** |
 | Standard profile (T=128, 2 seeds, 12 ep/seed) | — | 86/86 checks passed |
 | Extended profile (T=256, 3 seeds, 20 ep/seed) | — | 98/98 checks passed |
 

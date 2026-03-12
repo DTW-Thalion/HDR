@@ -40,7 +40,7 @@ VALIDATION_CONFIG: dict[str, Any] = {
     # Dynamics
     "rho_reference": [0.72, 0.96, 0.55],
     "max_dwell_len": 128,
-    "model_mismatch_bound": 0.20,
+    "model_mismatch_bound": 0.347,
     # Target set
     "kappa_lo": 0.55,
     "kappa_hi": 0.75,

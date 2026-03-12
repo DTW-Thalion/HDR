@@ -155,6 +155,24 @@ def test_brier_reliability_perfect_calibration():
     assert result["reliability"] < 1e-9
 
 
+def test_brier_reliability_normalisation_is_1_over_N():
+    """Confirm reliability uses 1/N weighting, not 1/M (manuscript bug check)."""
+    # Construct a two-bin scenario with known weights
+    # Bin 0: 90 samples, perfect calibration (p_bar=0.1, o_bar=0.1)
+    # Bin 1: 10 samples, miscalibrated (p_bar=0.9, o_bar=0.5)
+    y_true = np.array([0]*81 + [1]*9 + [0]*5 + [1]*5, dtype=float)
+    y_prob = np.array([0.1]*90 + [0.9]*10, dtype=float)
+    result = brier_reliability(y_true, y_prob, n_bins=10)
+    # With 1/N: reliability = (90/100)*(0.1-0.1)^2 + (10/100)*(0.9-0.5)^2
+    #                       = 0 + 0.1 * 0.16 = 0.016
+    # With 1/M=1/10: reliability = (90/10)*(0) + (10/10)*(0.16) = 0.16
+    expected_1_over_N = 10/100 * (0.9 - 0.5)**2   # = 0.016
+    assert abs(result["reliability"] - expected_1_over_N) < 0.01, (
+        f"Normalisation is 1/M (got {result['reliability']:.4f}), "
+        f"expected 1/N ≈ {expected_1_over_N:.4f}"
+    )
+
+
 def test_isotonic_calibrate_and_apply():
     """Calibration map should be monotone and apply_calibration returns array."""
     rng = np.random.default_rng(0)

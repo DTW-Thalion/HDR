@@ -248,7 +248,7 @@ The ICI (`inference/ici.py`) defines three conditions for activating Mode C:
 
 Key ICI quantities:
 - `T_k^eff = T * π_k * (1 - p_miss) * (1 - ρ_k)` — effective sample count (Prop 9.2)
-- `p_A^robust = p_A_nominal - k_calib * R_Brier` — calibration-adjusted Mode A probability
+- `p_A^robust = p_A_nominal + k_calib * R_Brier` — calibration-adjusted Mode A probability
 - `ω_min = omega_min_factor * T_k^eff` — minimum viable probability threshold
 
 ### Control hierarchy

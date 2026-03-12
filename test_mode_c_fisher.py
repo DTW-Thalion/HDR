@@ -102,6 +102,24 @@ def test_dither_policy_shape():
     assert u_c.shape == (m,)
 
 
+def test_fisher_trace_non_isotropic():
+    """Verify compute_fisher_trace handles non-isotropic Q_w correctly.
+
+    The Kronecker formula gives:
+        tr(F^(1)) = (u^T Q_w^{-1} u) * n_state
+    which differs from the isotropic simplification tr(Q_w^{-1}) * ||u||^2.
+    """
+    Q_w = np.diag([1.0, 4.0, 9.0])  # non-isotropic
+    u = np.array([1.0, 0.0, 0.0])
+    n_state = 3
+    trace_val = compute_fisher_trace(u, Q_w, n_state=n_state)
+    # General Kronecker formula: (u^T Q_w^{-1} u) * n = (1.0) * 3 = 3.0
+    expected = float(u @ np.linalg.inv(Q_w) @ u) * n_state
+    assert abs(trace_val - expected) < 1e-6, (
+        f"Expected Kronecker formula result {expected:.4f}, got {trace_val:.4f}"
+    )
+
+
 def test_accumulated_fisher_lower_bound_monotone_in_T_C():
     """Lower bound should increase monotonically with T_C."""
     n = 4
