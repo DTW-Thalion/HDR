@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This repository is an **in-silico validation suite** for the **Homeodynamic Remediation Framework (HDR) v5.0** — a multi-mode adaptive control system for constrained stochastic linear dynamical systems (SLDS). The framework validates mathematical properties, implementation correctness, and empirical performance across synthetic physiological scenarios.
+This repository is an **in-silico validation suite** for the **Homeodynamic Remediation Framework (HDR) v7.0** — a multi-mode adaptive control system for constrained stochastic linear dynamical systems (SLDS). The framework validates mathematical properties, implementation correctness, and empirical performance across synthetic physiological scenarios.
 
 HDR models a latent physiological state (e.g., neuroendocrine system) with K discrete operating modes ("basins") and switches between three control strategies based on inference quality:
 
@@ -16,25 +16,50 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 
 ```
 /home/user/HDR/
-├── hdr_validation/              # Python package (control, inference, model)
-├── control/                     # Control policy subpackage
-│   ├── lqr.py                   # DLQR, committor calculations, value iteration
-│   ├── mode_b.py                # Structured exploration control (Mode B)
-│   ├── mode_c.py                # Information-maximizing dither control (Mode C)
-│   └── mpc.py                   # Model Predictive Control (Mode A)
-├── inference/                   # Inference/estimation subpackage
-│   ├── ici.py                   # Inference-Control Interface (ICI) — core ICI conditions
-│   ├── imm.py                   # Interacting Multiple Model filter
-│   └── kalman.py                # Kalman filtering
-├── model/                       # System model subpackage
-│   ├── slds.py                  # SLDS model factory (BasinModel, EvaluationModel)
-│   ├── hsmm.py                  # Hidden Semi-Markov dwell models
-│   ├── coherence.py             # State coherence metrics
-│   ├── recovery.py              # Recovery trajectory analysis
-│   ├── safety.py                # Safety analysis tools
-│   └── target_set.py            # Target set geometry (box/ellipsoidal)
+├── hdr_validation/              # Python package (control, inference, model, identification)
+│   ├── control/                 # Control policy subpackage
+│   │   ├── lqr.py               # DLQR, committor calculations, value iteration, committor_with_jumps
+│   │   ├── mode_b.py            # Structured exploration control (Mode B)
+│   │   ├── mode_c.py            # Information-maximizing dither control (Mode C)
+│   │   ├── mimpc.py             # Mixed-Integer MPC (v7.0)
+│   │   ├── supervisor.py        # Extended 8-branch supervisor (v7.0)
+│   │   └── mpc.py               # Model Predictive Control (Mode A), solve_mode_a_unstable, solve_mode_a_irr
+│   ├── inference/               # Inference/estimation subpackage
+│   │   ├── ici.py               # Inference-Control Interface (ICI) — core ICI conditions
+│   │   ├── imm.py               # IMM filter + RegionConditionedIMM, FactoredMultiSiteIMM, MultiRateIMM (v7.0)
+│   │   ├── kalman.py            # Kalman filtering
+│   │   ├── particle.py          # Particle filter / SMC (v7.0)
+│   │   ├── variational.py       # Variational SLDS inference (v7.0)
+│   │   └── population.py        # Population-prior basin assignment (v7.0)
+│   ├── model/                   # System model subpackage
+│   │   ├── slds.py              # SLDS model factory (BasinModel, EvaluationModel)
+│   │   ├── hsmm.py              # Hidden Semi-Markov dwell models
+│   │   ├── coherence.py         # State coherence metrics
+│   │   ├── recovery.py          # Recovery trajectory analysis
+│   │   ├── safety.py            # Safety analysis tools
+│   │   ├── target_set.py        # Target set geometry (box/ellipsoidal)
+│   │   ├── extensions.py        # v7.0 structural extensions (basin classifier, PWA, jump-diffusion, etc.)
+│   │   ├── adaptive.py          # Forgetting-factor RLS, drift detection (v7.0)
+│   │   └── multirate.py         # Multi-rate observer, delay augmentation (v7.0)
+│   ├── identification/          # v7.0 identification subpackage
+│   │   ├── hierarchical.py      # Hierarchical empirical-Bayes coupling estimation
+│   │   ├── boed.py              # Bayesian Optimal Experimental Design
+│   │   ├── committor_recovery.py # Committor recovery via kernel regression
+│   │   ├── transition_rates.py  # Transition rate estimation
+│   │   ├── population_planning.py # Population-prior treatment planning
+│   │   ├── tau_estimation.py    # Tau burden estimation
+│   │   └── risk_information.py  # Risk-information frontier
+│   └── stages/                  # Stage scripts for stages 08–15
+│       ├── stage_08_ablation.py
+│       ├── stage_09_baselines.py
+│       ├── stage_10_mode_b_sweep.py
+│       ├── stage_11_invariant_set.py
+│       ├── stage_12_hierarchical.py  # v7.0
+│       ├── stage_13_inference_backbone.py  # v7.0
+│       ├── stage_14_population_planning.py  # v7.0
+│       └── stage_15_proxy_composite.py  # v7.0
 ├── results/                     # Experiment outputs (auto-generated)
-│   ├── stage_00/ … stage_07/    # Per-stage result artifacts
+│   ├── stage_00/ … stage_15/    # Per-stage result artifacts
 │   └── stage_03b/, stage_03c/   # Sub-stage artifacts
 ├── stage01_math_checks.py       # Stage 01: Mathematical validation
 ├── stage02_generator.py         # Stage 02: Synthetic dataset generation
@@ -43,12 +68,12 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 ├── stage05_mode_b.py            # Stage 05: Mode B validation
 ├── stage06_coherence.py         # Stage 06: State coherence
 ├── stage07_robustness.py        # Stage 07: Robustness sweeps
-├── test_*.py                    # Pytest test modules (9 files)
+├── test_*.py                    # Pytest test modules (24 files)
 ├── checkpointing.py             # Experiment state tracking + checkpoint recovery
 ├── cli.py                       # Command-line argument parsing
 ├── common.py                    # Shared utilities: chance-constraint tightening, risk scoring
 ├── ground_truth.py              # Synthetic environment simulator
-├── run_all.py                   # Orchestration script
+├── run_all.py                   # Orchestration script (stages 01–15)
 ├── runtime.py                   # Experiment execution framework
 ├── specification.py             # Configuration composition + observation scheduling
 ├── utils.py                     # Atomic file I/O, directory management
@@ -61,7 +86,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 └── config (N).json              # Parameter sweep variants (N = 1–58)
 ```
 
-**Important**: `hdr_validation/` is a proper Python package directory containing `control/`, `inference/`, `model/`, `utils.py`, `specification.py`, and `packaging.py`. Tests and scripts import the package as `hdr_validation.control.mpc`, `hdr_validation.inference.ici`, etc.
+**Important**: `hdr_validation/` is a proper Python package directory containing `control/`, `inference/`, `model/`, `identification/` (v7.0), `stages/`, `utils.py`, `specification.py`, and `packaging.py`. Tests and scripts import the package as `hdr_validation.control.mpc`, `hdr_validation.inference.ici`, `hdr_validation.identification.hierarchical`, etc.
 
 ---
 
@@ -71,12 +96,21 @@ All production code imports via the `hdr_validation` package namespace:
 
 ```python
 from hdr_validation.control.mpc import solve_mode_a
-from hdr_validation.control.lqr import dlqr, committor
+from hdr_validation.control.lqr import dlqr, committor, committor_with_jumps
+from hdr_validation.control.mimpc import solve_mixed_integer_mpc, CumulativeExposureConstraint
+from hdr_validation.control.supervisor import ExtendedSupervisor
 from hdr_validation.inference.ici import compute_ici_state, compute_T_k_eff
-from hdr_validation.inference.imm import IMM
+from hdr_validation.inference.imm import IMMFilter, RegionConditionedIMM
+from hdr_validation.inference.particle import ParticleFilter
+from hdr_validation.inference.variational import VariationalSLDS
+from hdr_validation.inference.population import PopulationPriorAssignment
 from hdr_validation.model.slds import make_evaluation_model, BasinModel
 from hdr_validation.model.target_set import build_target_set, TargetSet
 from hdr_validation.model.hsmm import DwellModel
+from hdr_validation.model.extensions import BasinClassifier, JumpDiffusion, PWACoupling
+from hdr_validation.model.adaptive import FFRLSEstimator, DriftDetector
+from hdr_validation.identification.hierarchical import HierarchicalCouplingEstimator
+from hdr_validation.identification.boed import BOEDEstimator
 from hdr_validation.utils import atomic_write_json, ensure_dir, seed_everything
 from hdr_validation.packaging import zip_paths
 ```
@@ -105,15 +139,15 @@ python run_all.py --profiles smoke standard extended validation
 ### Selective stage execution
 
 ```bash
-python run_all.py --profiles smoke --stages 03,04 --force    # Force-rerun stages 3 & 4
+python run_all.py --profiles smoke --stages 03 04 --force    # Force-rerun stages 3 & 4
 python run_all.py --stages 01 03b 03c                        # Multiple stages
+python run_all.py --stages 12 13 14 15                       # v7.0 stages only
 ```
 
 ### Stage IDs
 
 | ID   | Script                    | Description                              |
 |------|---------------------------|------------------------------------------|
-| 00   | (setup)                   | Environment setup and sanity checks      |
 | 01   | `stage01_math_checks.py`  | Mathematical validation (τ̃, committor)   |
 | 02   | `stage02_generator.py`    | Synthetic dataset generation             |
 | 03   | (IMM inference)           | Mode identification and calibration      |
@@ -123,6 +157,14 @@ python run_all.py --stages 01 03b 03c                        # Multiple stages
 | 05   | `stage05_mode_b.py`       | Mode B structured exploration            |
 | 06   | `stage06_coherence.py`    | State coherence checks                   |
 | 07   | `stage07_robustness.py`   | Robustness across parameter sweeps       |
+| 08   | `stage_08_ablation.py`    | Ablation study                           |
+| 09   | `stage_09_baselines.py`   | Baseline comparison                      |
+| 10   | `stage_10_mode_b_sweep.py` | Mode B FP/FN sweep                      |
+| 11   | `stage_11_invariant_set.py` | Riccati invariant set verification     |
+| 12   | `stage_12_hierarchical.py` | Hierarchical coupling estimation (v7.0) |
+| 13   | `stage_13_inference_backbone.py` | Inference backbone benchmark (v7.0) |
+| 14   | `stage_14_population_planning.py` | Population planning (v7.0)         |
+| 15   | `stage_15_proxy_composite.py` | Proxy composite estimation (v7.0)    |
 
 ---
 
@@ -211,17 +253,32 @@ def test_mpc_returns_bounded_control():
 
 ### Test files
 
-| File                  | Tests                                  |
-|-----------------------|----------------------------------------|
-| `test_packaging.py`   | Zip archive creation                   |
-| `test_ici.py`         | ICI state computation and bounds       |
-| `test_imm.py`         | IMM inference filter                   |
-| `test_mpc.py`         | MPC/Mode A control bounds              |
-| `test_mode_c.py`      | Mode C dither injection                |
-| `test_hsmm.py`        | HSMM dwell distribution models         |
-| `test_target_set.py`  | Target set geometry                    |
-| `test_committor.py`   | Committor BVP solution                 |
-| `test_recovery.py`    | Recovery trajectory analysis           |
+| File                      | Tests                                          |
+|---------------------------|-------------------------------------------------|
+| `test_packaging.py`       | Zip archive creation                            |
+| `test_ici.py`             | ICI state computation and bounds                |
+| `test_imm.py`             | IMM inference filter                            |
+| `test_mpc.py`             | MPC/Mode A control bounds                       |
+| `test_mode_c.py`          | Mode C dither injection                         |
+| `test_mode_c_fisher.py`   | Mode C Fisher information proxy                 |
+| `test_hsmm.py`            | HSMM dwell distribution models                  |
+| `test_target_set.py`      | Target set geometry                             |
+| `test_committor.py`       | Committor BVP solution                          |
+| `test_recovery.py`        | Recovery trajectory analysis                    |
+| `test_stability_check.py` | Basin stability classification                  |
+| `test_stage_08.py`        | Stage 08 ablation study                         |
+| `test_stage_09.py`        | Stage 09 baseline comparison                    |
+| `test_stage_10.py`        | Stage 10 Mode B sweep                           |
+| `test_stage_11.py`        | Stage 11 invariant set                          |
+| `test_extensions.py`      | v7.0 model extensions (25 tests)                |
+| `test_adaptive.py`        | FF-RLS and drift detection (v7.0)               |
+| `test_multirate.py`       | Multi-rate observation (v7.0)                   |
+| `test_mimpc.py`           | Mixed-integer MPC (v7.0)                        |
+| `test_supervisor.py`      | Extended supervisor 8-branch logic (v7.0)       |
+| `test_particle.py`        | Particle filter / SMC (v7.0)                    |
+| `test_variational.py`     | Variational SLDS inference (v7.0)               |
+| `test_identification.py`  | Identification subpackage (v7.0, 15 tests)      |
+| `test_committor_jump.py`  | Committor with jumps (v7.0)                     |
 
 ---
 
@@ -365,14 +422,20 @@ results/stage_03b/smoke/ici_diagnostic/
 
 ## Claim Validation
 
-The suite validates 14 claims (Claims 1–10 inherited from v4.3, Claims 11–14 new in v5.0):
+The suite validates 32 claims across v5.0 and v7.0:
 
 - **Claims 1–4**: ICI correctness, Mode A improvement, τ̃ correlation, chance-constraint calibration
 - **Claims 5–6**: ISS scaling, stability under drift
 - **Claims 7–8**: Mode B improvement and DP approximation quality
 - **Claims 9–10**: Coherence penalty, identifiability improvement
 - **Claims 11–14**: ICI regime identification, Mode C Fisher improvement, p_A^robust FP reduction, compound bound correctness
+- **Claims 15–18** (v7.0): Basin classification, reversible/irreversible partition, PWA coupling, multi-site Gershgorin bounds
+- **Claims 19–22** (v7.0): Jump-diffusion, cumulative exposure, state-conditioned coupling, modular expansion
+- **Claims 23–26** (v7.0): FF-RLS drift tracking, multi-rate observation, MI-MPC binary constraints, extended supervisor
+- **Claims 27–28** (v7.0): Particle filter consistency, hierarchical coupling convergence
+- **Claims 29–32** (v7.0): B_k sample complexity, basin boundary convergence, population planning, proxy-composite estimation
 
+Claims 1–14 are evaluated by stages 01–11; Claims 15–32 by stages 12–15.
 A claim is marked `Supported` only when it passes its criterion in both smoke and standard profiles.
 
 See `CLAIM_CRITERIA.md` for full criterion definitions and `CLAIM_MATRIX.md` for current status.

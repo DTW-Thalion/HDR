@@ -24,7 +24,7 @@ python run_all.py --resume --skip-done
 Selective re-run:
 
 ```bash
-python run_all.py --profiles smoke --stages 03,04 --force
+python run_all.py --profiles smoke --stages 03 04 --force
 ```
 
 ## No internet / no external downloads
