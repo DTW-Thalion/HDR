@@ -5,35 +5,60 @@
       "ci_lo": 0.0618,
       "ci_hi": 0.0886,
       "win_rate": 1.0,
-      "N_mal": 6
+      "N_mal": 6,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.3125,
+        "coherence_mean_coupling": 0.007951442285156254,
+        "kappa_hat_mean": 0.6202421875
+      }
     },
     "mpc_only": {
       "mean_gain": 0.0753,
       "ci_lo": 0.0633,
       "ci_hi": 0.09,
       "win_rate": 1.0,
-      "N_mal": 6
+      "N_mal": 6,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.0,
+        "coherence_mean_coupling": 0.0,
+        "kappa_hat_mean": 0.6202421875
+      }
     },
     "mpc_plus_surrogate": {
       "mean_gain": 0.0737,
       "ci_lo": 0.0618,
       "ci_hi": 0.0886,
       "win_rate": 1.0,
-      "N_mal": 6
+      "N_mal": 6,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.0,
+        "coherence_mean_coupling": 0.0,
+        "kappa_hat_mean": 0.6202421875
+      }
     },
     "mpc_plus_coherence": {
       "mean_gain": 0.0753,
       "ci_lo": 0.0633,
       "ci_hi": 0.09,
       "win_rate": 1.0,
-      "N_mal": 6
+      "N_mal": 6,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.3125,
+        "coherence_mean_coupling": 0.007951442285156254,
+        "kappa_hat_mean": 0.6202421875
+      }
     },
     "hdr_no_calib": {
       "mean_gain": 0.0737,
       "ci_lo": 0.0618,
       "ci_hi": 0.0886,
       "win_rate": 1.0,
-      "N_mal": 6
+      "N_mal": 6,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.28125,
+        "coherence_mean_coupling": 0.007253906250000003,
+        "kappa_hat_mean": 0.6296875000000001
+      }
     }
   },
   "n_seeds": 2,
@@ -41,5 +66,7 @@
   "T": 32,
   "total_maladaptive_episodes": 6,
   "results_are_valid": true,
-  "validity_note": "N_mal=6: valid"
+  "validity_note": "N_mal=6: valid",
+  "ablation_criterion_met": false,
+  "ablation_criterion_note": "hdr_full (+0.0737) < mpc_only (+0.0753) \u2014 EXPECTED_AT_SHORT_T: tau-tilde weight w_tau=6.38 penalises recovery attempts at T=32 before escape benefit is realised. Criterion expected to pass at T>=128. Production run required (T=256, n_seeds=20, n_ep=30)."
 }

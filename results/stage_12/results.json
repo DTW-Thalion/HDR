@@ -1,0 +1,24 @@
+{
+  "checks": [
+    {
+      "check": "error_decreases_with_T_p",
+      "passed": true,
+      "value": "1.00",
+      "note": "5/5 patients show decrease"
+    },
+    {
+      "check": "T_p_0_equals_group_mean",
+      "passed": true,
+      "value": "error=0.000000",
+      "note": "Graceful degradation check"
+    },
+    {
+      "check": "sample_complexity_scaling",
+      "passed": true,
+      "value": "N_coarse=19173, N_fine=76691",
+      "note": "Finer accuracy requires more samples"
+    }
+  ],
+  "n_patients": 5,
+  "elapsed": 0.00072669700057304
+}

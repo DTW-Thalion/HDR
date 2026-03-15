@@ -1,0 +1,23 @@
+{
+  "checks": [
+    {
+      "check": "pf_ess_above_threshold",
+      "passed": true,
+      "value": "50.0",
+      "note": "threshold=16.7"
+    },
+    {
+      "check": "pf_accuracy_nontrivial",
+      "passed": true,
+      "value": "PF=0.33, IMM=0.33",
+      "note": "Both backbones run successfully"
+    },
+    {
+      "check": "vslds_runs_successfully",
+      "passed": "True",
+      "value": "ELBO=52.16",
+      "note": "Variational SLDS execution check"
+    }
+  ],
+  "elapsed": 1.1999091140005476
+}
