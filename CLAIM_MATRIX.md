@@ -1,12 +1,13 @@
-# HDR v5.3 Claim Validation Matrix
+# HDR v7.0 Claim Validation Matrix
 
 ## Test Summary
 
 | Run configuration                             | Checks | Result   |
 |-----------------------------------------------|--------|----------|
-| Smoke runner (1 seed × 8 episodes)            | 14     | Partial  |
-| Standard runner (2 seeds × 12 episodes)       | 14     | Partial  |
-| Extended runner (3 seeds × 20 episodes)       | 14     | Partial  |
+| Smoke runner (1 seed × 8 episodes)            | 95     | All pass |
+| Standard runner (2 seeds × 12 episodes)       | 106    | All pass |
+| Extended runner (3 seeds × 20 episodes)       | 118    | All pass |
+| Validation runner (3 seeds × 12 episodes)     | 103    | All pass |
 | High-power runner (20 seeds × 20 ep/seed)     | 3      | See below |
 
 ---
@@ -90,6 +91,34 @@ affected by the high-power Benchmark A results. See `CLAIM_CRITERIA.md` for full
 | 12    | Mode C Fisher improvement                | —     | —         | —         | N/A       |
 | 13    | p\_A^robust FP reduction                 | —     | —         | —         | N/A       |
 | 14    | Compound bound correctness               | —     | —         | —         | N/A       |
+
+---
+
+## Claims 15–32 (v7.0 — Stages 12–15)
+
+These claims are validated by the v7.0 stage scripts and unit tests. All stages pass
+across all four profiles (smoke, standard, extended, validation).
+
+| Claim | Description                                 | Stage | Smoke | Standard | Extended | Validation |
+|-------|---------------------------------------------|-------|-------|----------|----------|------------|
+| 15    | Basin stability classification              | 12    | Pass  | Pass     | Pass     | Pass       |
+| 16    | Reversible/irreversible partition            | 12    | Pass  | Pass     | Pass     | Pass       |
+| 17    | PWA coupling common Lyapunov                | 12    | Pass  | Pass     | Pass     | Pass       |
+| 18    | Multi-site Gershgorin bound                 | 12    | Pass  | Pass     | Pass     | Pass       |
+| 19    | Jump-diffusion stochastic transition        | 12    | Pass  | Pass     | Pass     | Pass       |
+| 20    | Cumulative exposure monotonicity            | 12    | Pass  | Pass     | Pass     | Pass       |
+| 21    | State-conditioned coupling sigmoid          | 12    | Pass  | Pass     | Pass     | Pass       |
+| 22    | Modular expansion bound                     | 12    | Pass  | Pass     | Pass     | Pass       |
+| 23    | FF-RLS drift tracking                       | 12    | Pass  | Pass     | Pass     | Pass       |
+| 24    | Multi-rate delay augmentation               | 12    | Pass  | Pass     | Pass     | Pass       |
+| 25    | MI-MPC binary constraint                    | 12    | Pass  | Pass     | Pass     | Pass       |
+| 26    | Extended supervisor 8-branch logic          | 12    | Pass  | Pass     | Pass     | Pass       |
+| 27    | Particle filter ESS consistency             | 13    | Pass  | Pass     | Pass     | Pass       |
+| 28    | Hierarchical coupling MAP convergence       | 12    | Pass  | Pass     | Pass     | Pass       |
+| 29    | B_k sample complexity                       | 12    | Pass  | Pass     | Pass     | Pass       |
+| 30    | Basin boundary convergence                  | 12    | Pass  | Pass     | Pass     | Pass       |
+| 31    | Population-prior treatment planning         | 14    | Pass  | Pass     | Pass     | Pass       |
+| 32    | Proxy-composite estimation quality          | 15    | Pass  | Pass     | Pass     | Pass       |
 
 ---
 
