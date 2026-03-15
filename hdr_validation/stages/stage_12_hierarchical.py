@@ -18,10 +18,10 @@ ROOT = Path(__file__).parent.parent.parent
 
 def _make_config(n_patients: int = 10, T_p_values: list | None = None) -> dict[str, Any]:
     return {
-        "state_dim": 4,
-        "obs_dim": 8,
-        "control_dim": 4,
-        "disturbance_dim": 4,
+        "state_dim": 8,
+        "obs_dim": 16,
+        "control_dim": 8,
+        "disturbance_dim": 8,
         "K": 3,
         "rho_reference": [0.72, 0.96, 0.55],
         "max_dwell_len": 64,
