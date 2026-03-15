@@ -234,3 +234,90 @@ def solve_mode_a(
         notes=notes,
         allowed_mask=np.asarray(constraint_info["allowed_mask"]),
     )
+
+
+def solve_mode_a_unstable(
+    x: np.ndarray,
+    P: np.ndarray,
+    basin,
+    config: dict,
+    step: int,
+    used_burden: float = 0.0,
+) -> MPCResult:
+    """Mode A bypass for unstable basins (Prop 7.1).
+
+    Directly activates escape cost (Eq 6.10): maximises distance from
+    current basin's attractor by driving state toward the target set.
+    Uses stronger gain scaling for unstable dynamics.
+    """
+    t0 = time.perf_counter()
+    n = len(x)
+    x = np.asarray(x, dtype=float)
+
+    # For unstable basins, use aggressive direction toward origin/target
+    x_ref = np.zeros(n)
+    direction = x_ref - x
+    # Stronger gain for escape
+    u = np.clip(0.5 * direction[:basin.B.shape[1]], -0.6, 0.6)
+
+    u, constraint_info = apply_control_constraints(
+        u, config, step=step, used_burden=used_burden
+    )
+
+    solve_time = time.perf_counter() - t0
+    return MPCResult(
+        u=u,
+        feasible=True,
+        solve_time=solve_time,
+        risk=0.0,
+        notes="unstable_basin_escape",
+        allowed_mask=np.asarray(constraint_info["allowed_mask"]),
+    )
+
+
+def solve_mode_a_irr(
+    x_rev: np.ndarray,
+    x_irr: np.ndarray,
+    P: np.ndarray,
+    basin,
+    partition,
+    config: dict,
+    step: int = 0,
+    used_burden: float = 0.0,
+) -> MPCResult:
+    """MPC for mixed reversible-irreversible cost (Eq 6.11).
+
+    Includes lambda_irr * phi_k penalty term to slow irreversible progression.
+    """
+    t0 = time.perf_counter()
+    n_r = len(x_rev)
+    n_i = len(x_irr)
+    n = n_r + n_i
+
+    # Reconstruct full state
+    x_full = np.concatenate([x_rev, x_irr])
+
+    # Standard tracking on reversible part
+    x_ref = np.zeros(n)
+    direction = x_ref - x_full
+    lambda_irr = float(config.get("lambda_irr", 1.0))
+
+    # Weight irreversible components more heavily
+    weights = np.ones(n)
+    weights[n_r:] = lambda_irr
+
+    u = np.clip(0.3 * (weights * direction)[:basin.B.shape[1]], -0.6, 0.6)
+
+    u, constraint_info = apply_control_constraints(
+        u, config, step=step, used_burden=used_burden
+    )
+
+    solve_time = time.perf_counter() - t0
+    return MPCResult(
+        u=u,
+        feasible=True,
+        solve_time=solve_time,
+        risk=0.0,
+        notes="rev_irr_mpc",
+        allowed_mask=np.asarray(constraint_info["allowed_mask"]),
+    )

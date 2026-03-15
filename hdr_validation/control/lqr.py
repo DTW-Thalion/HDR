@@ -454,6 +454,40 @@ def compute_alpha_from_dare(
 # ──────────────────────────────────────────────────────────────────
 # Transient-MDP contraction coefficient (correct Bellman rate)
 # ──────────────────────────────────────────────────────────────────
+def committor_with_jumps(
+    P_smooth: np.ndarray,
+    P_cat: np.ndarray,
+    p_cat_vec: np.ndarray,
+    success_states: list[int],
+    failure_states: list[int],
+) -> np.ndarray:
+    """Solve committor BVP under composite transition matrix (Prop 5.19).
+
+    P_tilde[i,:] = (1-p_cat[i])*P_smooth[i,:] + p_cat[i]*P_cat[i,:]
+
+    Parameters
+    ----------
+    P_smooth : (n, n) smooth transition matrix
+    P_cat : (n, n) catastrophic transition matrix
+    p_cat_vec : (n,) per-state catastrophe probability
+    success_states, failure_states : boundary state lists
+
+    Returns
+    -------
+    q : (n,) committor values in [0, 1]
+    """
+    n = P_smooth.shape[0]
+    p_cat_vec = np.asarray(p_cat_vec, dtype=float)
+
+    # Build composite transition
+    P_tilde = np.zeros((n, n))
+    for i in range(n):
+        P_tilde[i, :] = (1.0 - p_cat_vec[i]) * P_smooth[i, :] + p_cat_vec[i] * P_cat[i, :]
+
+    # Solve committor on composite chain
+    return committor(P_tilde, failure_states, success_states)
+
+
 def transient_contraction_beta(Q_transient: np.ndarray) -> float:
     """Bellman contraction rate for escape-probability value iteration.
 
