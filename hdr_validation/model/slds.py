@@ -20,6 +20,13 @@ class BasinModel:
     c: np.ndarray
     E: np.ndarray
     rho: float
+    stability_class: str = "stable"  # 'stable' or 'unstable' (v7.0)
+    rev_irr_partition: Any = None
+    pwa_regions: Any = None
+    jump_params: Any = None
+    multisite_coupling: Any = None
+    adaptive_params: Any = None
+    cumulative_exposure_params: Any = None
 
 
 @dataclass
@@ -128,6 +135,10 @@ def make_evaluation_model(config: dict[str, Any], rng: np.random.Generator, K: i
             DwellModel("poisson", {"mean": 5.0}, max_len=config["max_dwell_len"]),
             DwellModel("lognormal", {"mu": 2.4, "sigma": 0.55}, max_len=config["max_dwell_len"]),
         ]
+    # v7.0: classify basin stability and set stability_class
+    for basin in basins:
+        basin.stability_class = "stable" if basin.rho < 1.0 else "unstable"
+
     return EvaluationModel(
         basins=basins,
         transition=transition / transition.sum(axis=1, keepdims=True),
@@ -137,6 +148,59 @@ def make_evaluation_model(config: dict[str, Any], rng: np.random.Generator, K: i
         control_dim=u_dim,
         disturbance_dim=d_dim,
     )
+
+
+def make_extended_evaluation_model(
+    config: dict[str, Any],
+    rng: np.random.Generator,
+    extensions: dict[str, Any] | None = None,
+    K: int | None = None,
+) -> EvaluationModel:
+    """Create evaluation model with v7.0 extensions.
+
+    When extensions is None or empty, produces identical output to
+    make_evaluation_model (Prop 9.2 backward compatibility).
+
+    Parameters
+    ----------
+    config : configuration dict
+    rng : random generator
+    extensions : dict of active extensions (e.g. {'rev_irr': True, 'pwa': True})
+    K : override number of basins
+    """
+    model = make_evaluation_model(config, rng, K=K)
+
+    if not extensions:
+        return model
+
+    # Apply extensions to each basin
+    for k, basin in enumerate(model.basins):
+        if extensions.get("rev_irr"):
+            n_irr = int(config.get("n_irr", 2))
+            basin.rev_irr_partition = {"n_r": model.state_dim - n_irr, "n_i": n_irr}
+
+        if extensions.get("pwa"):
+            basin.pwa_regions = {"R_k": int(config.get("R_k_regions", 2))}
+
+        if extensions.get("jump"):
+            basin.jump_params = {
+                "lambda_cat_max": float(config.get("lambda_cat_max", 0.05)),
+                "dt": float(config.get("dt_minutes", 30)) / 60.0,
+            }
+
+        if extensions.get("adaptive"):
+            basin.adaptive_params = {
+                "drift_rate": float(config.get("drift_rate", 0.001)),
+                "lambda_ff": float(config.get("lambda_ff", 0.98)),
+            }
+
+        if extensions.get("cumulative_exposure"):
+            basin.cumulative_exposure_params = {
+                "n_channels": int(config.get("n_cum_exp", 1)),
+                "xi_max": float(config.get("xi_max", 100.0)),
+            }
+
+    return model
 
 
 def pooled_basin(eval_model: EvaluationModel) -> BasinModel:

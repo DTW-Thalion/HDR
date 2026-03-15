@@ -1,45 +1,72 @@
 {
   "variants": {
     "hdr_full": {
-      "mean_gain": 0.0737,
-      "ci_lo": 0.0618,
-      "ci_hi": 0.0886,
+      "mean_gain": 0.0768,
+      "ci_lo": 0.0749,
+      "ci_hi": 0.0787,
       "win_rate": 1.0,
-      "N_mal": 6
+      "N_mal": 170,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.30078125,
+        "coherence_mean_coupling": 0.007346620051990467,
+        "kappa_hat_mean": 0.6236088867187499
+      }
     },
     "mpc_only": {
-      "mean_gain": 0.0753,
-      "ci_lo": 0.0633,
-      "ci_hi": 0.09,
+      "mean_gain": 0.0748,
+      "ci_lo": 0.0727,
+      "ci_hi": 0.0768,
       "win_rate": 1.0,
-      "N_mal": 6
+      "N_mal": 170,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.0,
+        "coherence_mean_coupling": 0.0,
+        "kappa_hat_mean": 0.6236088867187499
+      }
     },
     "mpc_plus_surrogate": {
-      "mean_gain": 0.0737,
-      "ci_lo": 0.0618,
-      "ci_hi": 0.0886,
+      "mean_gain": 0.0768,
+      "ci_lo": 0.0749,
+      "ci_hi": 0.0787,
       "win_rate": 1.0,
-      "N_mal": 6
+      "N_mal": 170,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.0,
+        "coherence_mean_coupling": 0.0,
+        "kappa_hat_mean": 0.6236088867187499
+      }
     },
     "mpc_plus_coherence": {
-      "mean_gain": 0.0753,
-      "ci_lo": 0.0633,
-      "ci_hi": 0.09,
+      "mean_gain": 0.0748,
+      "ci_lo": 0.0727,
+      "ci_hi": 0.0768,
       "win_rate": 1.0,
-      "N_mal": 6
+      "N_mal": 170,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.30078125,
+        "coherence_mean_coupling": 0.007346620051990467,
+        "kappa_hat_mean": 0.6236088867187499
+      }
     },
     "hdr_no_calib": {
-      "mean_gain": 0.0737,
-      "ci_lo": 0.0618,
-      "ci_hi": 0.0886,
+      "mean_gain": 0.0768,
+      "ci_lo": 0.0749,
+      "ci_hi": 0.0787,
       "win_rate": 1.0,
-      "N_mal": 6
+      "N_mal": 170,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.28515625,
+        "coherence_mean_coupling": 0.006687575151384085,
+        "kappa_hat_mean": 0.6331054687500002
+      }
     }
   },
-  "n_seeds": 2,
-  "n_ep_per_seed": 3,
-  "T": 32,
-  "total_maladaptive_episodes": 6,
+  "n_seeds": 20,
+  "n_ep_per_seed": 30,
+  "T": 256,
+  "total_maladaptive_episodes": 170,
   "results_are_valid": true,
-  "validity_note": "N_mal=6: valid"
+  "validity_note": "N_mal=170: valid",
+  "ablation_criterion_met": true,
+  "ablation_criterion_note": "hdr_full (+0.0768) >= mpc_only (+0.0748)"
 }

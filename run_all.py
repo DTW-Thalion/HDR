@@ -30,7 +30,7 @@ MANIFEST_PATH = ROOT / "run_all_manifest.json"
 
 # ── Stage metadata ─────────────────────────────────────────────────────────────
 
-STAGE_SEQUENCE = ["01", "02", "03", "03b", "03c", "04", "05", "06", "07", "08", "09", "10", "11"]
+STAGE_SEQUENCE = ["01", "02", "03", "03b", "03c", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15"]
 
 STAGE_LABELS = {
     "01":  "Stage 01 — Mathematical Checks",
@@ -46,6 +46,10 @@ STAGE_LABELS = {
     "09":  "Stage 09 — Baseline Comparison",
     "10":  "Stage 10 — Mode B FP/FN Sweep",
     "11":  "Stage 11 — Riccati Invariant Set",
+    "12":  "Stage 12 — Hierarchical Coupling",
+    "13":  "Stage 13 — Inference Backbone",
+    "14":  "Stage 14 — Population Planning",
+    "15":  "Stage 15 — Proxy Composite",
 }
 
 # Stages that must run before a given stage (dependency order)
@@ -127,6 +131,36 @@ def _call_stage_10(fast: bool = False) -> None:
     run_stage_10(N_sim=N_sim, T=50, fast_mode=False)
 
 
+def _call_stage_12(fast: bool = False) -> None:
+    """Run Stage 12 hierarchical coupling estimation."""
+    from hdr_validation.stages.stage_12_hierarchical import run_stage_12
+    n_patients = 5 if fast else 10
+    T_p_values = [0, 10, 50] if fast else [0, 10, 50, 200]
+    run_stage_12(n_patients=n_patients, T_p_values=T_p_values, fast_mode=fast)
+
+
+def _call_stage_13(fast: bool = False) -> None:
+    """Run Stage 13 inference backbone benchmark."""
+    from hdr_validation.stages.stage_13_inference_backbone import run_stage_13
+    n_particles = 50 if fast else 100
+    n_scenarios = 3 if fast else 5
+    run_stage_13(n_particles=n_particles, n_scenarios=n_scenarios, fast_mode=fast)
+
+
+def _call_stage_14(fast: bool = False) -> None:
+    """Run Stage 14 population planning benchmark."""
+    from hdr_validation.stages.stage_14_population_planning import run_stage_14
+    n_patients = 10 if fast else 20
+    run_stage_14(n_patients=n_patients, fast_mode=fast)
+
+
+def _call_stage_15(fast: bool = False) -> None:
+    """Run Stage 15 proxy composite benchmark."""
+    from hdr_validation.stages.stage_15_proxy_composite import run_stage_15
+    n_scenarios = 3 if fast else 5
+    run_stage_15(n_scenarios=n_scenarios, fast_mode=fast)
+
+
 def _call_stage_11(fast: bool = False) -> None:
     """Run Stage 11 Riccati invariant set verification."""
     from hdr_validation.stages.stage_11_invariant_set import run_stage_11
@@ -164,6 +198,14 @@ def call_stage(mod: Any, stage_id: str, state: dict) -> None:
         _call_stage_10(fast=fast)
     elif stage_id == "11":
         _call_stage_11(fast=fast)
+    elif stage_id == "12":
+        _call_stage_12(fast=fast)
+    elif stage_id == "13":
+        _call_stage_13(fast=fast)
+    elif stage_id == "14":
+        _call_stage_14(fast=fast)
+    elif stage_id == "15":
+        _call_stage_15(fast=fast)
     else:
         raise ValueError(f"Unknown stage: {stage_id!r}")
 
@@ -207,7 +249,7 @@ def run_profile(
     stage_results: dict[str, list[dict]] = {}
 
     # Stages that are profile-independent (have their own simulation logic)
-    INDEPENDENT_STAGES = {"08", "09", "10", "11"}
+    INDEPENDENT_STAGES = {"08", "09", "10", "11", "12", "13", "14", "15"}
 
     for stage_id in full_sequence:
         label = STAGE_LABELS[stage_id]

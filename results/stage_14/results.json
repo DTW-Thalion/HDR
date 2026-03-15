@@ -1,0 +1,17 @@
+{
+  "checks": [
+    {
+      "check": "pop_prior_accuracy_60pct",
+      "passed": true,
+      "value": "1.00",
+      "note": "threshold=0.60"
+    },
+    {
+      "check": "pop_prior_better_than_random",
+      "passed": true,
+      "value": "acc=1.00 vs random=0.33",
+      "note": "Population prior should beat random"
+    }
+  ],
+  "elapsed": 0.0017341020002277219
+}

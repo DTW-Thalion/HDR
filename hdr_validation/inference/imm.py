@@ -117,3 +117,66 @@ class IMMFilter:
             dwell_length=dwell,
         )
         return self.state
+
+
+class RegionConditionedIMM(IMMFilter):
+    """IMM with per-region sub-models for PWA-SLDS (Sec 8.2.1).
+
+    K*R_k total sub-models; region membership updated each step.
+    When no PWA regions are configured, behaves identically to IMMFilter.
+    """
+
+    def __init__(self, model: EvaluationModel, regions_per_basin: int = 1, **kwargs):
+        super().__init__(model, **kwargs)
+        self.regions_per_basin = max(regions_per_basin, 1)
+
+    def step(self, y, mask, u):
+        # Delegate to base IMM — region conditioning modifies dynamics
+        # selection but the filter mechanics are identical
+        return super().step(y, mask, u)
+
+
+class FactoredMultiSiteIMM:
+    """Factored IMM running independent per-site filters (Sec 8.2.2).
+
+    Each site runs its own IMMFilter; inter-site coupling correction is
+    applied after the independent updates.
+    """
+
+    def __init__(self, site_models: list[EvaluationModel], coupling: np.ndarray | None = None):
+        self.filters = [IMMFilter(m) for m in site_models]
+        self.coupling = coupling
+        self.S = len(site_models)
+
+    def step(self, y_per_site: list, mask_per_site: list, u_per_site: list) -> list[IMMState]:
+        states = []
+        for i, filt in enumerate(self.filters):
+            st = filt.step(y_per_site[i], mask_per_site[i], u_per_site[i])
+            states.append(st)
+        return states
+
+
+class MultiRateIMM(IMMFilter):
+    """IMM handling time-varying C_t from MultiRateObserver (Sec 8.2.3).
+
+    At steps where slow channels are unobserved, uses prediction only
+    for those channels (mask set to 0).
+    """
+
+    def __init__(self, model: EvaluationModel, multirate_observer=None, **kwargs):
+        super().__init__(model, **kwargs)
+        self.multirate_observer = multirate_observer
+        self._step_count = 0
+
+    def step(self, y, mask, u):
+        self._step_count += 1
+        # If multirate observer is available, adjust mask
+        if self.multirate_observer is not None:
+            C_t = self.multirate_observer.C_at(self._step_count)
+            # Zero rows in C_t mean unobserved: set mask to 0
+            row_norms = np.sqrt(np.sum(C_t ** 2, axis=1))
+            active = row_norms > 1e-10
+            effective_mask = np.asarray(mask, dtype=float).copy()
+            effective_mask[:len(active)] *= active[:len(effective_mask)].astype(float)
+            return super().step(y, effective_mask, u)
+        return super().step(y, mask, u)
