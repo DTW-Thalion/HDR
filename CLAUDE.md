@@ -59,31 +59,18 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │       ├── stage_14_population_planning.py  # v7.0
 │       └── stage_15_proxy_composite.py  # v7.0
 ├── results/                     # Experiment outputs (auto-generated)
-│   ├── stage_00/ … stage_15/    # Per-stage result artifacts
+│   ├── stage_04/ … stage_15/    # Per-stage result artifacts
 │   └── stage_03b/, stage_03c/   # Sub-stage artifacts
-├── stage01_math_checks.py       # Stage 01: Mathematical validation
-├── stage02_generator.py         # Stage 02: Synthetic dataset generation
-├── stage03b_ici_diagnostic.py   # Stage 03b: ICI diagnostic pipeline
-├── stage03c_mode_c.py           # Stage 03c: Mode C validation
-├── stage05_mode_b.py            # Stage 05: Mode B validation
-├── stage06_coherence.py         # Stage 06: State coherence
-├── stage07_robustness.py        # Stage 07: Robustness sweeps
-├── test_*.py                    # Pytest test modules (24 files)
-├── checkpointing.py             # Experiment state tracking + checkpoint recovery
-├── cli.py                       # Command-line argument parsing
-├── common.py                    # Shared utilities: chance-constraint tightening, risk scoring
-├── ground_truth.py              # Synthetic environment simulator
+├── smoke_runner.py              # Smoke profile runner (stage functions + SMOKE_CONFIG)
+├── standard_runner.py           # Standard profile runner
+├── extended_runner.py           # Extended profile runner
+├── validation_runner.py         # Validation profile runner
+├── test_*.py                    # Pytest test modules (24 files, 211 tests)
 ├── run_all.py                   # Orchestration script (stages 01–15)
-├── runtime.py                   # Experiment execution framework
-├── specification.py             # Configuration composition + observation scheduling
-├── utils.py                     # Atomic file I/O, directory management
+├── plotting.py                  # Visualization utilities
 ├── config.json                  # Master configuration
-├── smoke.json                   # Smoke profile overrides
-├── standard.json                # Standard profile overrides
-├── extended.json                # Extended profile overrides
-├── validation.json              # Validation profile overrides
 ├── paper_defaults.json          # Reference parameter values from paper
-└── config (N).json              # Parameter sweep variants (N = 1–58)
+└── config (N).json              # Parameter sweep variants
 ```
 
 **Important**: `hdr_validation/` is a proper Python package directory containing `control/`, `inference/`, `model/`, `identification/` (v7.0), `stages/`, `utils.py`, `specification.py`, and `packaging.py`. Tests and scripts import the package as `hdr_validation.control.mpc`, `hdr_validation.inference.ici`, `hdr_validation.identification.hierarchical`, etc.
@@ -111,17 +98,12 @@ from hdr_validation.model.extensions import BasinClassifier, JumpDiffusion, PWAC
 from hdr_validation.model.adaptive import FFRLSEstimator, DriftDetector
 from hdr_validation.identification.hierarchical import HierarchicalCouplingEstimator
 from hdr_validation.identification.boed import BOEDEstimator
-from hdr_validation.utils import atomic_write_json, ensure_dir, seed_everything
+from hdr_validation.utils import ensure_dir, atomic_write_text
 from hdr_validation.packaging import zip_paths
+from hdr_validation.specification import observation_schedule, generate_observation
 ```
 
-Root-level modules (e.g., `checkpointing.py`, `common.py`, `specification.py`) use relative imports within stage scripts:
-
-```python
-from ..inference.ici import apply_calibration, compute_ici_state
-from ..model.slds import make_evaluation_model
-from .common import save_experiment_bundle
-```
+Stage logic for stages 01–07 lives in the profile runner modules (`smoke_runner.py`, `standard_runner.py`, etc.). Stages 08–15 are in `hdr_validation/stages/`.
 
 ---
 
@@ -148,15 +130,15 @@ python run_all.py --stages 12 13 14 15                       # v7.0 stages only
 
 | ID   | Script                    | Description                              |
 |------|---------------------------|------------------------------------------|
-| 01   | `stage01_math_checks.py`  | Mathematical validation (τ̃, committor)   |
-| 02   | `stage02_generator.py`    | Synthetic dataset generation             |
-| 03   | (IMM inference)           | Mode identification and calibration      |
-| 03b  | `stage03b_ici_diagnostic.py` | ICI calibration and regime boundaries |
-| 03c  | `stage03c_mode_c.py`      | Mode C validation                        |
-| 04   | (Mode A)                  | Mode A performance vs baselines          |
-| 05   | `stage05_mode_b.py`       | Mode B structured exploration            |
-| 06   | `stage06_coherence.py`    | State coherence checks                   |
-| 07   | `stage07_robustness.py`   | Robustness across parameter sweeps       |
+| 01   | (in profile runner)       | Mathematical validation (τ̃, committor)   |
+| 02   | (in profile runner)       | Synthetic dataset generation             |
+| 03   | (in profile runner)       | Mode identification and calibration      |
+| 03b  | (in profile runner)       | ICI calibration and regime boundaries    |
+| 03c  | (in profile runner)       | Mode C validation                        |
+| 04   | (in profile runner)       | Mode A performance vs baselines          |
+| 05   | (in profile runner)       | Mode B structured exploration            |
+| 06   | (in profile runner)       | State coherence checks                   |
+| 07   | (in profile runner)       | Robustness across parameter sweeps       |
 | 08   | `stage_08_ablation.py`    | Ablation study                           |
 | 09   | `stage_09_baselines.py`   | Baseline comparison                      |
 | 10   | `stage_10_mode_b_sweep.py` | Mode B FP/FN sweep                      |
@@ -172,12 +154,7 @@ python run_all.py --stages 12 13 14 15                       # v7.0 stages only
 
 ### Profile hierarchy
 
-Configs are composed from `config.json` (master defaults) + profile override (e.g., `smoke.json`). A config hash is computed for cache-key / checkpoint purposes.
-
-```python
-from hdr_validation.specification import compose_profile_config, config_hash
-cfg = compose_profile_config(project_root, profile_name="smoke")
-```
+Each profile runner (e.g., `smoke_runner.py`) defines its own config dict inline (e.g., `SMOKE_CONFIG`). The master defaults come from `config.json`.
 
 ### Key configuration parameters
 
@@ -354,25 +331,21 @@ ICI state → Mode selection → Control law
 
 ## Checkpointing and Resumability
 
-The `checkpointing.py` module provides a `RunManifest` class that tracks experiment state:
+`run_all.py` manages a JSON manifest (`run_all_manifest.json`) to track stage completion:
 
 ```python
-manifest = RunManifest(project_root)
-if manifest.should_skip(stage_id, profile_name, config_hash):
-    return  # Already completed with same config
-
-manifest.mark_running(stage_id, profile_name)
-try:
-    result = run_stage(...)
-    manifest.mark_completed(stage_id, profile_name, result)
-except Exception as e:
-    manifest.mark_failed(stage_id, profile_name, str(e))
+# In run_all.py:
+manifest = load_manifest()            # Load existing state
+is_done(manifest, profile, stage_id)  # Check if stage completed
+mark_done(manifest, profile, stage_id)  # Mark stage as done
+mark_failed(manifest, profile, stage_id)  # Mark stage as failed
+save_manifest(manifest)               # Persist to disk
 ```
 
-- Manifest stored as `run_manifest.json` in project root
-- Config hash ensures cache invalidation on parameter changes
-- Partial results flushed atomically after every seed/chunk
+- Manifest stored as `run_all_manifest.json` in project root
 - Use `--skip-done` flag to skip already-completed stages
+- Use `--resume` to load existing manifest state
+- Use `--force` to re-run regardless of manifest
 
 ---
 
@@ -382,11 +355,8 @@ All file writes use atomic operations (write to temp, then rename):
 
 ```python
 from hdr_validation.utils import (
-    atomic_write_json,   # JSON serialization
-    atomic_write_text,   # Plain text
-    atomic_save_npz,     # NumPy compressed arrays
+    atomic_write_text,   # Plain text (write-to-temp + rename)
     ensure_dir,          # mkdir -p
-    seed_everything,     # Set numpy + Python random seeds
 )
 ```
 
