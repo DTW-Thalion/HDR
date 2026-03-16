@@ -12,6 +12,7 @@ Usage:
     python run_all.py --stages 01 03b 03c          # selected stages, all profiles
     python run_all.py --resume --skip-done         # skip already-completed stages
     python run_all.py --stages 08 08b --run-tests  # run stages then pytest tests
+    python run_all.py --full-validation            # all 32 claims, highpower for 1-2
 """
 from __future__ import annotations
 
@@ -78,6 +79,19 @@ STAGE_TEST_FILES: dict[str, str] = {
     "10":  "test_stage_10.py",
     "11":  "test_stage_11.py",
     "16":  "test_stage_16.py",
+}
+
+# Claim-to-stage mapping (for --full-validation summary)
+CLAIM_STAGES: dict[int, list[str]] = {
+    1: ["04"], 2: ["04"], 3: ["01"], 4: ["01"],
+    5: ["01", "07"], 6: ["07"], 7: ["05"], 8: ["05"],
+    9: ["06", "08", "08b"], 10: ["03"], 11: ["03b"], 12: ["03c"],
+    13: ["03b", "10"], 14: ["01", "07"],
+    15: ["16"], 16: ["16"], 17: ["16"], 18: ["16"],
+    19: ["16"], 20: ["16"], 21: ["16"], 22: ["16"],
+    23: ["16"], 24: ["16"], 25: ["16"], 26: ["16"],
+    27: ["13"], 28: ["12"], 29: ["12"], 30: ["12"],
+    31: ["14"], 32: ["15"],
 }
 
 # ── Manifest (checkpoint) ──────────────────────────────────────────────────────
@@ -390,6 +404,264 @@ def run_profile(
     return stage_results
 
 
+# ── Full-validation mode ──────────────────────────────────────────────────────
+
+def _run_highpower_stage_04() -> dict[str, Any]:
+    """Run the highpower benchmark (Stage 04) and return a summary dict."""
+    from highpower_runner import run_highpower_benchmark
+    return run_highpower_benchmark()
+
+
+def _run_all_unit_tests() -> list[dict]:
+    """Run the full pytest suite (excluding production-scale tests).
+
+    Returns a list of check records.
+    """
+    import subprocess
+
+    cmd = [
+        sys.executable, "-m", "pytest",
+        str(ROOT), "-v", "--tb=short",
+        "-k", "not production",
+        "-q",
+    ]
+    print("\n  Running full pytest suite (excluding production-scale)...")
+    result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
+    print(result.stdout[-2000:] if len(result.stdout) > 2000 else result.stdout)
+    if result.stderr:
+        # Only print last portion of stderr to avoid noise
+        print(result.stderr[-1000:] if len(result.stderr) > 1000 else result.stderr)
+
+    passed = result.returncode == 0
+    return [{
+        "stage": "unit_tests",
+        "check": "pytest_full_suite",
+        "passed": passed,
+        "value": "all passed" if passed else f"FAILED (exit code {result.returncode})",
+        "note": "Full pytest suite (excl. production-scale)",
+    }]
+
+
+def run_full_validation(
+    force: bool = False,
+    skip_done: bool = False,
+    manifest: dict | None = None,
+) -> int:
+    """Run the complete validation covering all 32 claims.
+
+    Execution plan:
+      1. Extended profile for stages 01-03c, 05-07 (Claims 3-14)
+      2. Highpower benchmark for stage 04 (Claims 1-2, authoritative)
+      3. Stages 08-16 at production parameters (Claims 9, 13, 15-32)
+      4. Full pytest suite for unit-test-validated claims (15-32)
+
+    Returns number of failures.
+    """
+    if manifest is None:
+        manifest = {}
+
+    all_results: dict[str, dict[str, list[dict]]] = {}
+    t_total = time.perf_counter()
+
+    print("\n" + "=" * 62)
+    print("  FULL VALIDATION MODE — All 32 Claims")
+    print("=" * 62)
+
+    # ── Phase 1: Extended profile, stages 01-03c + 05-07 (Claims 3-14) ────
+    print("\n" + "#" * 62)
+    print("  Phase 1: Extended profile — Stages 01-03c, 05-07")
+    print("  (Claims 3-14: mathematical, inference, exploration,")
+    print("   coherence, robustness)")
+    print("#" * 62)
+
+    phase1_stages = ["01", "02", "03", "03b", "03c", "05", "06", "07"]
+    all_results["extended"] = run_profile(
+        profile="extended",
+        stages_to_run=phase1_stages,
+        force=force,
+        skip_done=skip_done,
+        manifest=manifest,
+        fast=False,
+        run_tests=False,
+    )
+
+    # ── Phase 2: Highpower benchmark for stage 04 (Claims 1-2) ────────────
+    print("\n" + "#" * 62)
+    print("  Phase 2: Highpower Benchmark A — Stage 04")
+    print("  (Claims 1-2: maladaptive-basin cost reduction, win rate)")
+    print("#" * 62)
+
+    hp_key = manifest_key("highpower", "04")
+    hp_results: list[dict] = []
+
+    if skip_done and not force and manifest.get(hp_key) == "done":
+        print("\n  [SKIP] Highpower Stage 04 (already done)")
+    else:
+        t_hp = time.perf_counter()
+        try:
+            hp_summary = _run_highpower_stage_04()
+
+            # Extract check records from the highpower summary
+            gain = hp_summary.get("hdr_vs_pe_maladaptive_mean", 0.0)
+            ci_lo = hp_summary.get("ci_95_mean_lo", 0.0)
+            win_rate = hp_summary.get("hdr_mal_win_rate", 0.0)
+            n_mal = hp_summary.get("n_maladaptive_episodes", 0)
+            criterion_met = hp_summary.get("criterion_plus3pct_satisfied_95ci_mean", False)
+
+            hp_results.append({
+                "stage": "04",
+                "check": "claim_1_cost_reduction",
+                "passed": bool(criterion_met),
+                "value": f"gain={gain:+.4f}, 95% CI lower={ci_lo:+.4f}, N_mal={n_mal}",
+                "note": "Claim 1: gain >= +3%, 95% CI lower >= +0.03",
+            })
+            hp_results.append({
+                "stage": "04",
+                "check": "claim_2_win_rate",
+                "passed": bool(win_rate >= 0.70),
+                "value": f"win_rate={win_rate:.3f}",
+                "note": "Claim 2: win rate >= 70%",
+            })
+
+            manifest[hp_key] = "done"
+            save_manifest(manifest)
+            elapsed_hp = time.perf_counter() - t_hp
+            n_hp_pass = sum(1 for c in hp_results if c["passed"])
+            print(f"  Highpower Stage 04: {n_hp_pass}/{len(hp_results)} checks passed ({elapsed_hp:.1f}s)")
+        except Exception as exc:
+            traceback.print_exc()
+            hp_results.append({
+                "stage": "04",
+                "check": "highpower_execution",
+                "passed": False,
+                "value": str(exc),
+                "note": "Highpower benchmark raised an exception",
+            })
+            manifest[hp_key] = "failed"
+            save_manifest(manifest)
+
+    all_results["highpower"] = {"04": hp_results}
+
+    # ── Phase 3: Stages 08-16, production parameters (Claims 9, 13, 15-32) ─
+    print("\n" + "#" * 62)
+    print("  Phase 3: Profile-independent stages 08-16")
+    print("  (Claims 9, 13, 15-32: ablation, baselines, v7.0/v7.1)")
+    print("#" * 62)
+
+    # Use a dummy extended profile for the independent stages — they only
+    # need the module loaded so call_stage can dispatch to the _call_stage_*
+    # functions. The stages 08-16 don't use the profile module.
+    phase3_stages = ["08", "08b", "09", "10", "11", "12", "13", "14", "15", "16"]
+    phase3_results = run_profile(
+        profile="extended",
+        stages_to_run=phase3_stages,
+        force=force,
+        skip_done=skip_done,
+        manifest=manifest,
+        fast=False,
+        run_tests=True,
+    )
+    # Merge phase3 results into the extended results
+    for stage_id, records in phase3_results.items():
+        all_results["extended"][stage_id] = records
+
+    # ── Phase 4: Full unit test suite ──────────────────────────────────────
+    print("\n" + "#" * 62)
+    print("  Phase 4: Full pytest suite")
+    print("  (Unit-test coverage for Claims 15-32)")
+    print("#" * 62)
+
+    unit_test_records = _run_all_unit_tests()
+    all_results["unit_tests"] = {"all": unit_test_records}
+
+    # ── Claim coverage summary ─────────────────────────────────────────────
+    elapsed_total = time.perf_counter() - t_total
+    n_fail = _print_full_validation_summary(all_results, elapsed_total)
+    return n_fail
+
+
+def _print_full_validation_summary(
+    all_results: dict[str, dict[str, list[dict]]],
+    elapsed: float,
+) -> int:
+    """Print the full-validation claim coverage summary. Returns failure count."""
+    print("\n" + "=" * 62)
+    print("  FULL VALIDATION — CLAIM COVERAGE SUMMARY")
+    print("=" * 62)
+
+    # Collect all checks by stage
+    stage_checks: dict[str, list[dict]] = {}
+    for profile, stage_map in all_results.items():
+        for stage_id, records in stage_map.items():
+            stage_checks.setdefault(stage_id, []).extend(records)
+
+    # Per-claim status
+    total_pass = total_fail = 0
+    claim_statuses: list[tuple[int, bool, str]] = []
+
+    for claim_id in range(1, 33):
+        stages = CLAIM_STAGES[claim_id]
+        claim_checks: list[dict] = []
+        for s in stages:
+            claim_checks.extend(stage_checks.get(s, []))
+
+        if not claim_checks:
+            claim_statuses.append((claim_id, False, "NO CHECKS RUN"))
+            total_fail += 1
+            continue
+
+        n_pass = sum(1 for c in claim_checks if c["passed"])
+        n_total = len(claim_checks)
+        all_passed = n_pass == n_total
+
+        if all_passed:
+            claim_statuses.append((claim_id, True, f"{n_pass}/{n_total} checks passed"))
+            total_pass += 1
+        else:
+            claim_statuses.append((claim_id, False, f"{n_pass}/{n_total} checks passed"))
+            total_fail += 1
+
+    # Also count unit tests
+    for records in stage_checks.get("all", []):
+        if records["passed"]:
+            total_pass += 1
+        else:
+            total_fail += 1
+
+    # Print claim table
+    print(f"\n  {'Claim':<8} {'Status':<10} {'Detail'}")
+    print(f"  {'─'*8} {'─'*10} {'─'*40}")
+    for claim_id, passed, detail in claim_statuses:
+        status = "PASS" if passed else "FAIL"
+        marker = " " if passed else "*"
+        source = "highpower" if claim_id in (1, 2) else "extended+stages"
+        print(f"  {marker}{claim_id:<7} {status:<10} {detail:<30} [{source}]")
+
+    # Print unit test status
+    ut_records = stage_checks.get("all", [])
+    if ut_records:
+        ut_passed = all(r["passed"] for r in ut_records)
+        ut_status = "PASS" if ut_passed else "FAIL"
+        print(f"\n  {'Unit tests':<18} {ut_status:<10} {ut_records[0]['value']}")
+
+    # Summary line
+    print(f"\n  {'─'*62}")
+    print(f"  Claims: {total_pass} passed, {total_fail} failed out of {total_pass + total_fail}")
+    print(f"  Elapsed: {elapsed:.1f}s")
+
+    if total_fail == 0:
+        print("\n  ALL 32 CLAIMS VALIDATED")
+    else:
+        print(f"\n  {total_fail} CLAIM(S) FAILED — see details above")
+        # Print failed claims
+        for claim_id, passed, detail in claim_statuses:
+            if not passed:
+                stages = CLAIM_STAGES[claim_id]
+                print(f"    Claim {claim_id} (stages {', '.join(stages)}): {detail}")
+
+    return total_fail
+
+
 # ── Summary printing ──────────────────────────────────────────────────────────
 
 def print_summary(all_results: dict[str, dict[str, list[dict]]]) -> int:
@@ -465,12 +737,32 @@ def parse_args() -> argparse.Namespace:
         "--run-tests", action="store_true",
         help="Run pytest test files for each stage that has one (skips production-scale tests)",
     )
+    parser.add_argument(
+        "--full-validation", action="store_true",
+        help="Run complete validation of all 32 claims: extended profile for "
+             "stages 01-07 (Claims 3-14), highpower benchmark for stage 04 "
+             "(Claims 1-2), stages 08-16 at production scale (Claims 9, 13, "
+             "15-32), and full pytest suite",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
 
+    # ── Full-validation mode ──────────────────────────────────────────────
+    if args.full_validation:
+        manifest = load_manifest() if (args.resume or args.skip_done) else {}
+        print("HDR Validation Suite — FULL VALIDATION MODE")
+        print("  Covers all 32 claims with authoritative highpower statistics")
+        n_fail = run_full_validation(
+            force=args.force,
+            skip_done=args.skip_done,
+            manifest=manifest,
+        )
+        sys.exit(0 if n_fail == 0 else 1)
+
+    # ── Standard mode ─────────────────────────────────────────────────────
     # Validate stage IDs
     unknown = [s for s in args.stages if s not in STAGE_SEQUENCE]
     if unknown:
