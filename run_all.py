@@ -30,7 +30,7 @@ MANIFEST_PATH = ROOT / "run_all_manifest.json"
 
 # ── Stage metadata ─────────────────────────────────────────────────────────────
 
-STAGE_SEQUENCE = ["01", "02", "03", "03b", "03c", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16"]
+STAGE_SEQUENCE = ["01", "02", "03", "03b", "03c", "04", "05", "06", "07", "08", "08b", "09", "10", "11", "12", "13", "14", "15", "16"]
 
 STAGE_LABELS = {
     "01":  "Stage 01 — Mathematical Checks",
@@ -43,6 +43,7 @@ STAGE_LABELS = {
     "06":  "Stage 06 — State Coherence",
     "07":  "Stage 07 — Robustness Sweeps",
     "08":  "Stage 08 — Ablation Study",
+    "08b": "Stage 08b — Asymmetric Ablation",
     "09":  "Stage 09 — Baseline Comparison",
     "10":  "Stage 10 — Mode B FP/FN Sweep",
     "11":  "Stage 11 — Riccati Invariant Set",
@@ -114,6 +115,15 @@ def _call_stage_08(fast: bool = False) -> None:
     n_ep = 3 if fast else 30
     T = 32 if fast else 256
     run_stage_08(n_seeds=n_seeds, n_ep=n_ep, T=T, fast_mode=False)
+
+
+def _call_stage_08b(fast: bool = False) -> None:
+    """Run Stage 08b multi-axis asymmetric ablation."""
+    from hdr_validation.stages.stage_08b_ablation import run_stage_08b
+    n_seeds = 2 if fast else 20
+    n_ep = 3 if fast else 30
+    T = 32 if fast else 256
+    run_stage_08b(n_seeds=n_seeds, n_ep=n_ep, T=T, fast_mode=False)
 
 
 def _call_stage_09(fast: bool = False) -> None:
@@ -201,6 +211,8 @@ def call_stage(mod: Any, stage_id: str, state: dict) -> None:
         mod.stage07_robustness()
     elif stage_id == "08":
         _call_stage_08(fast=fast)
+    elif stage_id == "08b":
+        _call_stage_08b(fast=fast)
     elif stage_id == "09":
         _call_stage_09(fast=fast)
     elif stage_id == "10":
@@ -260,7 +272,7 @@ def run_profile(
     stage_results: dict[str, list[dict]] = {}
 
     # Stages that are profile-independent (have their own simulation logic)
-    INDEPENDENT_STAGES = {"08", "09", "10", "11", "12", "13", "14", "15", "16"}
+    INDEPENDENT_STAGES = {"08", "08b", "09", "10", "11", "12", "13", "14", "15", "16"}
 
     for stage_id in full_sequence:
         label = STAGE_LABELS[stage_id]

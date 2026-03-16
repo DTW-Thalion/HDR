@@ -3,21 +3,21 @@
     {
       "check": "rmse_monotonic_in_sigma",
       "passed": true,
-      "value": "['0.232', '0.327', '0.632', '1.192', '2.306', '4.531']",
+      "value": "['0.233', '0.320', '0.627', '1.184', '2.373', '4.755']",
       "note": "RMSE should increase with proxy noise"
     },
     {
       "check": "rmse_ratio_at_sigma_05",
       "passed": false,
-      "value": "5.14",
+      "value": "5.09",
       "note": "Should be < 2x direct observation RMSE"
     },
     {
       "check": "no_catastrophic_failure_sigma_2",
       "passed": true,
-      "value": "4.531",
+      "value": "4.755",
       "note": "RMSE should remain bounded"
     }
   ],
-  "elapsed": 0.06628761399997529
+  "elapsed": 0.03978276299949357
 }

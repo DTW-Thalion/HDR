@@ -5,9 +5,9 @@
 | Run configuration                             | Checks | Result   |
 |-----------------------------------------------|--------|----------|
 | Smoke runner (1 seed × 8 episodes)            | 97     | All pass |
-| Standard runner (2 seeds × 12 episodes)       | 98     | All pass |
-| Extended runner (3 seeds × 20 episodes)       | 110    | All pass |
-| Validation runner (3 seeds × 12 episodes)     | 103    | All pass |
+| Standard runner (2 seeds × 12 episodes)       | 108    | All pass |
+| Extended runner (3 seeds × 20 episodes)       | 120    | All pass |
+| Validation runner (3 seeds × 12 episodes)     | 104    | All pass |
 | High-power runner (20 seeds × 20 ep/seed)     | 3      | See below |
 
 ---
