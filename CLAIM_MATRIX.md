@@ -5,10 +5,11 @@
 | Run configuration                             | Checks | Result   |
 |-----------------------------------------------|--------|----------|
 | Smoke runner (1 seed × 8 episodes)            | 97     | All pass |
-| Standard runner (2 seeds × 12 episodes)       | 108    | All pass |
-| Extended runner (3 seeds × 20 episodes)       | 120    | All pass |
-| Validation runner (3 seeds × 12 episodes)     | 104    | All pass |
-| High-power runner (20 seeds × 20 ep/seed)     | 3      | See below |
+| Standard runner (2 seeds × 12 episodes)       | 98     | All pass |
+| Extended runner (3 seeds × 20 episodes)       | 110    | All pass |
+| Validation runner (3 seeds × 12 episodes)     | 95     | All pass |
+| High-power runner (20 seeds × 30 ep/seed)     | 3      | See below |
+| Stages 08–11 (profile-independent)            | 4      | All pass |
 
 ---
 
@@ -67,27 +68,45 @@ Claim 2 (win rate ≥ 0.70) is **Supported** in the high-power run: 0.772 > 0.70
 
 ---
 
-## Claims 3–14 (from v4.3 / v5.0 stages)
+## Claims 1–14 (v5.0 stages 01–11)
 
-These claims are evaluated by the smoke/standard/extended runners and are not directly
-affected by the high-power Benchmark A results. See `CLAIM_CRITERIA.md` for full criteria.
+These claims are evaluated by the profile runners (stages 01–07) and profile-independent
+stage scripts (stages 08–11). All four profiles pass with zero failures. The high-power
+runner evaluates only Claims 1–2 (Benchmark A).
 
-| Claim | Description                              | Smoke | Standard | Extended | Highpower |
-|-------|------------------------------------------|-------|----------|----------|-----------|
-| 1     | Mode A cost reduction ≥ +3% (maladaptive) | —   | Supported | Supported | Supported |
-| 2     | Mode A win rate ≥ 70% (maladaptive)      | —     | Supported | Supported | Supported |
-| 3     | τ̃ correlation with recovery cost         | —     | —         | —         | N/A       |
-| 4     | Chance-constraint calibration            | —     | —         | —         | N/A       |
-| 5     | ISS scaling                              | —     | —         | —         | N/A       |
-| 6     | Stability under drift                    | —     | —         | —         | N/A       |
-| 7     | Mode B improvement                       | —     | —         | —         | N/A       |
-| 8     | DP approximation quality                 | —     | —         | —         | N/A       |
-| 9     | Coherence penalty                        | —     | —         | —         | N/A       |
-| 10    | Identifiability improvement              | —     | —         | —         | N/A       |
-| 11    | ICI regime identification                | —     | —         | —         | N/A       |
-| 12    | Mode C Fisher improvement                | —     | —         | —         | N/A       |
-| 13    | p\_A^robust FP reduction                 | —     | —         | —         | N/A       |
-| 14    | Compound bound correctness               | —     | —         | —         | N/A       |
+| Claim | Description                              | Stage(s)   | Smoke     | Standard  | Extended  | Highpower |
+|-------|------------------------------------------|------------|-----------|-----------|-----------|-----------|
+| 1     | Mode A cost reduction ≥ +3% (maladaptive) | 04       | Pass      | Supported | Supported | Supported |
+| 2     | Mode A win rate ≥ 70% (maladaptive)      | 04         | Pass      | Supported | Supported | Supported |
+| 3     | τ̃ correlation with recovery cost         | 01         | Pass      | Pass      | Pass      | N/A       |
+| 4     | Chance-constraint calibration            | 01          | Pass      | Pass      | Pass      | N/A       |
+| 5     | ISS scaling                              | 01, 07      | Pass      | Pass      | Pass      | N/A       |
+| 6     | Stability under drift                    | 07          | Pass      | Pass      | Pass      | N/A       |
+| 7     | Mode B improvement                       | 05          | Pass      | Pass      | Pass      | N/A       |
+| 8     | DP approximation quality                 | 05          | Pass      | Pass      | Pass      | N/A       |
+| 9     | Coherence penalty                        | 06          | Pass      | Pass      | Pass      | N/A       |
+| 10    | Identifiability improvement              | 03c         | Pass      | Pass      | Pass      | N/A       |
+| 11    | ICI regime identification                | 03b         | Pass      | Pass      | Pass      | N/A       |
+| 12    | Mode C Fisher improvement                | 03c         | Pass      | Pass      | Pass      | N/A       |
+| 13    | p\_A^robust FP reduction                 | 10          | Pass      | Pass      | Pass      | N/A       |
+| 14    | Compound bound correctness               | 01, 07      | Pass      | Pass      | Pass      | N/A       |
+
+**Criteria summary (Claims 3–14):**
+
+| Claim | Criterion |
+|-------|-----------|
+| 3     | τ̃ sandwich inequality holds: τ\_L ≤ τ̃ with strict gap (Prop H.1) |
+| 4     | Chance-constraint tightening δ ≥ 0 for all observation dimensions |
+| 5     | DARE α ∈ (0,1), transient contraction β ∈ [0,1), μ̄\_required ∈ (0,1] |
+| 6     | Mode A returns finite control across mismatch sweep δ ∈ {0.05, 0.10, 0.20} |
+| 7     | Mode B aggressive policy escape probability > passive policy |
+| 8     | Heuristic committor gap ≤ 0.10; suboptimality bound ≥ ε\_H |
+| 9     | Coherence contribution monotone in w3; TIB non-inferior to baselines |
+| 10    | Fisher information proxy increases with diverse input data |
+| 11    | ICI conditions fire correctly: condition\_iii when T\_k\_eff < ω\_min |
+| 12    | Fisher proxy ≥ 0; increases with data (persistent excitation) |
+| 13    | FP rate with robust threshold ≤ FP rate with fixed threshold (all levels) |
+| 14    | T\_k\_eff = T · π\_k · (1−p\_miss) · (1−ρ\_k) formula verified across ρ ∈ {0.72, 0.85, 0.96} |
 
 ---
 
