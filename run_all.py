@@ -30,7 +30,7 @@ MANIFEST_PATH = ROOT / "run_all_manifest.json"
 
 # ── Stage metadata ─────────────────────────────────────────────────────────────
 
-STAGE_SEQUENCE = ["01", "02", "03", "03b", "03c", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15"]
+STAGE_SEQUENCE = ["01", "02", "03", "03b", "03c", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16"]
 
 STAGE_LABELS = {
     "01":  "Stage 01 — Mathematical Checks",
@@ -50,6 +50,7 @@ STAGE_LABELS = {
     "13":  "Stage 13 — Inference Backbone",
     "14":  "Stage 14 — Population Planning",
     "15":  "Stage 15 — Proxy Composite",
+    "16":  "Stage 16 — Extension Integration",
 }
 
 # Stages that must run before a given stage (dependency order)
@@ -161,6 +162,14 @@ def _call_stage_15(fast: bool = False) -> None:
     run_stage_15(n_scenarios=n_scenarios, fast_mode=fast)
 
 
+def _call_stage_16(fast: bool = False) -> None:
+    """Run Stage 16 model-failure extension integration."""
+    from hdr_validation.stages.stage_16_extensions import run_stage_16
+    n_seeds = 2 if fast else 5
+    T = 32 if fast else 128
+    run_stage_16(n_seeds=n_seeds, T=T, fast_mode=fast)
+
+
 def _call_stage_11(fast: bool = False) -> None:
     """Run Stage 11 Riccati invariant set verification."""
     from hdr_validation.stages.stage_11_invariant_set import run_stage_11
@@ -206,6 +215,8 @@ def call_stage(mod: Any, stage_id: str, state: dict) -> None:
         _call_stage_14(fast=fast)
     elif stage_id == "15":
         _call_stage_15(fast=fast)
+    elif stage_id == "16":
+        _call_stage_16(fast=fast)
     else:
         raise ValueError(f"Unknown stage: {stage_id!r}")
 
@@ -249,7 +260,7 @@ def run_profile(
     stage_results: dict[str, list[dict]] = {}
 
     # Stages that are profile-independent (have their own simulation logic)
-    INDEPENDENT_STAGES = {"08", "09", "10", "11", "12", "13", "14", "15"}
+    INDEPENDENT_STAGES = {"08", "09", "10", "11", "12", "13", "14", "15", "16"}
 
     for stage_id in full_sequence:
         label = STAGE_LABELS[stage_id]
@@ -370,7 +381,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--fast", action="store_true",
-        help="Run stages 08-11 with reduced parameters (n_seeds=2, n_ep=3, T=32) for smoke testing",
+        help="Run stages 08-16 with reduced parameters for smoke testing",
     )
     return parser.parse_args()
 
