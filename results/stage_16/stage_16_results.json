@@ -18,7 +18,7 @@
   },
   "16.12": {
     "subtest": "16.12",
-    "name": "PD baseline equivalence",
+    "name": "PD profile (no extensions)",
     "backward_compatible": true,
     "pass": true,
     "elapsed": 0.04
