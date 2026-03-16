@@ -238,18 +238,18 @@ def test_mpc_returns_bounded_control():
 
 ### Test files
 
-| File                      | Tests (actual content — see File Naming Note)   |
+| File                      | Tests                                          |
 |---------------------------|-------------------------------------------------|
-| `test_packaging.py`       | MPC/Mode A control bounds (`solve_mode_a`)      |
-| `test_ici.py`             | ICI state computation and bounds                |
-| `test_imm.py`             | Committor and value iteration (Mode B)          |
-| `test_mpc.py`             | IMM inference filter                            |
-| `test_mode_c.py`          | Recovery trajectory analysis (`tau_tilde`)      |
+| `test_mpc.py`             | MPC/Mode A control bounds (`solve_mode_a`)      |
+| `test_ici.py`             | ICI state computation, mu_erg bounds            |
+| `test_ici_compound.py`    | ICI compound bound (T_k_eff), Brier, calibration |
+| `test_imm.py`             | IMM inference filter                            |
+| `test_committor.py`       | Committor and value iteration (Mode B)          |
+| `test_mode_c.py`          | Mode C dither injection/supervisor/tracker      |
 | `test_mode_c_fisher.py`   | Mode C Fisher information proxy                 |
-| `test_hsmm.py`            | Mode C dither injection/supervisor/tracker      |
-| `test_target_set.py`      | HSMM dwell distribution models                  |
-| `test_committor.py`       | Safety analysis (Gaussian calibration toy)      |
-| `test_recovery.py`        | ICI compound bound, Brier, calibration          |
+| `test_hsmm.py`            | HSMM dwell distribution models                  |
+| `test_recovery.py`        | Recovery trajectory analysis (`tau_tilde`)      |
+| `test_safety.py`          | Safety analysis (Gaussian calibration toy)      |
 | `test_stability_check.py` | Basin stability classification                  |
 | `test_stage_08.py`        | Stage 08 ablation study                         |
 | `test_stage_09.py`        | Stage 09 baseline comparison                    |
@@ -466,17 +466,4 @@ matplotlib    # visualization in plotting.py
 
 ## File Naming Note
 
-Some files at the repository root have names that do not match their content due to upload history (multiple "Add files via upload" commits). When navigating the codebase, verify file content rather than relying solely on filename. The canonical organized package is in `control/`, `inference/`, `model/`, and `identification/` subdirectories.
-
-**Affected test files** (filename → actual content):
-
-| Filename | Expected from name | Actual content |
-|----------|--------------------|----------------|
-| `test_packaging.py` | Packaging/zip | MPC control bounds |
-| `test_imm.py` | IMM filter | Committor/value iteration |
-| `test_mpc.py` | MPC | IMM filter |
-| `test_mode_c.py` | Mode C dither | Recovery (tau_tilde) |
-| `test_hsmm.py` | HSMM dwell | Mode C dither/supervisor |
-| `test_target_set.py` | Target set | HSMM dwell models |
-| `test_committor.py` | Committor BVP | Safety (calibration) |
-| `test_recovery.py` | Recovery | ICI compound bound/Brier |
+Some production source files in `hdr_validation/` may have names that do not perfectly match their content due to upload history (multiple "Add files via upload" commits). The canonical organized package is in `control/`, `inference/`, `model/`, and `identification/` subdirectories. Test files at the repo root have been renamed to match their actual content.
