@@ -318,20 +318,11 @@ are validated by stage scripts 12–15. All pass across all four profiles.
 | 27    | Particle filter ESS consistency             | test\_particle + Stage 13                     | Pass  | Pass     | Pass     | Pass       |
 | 28    | Hierarchical coupling MAP convergence       | test\_identification + Stage 12               | Pass  | Pass     | Pass     | Pass       |
 | 29    | B\_k sample complexity                      | test\_identification + Stage 12               | Pass  | Pass     | Pass     | Pass       |
-| 30    | Basin boundary convergence                  | test\_identification (+ Stage 12†)            | Pass  | Pass     | Pass     | Pass       |
+| 30    | Basin boundary convergence                  | test\_identification + Stage 12               | Pass  | Pass     | Pass     | Pass       |
 | 31    | Population-prior treatment planning         | test\_identification + Stage 14               | Pass  | Pass     | Pass     | Pass       |
 | 32    | Proxy-composite estimation quality          | test\_identification + Stage 15               | Pass  | Pass     | Pass     | Pass       |
 
 ### Known limitations
-
-- **†Claim 30 (basin boundary convergence)**: Stage 12's docstring lists Claims 28–30,
-  but the stage only has dedicated checks for Claims 28 (MAP convergence) and 29
-  (sample complexity). Claim 30 is partially covered: the boundary correlation check
-  in Stage 12 verifies that estimated boundaries correlate with true boundaries at
-  T\_p=200, but there is no explicit convergence-rate check analogous to Claims 28–29.
-  The unit tests in `test_identification.py` provide the primary validation via the
-  `test_boed_boundary_convergence` test. This is flagged as a coverage gap to be
-  addressed in future revisions.
 
 - **Claims 10 and 12 share assertions**: Both claims are validated in part by
   `stage03c_mode_c()`, which checks Fisher proxy non-negativity and persistent
@@ -370,7 +361,7 @@ are validated by stage scripts 12–15. All pass across all four profiles.
 | 27 | Particle filter ESS tracks expected rate; resampling triggers correctly | `n_particles = 100` (production), `n_scenarios = 5`. Stage 13 verifies ESS consistency across IMM, particle filter, and variational SLDS backends. |
 | 28 | Hierarchical coupling MAP estimate converges with increasing T\_p | `T_p_values = [0, 10, 50, 200]`, `n_patients = 10`. Stage 12 verifies MAP error decreases monotonically with T\_p. The four values span zero data (prior only) to large-sample (200 observations), demonstrating convergence. |
 | 29 | B\_k sample complexity matches theoretical rate | Stage 12 verifies that the estimation error scales as O(1/√T\_p) by checking that the error at T\_p=200 is less than the error at T\_p=10. |
-| 30 | Basin boundary estimates converge | Stage 12 verifies boundary convergence by checking that the correlation between estimated and true boundaries increases with T\_p. |
+| 30 | Basin boundary estimates converge (Prop 11.7) | Stage 12 check `boundary_convergence_with_N`: generates synthetic trajectories at N ∈ {20, 50, 200} sample sizes, estimates the committor via Nadaraya-Watson kernel regression (bandwidth=1.0), and verifies MSE at test points decreases with N. True committor is a distance-ratio sigmoid between basin-0 (origin) and basin-1 (offset=4.0) centres in 2D. Criterion: MSE(N\_max) < MSE(N\_min). |
 | 31 | Population-prior plan improves over uniform baseline | `n_patients = 20`. Stage 14 verifies that the population-prior treatment plan achieves lower cost than the uniform-prior baseline. |
 | 32 | Proxy-composite estimate error bounded | `n_scenarios = 5`. Stage 15 verifies that the proxy-composite estimation error is bounded and decreases with sample size. |
 
