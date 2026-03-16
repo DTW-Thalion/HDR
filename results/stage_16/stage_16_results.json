@@ -5,7 +5,41 @@
     "numerical_stability": true,
     "region_consistency_rate": 1.0,
     "pass": true,
-    "elapsed": 0.09
+    "elapsed": 0.72
+  },
+  "16.02": {
+    "subtest": "16.02",
+    "name": "Absorbing-state partition",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "monotonicity_rate": 1.0,
+    "absorbing_detected": true,
+    "drift_nonneg": true,
+    "pass": true,
+    "elapsed": 0.01
+  },
+  "16.03": {
+    "subtest": "16.03",
+    "name": "Basin stability classification",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "classification_accuracy": 1.0,
+    "mode_b_bypass_rate": 1.0,
+    "projection_error": 0.0,
+    "pass": true,
+    "elapsed": 0.0
+  },
+  "16.04": {
+    "subtest": "16.04",
+    "name": "Multi-site dynamics",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "composite_stable": true,
+    "gershgorin_holds": true,
+    "per_site_imm_converged": true,
+    "cross_site_response": 0.3165,
+    "pass": "True",
+    "elapsed": 0.01
   },
   "16.05": {
     "subtest": "16.05",
@@ -14,6 +48,75 @@
     "mode_c_trigger_rate": 1.0,
     "numerical_stability": true,
     "pass": true,
+    "elapsed": 0.05
+  },
+  "16.06": {
+    "subtest": "16.06",
+    "name": "Jump-diffusion",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "jump_rate_in_ci": true,
+    "committor_shift_proportional": true,
+    "jump_magnitude_ks_p": 0.9595,
+    "prophylactic_trigger_rate": 1.0,
+    "pass": true,
+    "elapsed": 0.03
+  },
+  "16.07": {
+    "subtest": "16.07",
+    "name": "Mixed-integer MPC",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "binary_integrality_rate": 1.0,
+    "onetime_constraint_satisfied": true,
+    "feasibility_rate": 1.0,
+    "pass": true,
+    "elapsed": 0.07
+  },
+  "16.08": {
+    "subtest": "16.08",
+    "name": "Multi-rate IMM",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "masking_correct": true,
+    "covariance_growth_monotonic": true,
+    "observation_epoch_improvement": true,
+    "mode_accuracy_above_threshold": true,
+    "pass": true,
+    "elapsed": 0.04
+  },
+  "16.09": {
+    "subtest": "16.09",
+    "name": "Cumulative-exposure",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "monotonicity_rate": 1.0,
+    "exposure_violations": 0,
+    "toxicity_correlation": 1.0,
+    "pass": true,
+    "elapsed": 0.71
+  },
+  "16.10": {
+    "subtest": "16.10",
+    "name": "State-conditioned coupling",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "sigmoid_correct": true,
+    "stability_preserved": true,
+    "sign_reversal_observed": true,
+    "pass": true,
+    "elapsed": 0.05
+  },
+  "16.11": {
+    "subtest": "16.11",
+    "name": "Modular axis expansion",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "expanded_stable": true,
+    "bound_holds": true,
+    "original_unperturbed": true,
+    "new_axis_responsive": true,
+    "pass": true,
     "elapsed": 0.01
   },
   "16.12": {
@@ -21,6 +124,59 @@
     "name": "PD profile (no extensions)",
     "backward_compatible": true,
     "pass": true,
-    "elapsed": 0.04
+    "elapsed": 0.17
+  },
+  "16.13": {
+    "subtest": "16.13",
+    "name": "DM profile (M5+M10)",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "drift_tracked": true,
+    "coupling_correct": true,
+    "interaction_bounded": true,
+    "pass": true,
+    "elapsed": 0.02
+  },
+  "16.14": {
+    "subtest": "16.14",
+    "name": "CA profile (7 extensions)",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "individual_invariants_pass": true,
+    "jump_near_ceiling_safe": true,
+    "multisite_supervisor_correct": true,
+    "pass": true,
+    "elapsed": 0.01
+  },
+  "16.15": {
+    "subtest": "16.15",
+    "name": "OS profile (4 extensions)",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "individual_invariants_pass": true,
+    "reconvergence_within_bound": true,
+    "pass": true,
+    "elapsed": 0.02
+  },
+  "16.16": {
+    "subtest": "16.16",
+    "name": "AD profile (M1+M2+M8)",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "individual_invariants_pass": true,
+    "threshold_irr_coupling": true,
+    "region_stability_during_blackout": true,
+    "pass": true,
+    "elapsed": 0.0
+  },
+  "16.17": {
+    "subtest": "16.17",
+    "name": "CRD profile (M11 only)",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "expansion_invariants_pass": true,
+    "cost_ratio": 0.9618,
+    "pass": true,
+    "elapsed": 0.41
   }
 }
