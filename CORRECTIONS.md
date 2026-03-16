@@ -43,7 +43,7 @@ at T=128 with n_seeds=2, n_ep=6.
 - test_ablation_criterion_note_contains_expected_tag_when_inverted
 - test_hdr_full_beats_mpc_only_production (SKIPPED in CI)
 
-Updated total: **281 defined, 280 passed, 1 skipped** (29 test files, including v7.1 additions).
+Updated total: **295 defined, 293 passed, 2 skipped** (30 test files, including v7.1 additions and test\_stage\_08b).
 See the Test Summary table below for the full per-suite breakdown.
 
 ---
@@ -131,6 +131,7 @@ bias.  This is expected and is not a code defect.  The high-power run
 | Fisher trace tests (`test_mode_c_fisher`) | 12 | 12/12 passed |
 | Stability check tests (`test_stability_check`) | 7 | 7/7 passed |
 | Stage 08 ablation tests (`test_stage_08`) | 8 | 7/8 passed, 1 skipped |
+| Stage 08b asymmetric ablation tests (`test_stage_08b`) | 14 | 13/14 passed, 1 skipped |
 | Stage 09 baseline tests (`test_stage_09`) | 6 | 6/6 passed |
 | Stage 10 Mode B sweep tests (`test_stage_10`) | 7 | 7/7 passed |
 | Stage 11 invariant set tests (`test_stage_11`) | 9 | 9/9 passed |
@@ -149,7 +150,7 @@ bias.  This is expected and is not a code defect.  The high-power run
 | Variational SLDS (`test_variational`) | 5 | 5/5 passed |
 | Committor with jumps (`test_committor_jump`) | 4 | 4/4 passed |
 | Interaction matrix (`test_interaction_matrix`) | 4 | 4/4 passed |
-| **Total pytest** | **281** | **280/281 passed, 1 skipped** |
+| **Total pytest** | **295** | **293/295 passed, 2 skipped** |
 | Standard profile (T=128, 2 seeds, 12 ep/seed) | — | 95/95 checks passed |
 | Extended profile (T=256, 3 seeds, 20 ep/seed) | — | 107/107 checks passed |
 
@@ -167,7 +168,7 @@ bias.  This is expected and is not a code defect.  The high-power run
 | 6 | Stability under drifting S*(t) consistent with linear degradation | 04 | target_drift_fit_slope > 0; R² ≥ 0.75 | slope=3.27, R²=0.999 | slope=3.53, R²=0.999 | **Supported** |
 | 7 | Mode B improves escape when Mode C pre-emption confirms adequate inference quality | 03b, 05 | aggressive > passive escape probability | 0.700 → 0.860 | 0.667 → 0.860 | **Supported** |
 | 8 | Mode B acceptably close to exact DP (including ε_H term) | 05 | Abs gap ≤ 0.10; suboptimality bound ≥ ε_H | gap=0.000, ε_H=0.783 | gap=0.000, ε_H=0.783 | **Supported** |
-| 9 | Coherence penalty behaves as designed; w3 calibrated | 06 | penalty finite, ≥ 0, lower outside target; monotone in w3 | all structural tests pass | all structural tests pass | **Supported** |
+| 9 | Coherence penalty behaves as designed; w3 calibrated | 06, 08, 08b | penalty finite, ≥ 0, lower outside target; monotone in w3; ablation marginal gain ≥ 0 | all structural tests pass | all structural tests pass | **Supported** |
 | 10 | Identifiability improves with perturbations, priors, dither | 03 | IMM mode probs valid; all K modes predicted; F1 > 0 | F1=0.817 | F1=0.828 | **Supported** |
 
 ---
@@ -178,7 +179,7 @@ bias.  This is expected and is not a code defect.  The high-power run
 |---|-------|----------|-----------|----------|----------|--------|
 | 11 | ICI correctly identifies operating regime and activates Mode C | 03b, 03c | Entry conditions consistent; supervisor selects mode_c; conditions fire correctly | all 03b/03c checks pass | all 03b/03c checks pass | **Supported** |
 | 12 | Mode C improves T_k_eff and R_Brier within Fisher information bounds | 03c | Fisher proxy ≥ 0; increases with data; action bounded | proxy 0.000 → 0.371 | proxy 0.000 → 0.371, non-decreasing | **Supported** |
-| 13 | p_A^robust reduces FP rate vs fixed p_A under miscalibrated posterior | 03b, 05 | p_A_robust ≥ p_A_nominal; Brier reliability finite and ≥ 0 | p_A_robust=0.705 ≥ 0.700 | p_A_robust=0.702 ≥ 0.700 | **Supported** |
+| 13 | p_A^robust reduces FP rate vs fixed p_A under miscalibrated posterior | 03b, 10 | p_A_robust ≥ p_A_nominal (03b); FP\_robust ≤ FP\_fixed at all R\_Brier levels (10) | p_A_robust=0.705 ≥ 0.700 | p_A_robust=0.702 ≥ 0.700 | **Supported** |
 | 14 | Compound bound correctly predicts regime boundary | 01, 03, 07 | T_k_eff formula correct; scales linearly with T; stable across rho/mismatch sweeps | T_k_eff=12.54, all rho checks pass | T_k_eff=25.09 = 2×12.54, all sweeps pass | **Supported** |
 
 ---
