@@ -4,14 +4,18 @@
 
 ## Test Summary
 
+**Recommended entry point:** `python run_all.py --full-validation` — validates all 32 claims
+in a single run (extended stages 01–07, highpower stage 04, stages 08–16, full pytest suite).
+
 | Run configuration                             | Checks | Result   |
 |-----------------------------------------------|--------|----------|
 | Smoke runner (1 seed × 8 episodes)            | 97     | All pass |
 | Standard runner (2 seeds × 12 episodes)       | 98     | All pass |
 | Extended runner (3 seeds × 20 episodes)       | 110    | All pass |
 | Validation runner (3 seeds × 12 episodes)     | 95     | All pass |
-| High-power runner (20 seeds × 30 ep/seed)     | 3      | See below |
-| Stages 08–11 (profile-independent)            | 4      | All pass |
+| High-power runner (20 seeds × 30 ep/seed)     | 2      | See below |
+| Stages 08–16 (profile-independent)            | varies | All pass |
+| Pytest suite (30 files)                       | 295    | 293 pass, 2 skip |
 
 ---
 
@@ -62,11 +66,11 @@
 
 | Metric        | Standard | Extended | **Highpower** |
 |---------------|----------|----------|---------------|
-| Win rate      | 0.909    | 0.800    | **0.772**     |
-| N episodes    | ~11      | ~15      | **123**       |
+| Win rate      | 0.909    | 0.800    | **0.838**     |
+| N episodes    | ~11      | ~15      | **179**       |
 | **Status**    | Supported | Supported | **Supported** |
 
-Claim 2 (win rate ≥ 0.70) is **Supported** in the high-power run: 0.772 > 0.70 across 123 episodes.
+Claim 2 (win rate ≥ 0.70) is **Supported** in the high-power run: 0.838 > 0.70 across 179 episodes.
 
 ---
 
@@ -74,7 +78,8 @@ Claim 2 (win rate ≥ 0.70) is **Supported** in the high-power run: 0.772 > 0.70
 
 These claims are evaluated by the profile runners (stages 01–07) and profile-independent
 stage scripts (stages 08–11). All four profiles pass with zero failures. The high-power
-runner evaluates only Claims 1–2 (Benchmark A).
+runner evaluates only Claims 1–2 (Benchmark A). Use `python run_all.py --full-validation`
+to validate all 14 claims in a single run (extended profile + highpower benchmark).
 
 | Claim | Description                              | Stage(s)       | Smoke     | Standard  | Extended  | Highpower |
 |-------|------------------------------------------|----------------|-----------|-----------|-----------|-----------|

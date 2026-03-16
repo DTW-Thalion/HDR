@@ -120,21 +120,26 @@ bias.  This is expected and is not a code defect.  The high-power run
 
 ## Test Summary
 
-*Verified 2026-03-16. Authoritative artefact: `pytest_final.txt`.*
+*Verified 2026-03-16 via `pytest --collect-only`. 30 test files, 295 tests.*
 
 | Suite | Tests | Result |
 |-------|------:|--------|
-| Model unit tests (`test_hsmm`, `test_target_set`, `test_recovery`) | 53 | 53/53 passed |
-| Control unit tests (`test_mpc`, `test_committor`) | 2 | 2/2 passed |
-| Inference unit tests (`test_ici`, `test_imm`, `test_mode_c`) | 19 | 19/19 passed |
-| Packaging tests (`test_packaging`) | 2 | 2/2 passed |
-| Fisher trace tests (`test_mode_c_fisher`) | 12 | 12/12 passed |
-| Stability check tests (`test_stability_check`) | 7 | 7/7 passed |
-| Stage 08 ablation tests (`test_stage_08`) | 8 | 7/8 passed, 1 skipped |
-| Stage 08b asymmetric ablation tests (`test_stage_08b`) | 14 | 13/14 passed, 1 skipped |
-| Stage 09 baseline tests (`test_stage_09`) | 6 | 6/6 passed |
-| Stage 10 Mode B sweep tests (`test_stage_10`) | 7 | 7/7 passed |
-| Stage 11 invariant set tests (`test_stage_11`) | 9 | 9/9 passed |
+| ICI (`test_ici`) | 16 | 16/16 passed |
+| ICI compound bound (`test_ici_compound`) | 28 | 28/28 passed |
+| Mode C (`test_mode_c`) | 24 | 24/24 passed |
+| Mode C Fisher (`test_mode_c_fisher`) | 12 | 12/12 passed |
+| MPC / Mode A (`test_mpc`) | 2 | 2/2 passed |
+| Committor / Mode B (`test_committor`) | 2 | 2/2 passed |
+| Stability check (`test_stability_check`) | 7 | 7/7 passed |
+| HSMM (`test_hsmm`) | 1 | 1/1 passed |
+| IMM (`test_imm`) | 1 | 1/1 passed |
+| Recovery (`test_recovery`) | 1 | 1/1 passed |
+| Safety (`test_safety`) | 1 | 1/1 passed |
+| Stage 08 ablation (`test_stage_08`) | 8 | 7/8 passed, 1 skipped |
+| Stage 08b asymmetric ablation (`test_stage_08b`) | 14 | 13/14 passed, 1 skipped |
+| Stage 09 baseline (`test_stage_09`) | 6 | 6/6 passed |
+| Stage 10 Mode B sweep (`test_stage_10`) | 7 | 7/7 passed |
+| Stage 11 invariant set (`test_stage_11`) | 9 | 9/9 passed |
 | *v7.0/v7.1 additions (14 files):* | | |
 | Extensions (`test_extensions`) | 25 | 25/25 passed |
 | Identification (`test_identification`) | 15 | 15/15 passed |
@@ -153,6 +158,14 @@ bias.  This is expected and is not a code defect.  The high-power run
 | **Total pytest** | **295** | **293/295 passed, 2 skipped** |
 | Standard profile (T=128, 2 seeds, 12 ep/seed) | — | 95/95 checks passed |
 | Extended profile (T=256, 3 seeds, 20 ep/seed) | — | 107/107 checks passed |
+
+The 2 skipped tests are production-scale ablation tests (`test_hdr_full_beats_mpc_only_production`
+in `test_stage_08.py` and `test_stage_08b.py`) that require 20 seeds × 30 episodes × T=256
+and are excluded from CI via the `production` keyword filter.
+
+**Recommended validation command:** `python run_all.py --full-validation` — runs all 32 claims
+including the highpower benchmark for Claims 1–2, stages 08–16 at production scale, and the
+full pytest suite. See CLAUDE.md §Running the Validation Pipeline for details.
 
 ---
 
@@ -180,7 +193,7 @@ bias.  This is expected and is not a code defect.  The high-power run
 | 11 | ICI correctly identifies operating regime and activates Mode C | 03b, 03c | Entry conditions consistent; supervisor selects mode_c; conditions fire correctly | all 03b/03c checks pass | all 03b/03c checks pass | **Supported** |
 | 12 | Mode C improves T_k_eff and R_Brier within Fisher information bounds | 03c | Fisher proxy ≥ 0; increases with data; action bounded | proxy 0.000 → 0.371 | proxy 0.000 → 0.371, non-decreasing | **Supported** |
 | 13 | p_A^robust reduces FP rate vs fixed p_A under miscalibrated posterior | 03b, 10 | p_A_robust ≥ p_A_nominal (03b); FP\_robust ≤ FP\_fixed at all R\_Brier levels (10) | p_A_robust=0.705 ≥ 0.700 | p_A_robust=0.702 ≥ 0.700 | **Supported** |
-| 14 | Compound bound correctly predicts regime boundary | 01, 03, 07 | T_k_eff formula correct; scales linearly with T; stable across rho/mismatch sweeps | T_k_eff=12.54, all rho checks pass | T_k_eff=25.09 = 2×12.54, all sweeps pass | **Supported** |
+| 14 | Compound bound correctly predicts regime boundary | 01, 07 | T_k_eff formula correct; scales linearly with T; stable across rho/mismatch sweeps | T_k_eff=12.54, all rho checks pass | T_k_eff=25.09 = 2×12.54, all sweeps pass | **Supported** |
 
 ---
 
