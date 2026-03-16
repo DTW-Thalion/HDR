@@ -98,14 +98,6 @@ def test_ablation_criterion_note_contains_expected_tag_when_inverted(tmp_path: P
         )
 
 
-@pytest.mark.skipif(
-    condition=True,   # Always skip in CI — requires production compute
-    reason=(
-        "Production-scale ablation criterion test. "
-        "Requires n_seeds=20, n_ep=30, T=256 (~3-5 weeks compute). "
-        "Remove skipif when production run is available."
-    ),
-)
 def test_hdr_full_beats_mpc_only_production(tmp_path: Path):
     """hdr_full gain >= mpc_only gain at production scale (T=256, N_mal>=50).
     This is the definitive test of the ablation claim in the manuscript."""
