@@ -5,7 +5,7 @@
     "numerical_stability": true,
     "region_consistency_rate": 1.0,
     "pass": true,
-    "elapsed": 4.27
+    "elapsed": 0.11
   },
   "16.02": {
     "subtest": "16.02",
@@ -16,7 +16,7 @@
     "absorbing_detected": true,
     "drift_nonneg": true,
     "pass": true,
-    "elapsed": 0.02
+    "elapsed": 0.0
   },
   "16.03": {
     "subtest": "16.03",
@@ -27,7 +27,7 @@
     "mode_b_bypass_rate": 1.0,
     "projection_error": 0.0,
     "pass": true,
-    "elapsed": 0.01
+    "elapsed": 0.0
   },
   "16.04": {
     "subtest": "16.04",
@@ -37,9 +37,9 @@
     "composite_stable": true,
     "gershgorin_holds": true,
     "per_site_imm_converged": true,
-    "cross_site_response": 0.3014,
+    "cross_site_response": 0.4216,
     "pass": "True",
-    "elapsed": 0.02
+    "elapsed": 0.0
   },
   "16.05": {
     "subtest": "16.05",
@@ -48,7 +48,7 @@
     "mode_c_trigger_rate": 1.0,
     "numerical_stability": true,
     "pass": true,
-    "elapsed": 0.1
+    "elapsed": 0.01
   },
   "16.06": {
     "subtest": "16.06",
@@ -60,7 +60,7 @@
     "jump_magnitude_ks_p": 0.5,
     "prophylactic_trigger_rate": 1.0,
     "pass": true,
-    "elapsed": 0.02
+    "elapsed": 0.01
   },
   "16.07": {
     "subtest": "16.07",
@@ -71,7 +71,7 @@
     "onetime_constraint_satisfied": true,
     "feasibility_rate": 1.0,
     "pass": true,
-    "elapsed": 0.05
+    "elapsed": 0.01
   },
   "16.08": {
     "subtest": "16.08",
@@ -83,7 +83,7 @@
     "observation_epoch_improvement": true,
     "mode_accuracy_above_threshold": true,
     "pass": true,
-    "elapsed": 0.03
+    "elapsed": 0.01
   },
   "16.09": {
     "subtest": "16.09",
@@ -94,7 +94,7 @@
     "exposure_violations": 0,
     "toxicity_correlation": 1.0,
     "pass": true,
-    "elapsed": 4.27
+    "elapsed": 0.09
   },
   "16.10": {
     "subtest": "16.10",
@@ -105,7 +105,7 @@
     "stability_preserved": true,
     "sign_reversal_observed": true,
     "pass": true,
-    "elapsed": 0.06
+    "elapsed": 0.01
   },
   "16.11": {
     "subtest": "16.11",
@@ -117,14 +117,14 @@
     "original_unperturbed": true,
     "new_axis_responsive": true,
     "pass": true,
-    "elapsed": 0.01
+    "elapsed": 0.0
   },
   "16.12": {
     "subtest": "16.12",
     "name": "PD profile (no extensions)",
     "backward_compatible": true,
     "pass": true,
-    "elapsed": 2.12
+    "elapsed": 0.04
   },
   "16.13": {
     "subtest": "16.13",
@@ -135,7 +135,7 @@
     "coupling_correct": true,
     "interaction_bounded": true,
     "pass": true,
-    "elapsed": 0.02
+    "elapsed": 0.0
   },
   "16.14": {
     "subtest": "16.14",
@@ -146,7 +146,7 @@
     "jump_near_ceiling_safe": true,
     "multisite_supervisor_correct": true,
     "pass": true,
-    "elapsed": 0.02
+    "elapsed": 0.0
   },
   "16.15": {
     "subtest": "16.15",
@@ -156,7 +156,7 @@
     "individual_invariants_pass": true,
     "reconvergence_within_bound": true,
     "pass": true,
-    "elapsed": 0.03
+    "elapsed": 0.0
   },
   "16.16": {
     "subtest": "16.16",
@@ -167,7 +167,7 @@
     "threshold_irr_coupling": true,
     "region_stability_during_blackout": true,
     "pass": true,
-    "elapsed": 0.01
+    "elapsed": 0.0
   },
   "16.17": {
     "subtest": "16.17",
@@ -175,8 +175,8 @@
     "numerical_stability": true,
     "backward_compatible": true,
     "expansion_invariants_pass": true,
-    "cost_ratio": 1.0121,
+    "cost_ratio": 1.0085,
     "pass": true,
-    "elapsed": 2.22
+    "elapsed": 0.04
   }
 }
