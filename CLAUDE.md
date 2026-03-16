@@ -68,7 +68,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 ├── standard_runner.py           # Standard profile runner
 ├── extended_runner.py           # Extended profile runner
 ├── validation_runner.py         # Validation profile runner
-├── test_*.py                    # Pytest test modules (29 files, 243 tests)
+├── test_*.py                    # Pytest test modules (29 files, 281 tests)
 ├── run_all.py                   # Orchestration script (stages 01–16)
 ├── plotting.py                  # Visualization utilities
 ├── config.json                  # Master configuration
