@@ -151,9 +151,30 @@ def solve_mode_a(
         g_grad = coherence_grad(kappa_hat, float(config["kappa_lo"]), float(config["kappa_hi"]))
         g_pen = coherence_penalty(kappa_hat, float(config["kappa_lo"]), float(config["kappa_hi"]))
         coupling_scale = float(config["w3"]) * (abs(g_grad) * 0.5 + g_pen * 0.3)
-        for idx in [1, 5, 6]:
-            if idx < n:
-                Q_eff[idx, idx] += coupling_scale
+        # Axis-differential coherence weighting.
+        # If config provides "J_coupling" (an (n,n) array), weight each axis
+        # by its normalised row norm: axes with stronger coupling receive
+        # proportionally larger Q boost. This routes planning effort toward
+        # the axes that most affect system-wide coherence.
+        # If "J_coupling" is absent (legacy / isotropic models), fall back
+        # to the previous hardcoded behaviour (uniform boost on axes [1,5,6])
+        # so all existing tests continue to pass unchanged.
+        J_coupling = config.get("J_coupling", None)
+        if J_coupling is not None:
+            J = np.asarray(J_coupling, dtype=float)
+            row_norms = np.linalg.norm(J, axis=1)          # shape (n,)
+            total = row_norms.sum()
+            if total > 1e-10:
+                axis_weights = row_norms / total            # normalised
+            else:
+                axis_weights = np.ones(n) / n
+            for i in range(n):
+                Q_eff[i, i] += coupling_scale * axis_weights[i] * n
+        else:
+            # Legacy fallback: uniform boost on axes [1, 5, 6]
+            for idx in [1, 5, 6]:
+                if idx < n:
+                    Q_eff[idx, idx] += coupling_scale
 
     # ── Tightened-constraint Q boost: when a dimension is tightly constrained
     # (tight margin < threshold), raise Q on that dimension so the controller
