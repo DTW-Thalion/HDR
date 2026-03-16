@@ -104,6 +104,12 @@ def solve_mode_a(
        approximation).
     5. Safety fallback threshold raised to 3×eps_safe and scale raised to 0.65
        to prevent the clamp→large-deviation→clamp spiral in the original.
+
+    Parameters (v7.1 addition)
+    --------------------------
+    R_u_full : np.ndarray or None, shape (m, m)
+        Full cross-column interaction penalty matrix. When provided, replaces
+        the default lambda_u * I diagonal penalty. Must be symmetric PD.
     """
     t0 = time.perf_counter()
     n = len(x_hat)

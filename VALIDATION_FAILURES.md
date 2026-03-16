@@ -29,9 +29,9 @@ _Baseline run performed before Tasks 2–5 modifications._
 The following checks introduced by Tasks 2–5 are **expected to fail** and are categorised as (B) ACKNOWLEDGE:
 
 ### 07.8 — Mismatch bound covers empirical p90 delta_A for basin 1
-- **Category**: (B) ACKNOWLEDGE — known limitation documented in manuscript
-- **Reason**: `model_mismatch_bound = 0.20` is less than the empirical p90 of basin-1 delta_A (~0.347). This means the ISS Proposition 10.4 guarantee is violated in ~10% of seeds. This is an intentional test of the current parameter values and must remain visible. The manuscript should disclose this.
-- **Before/After**: no threshold change (must fail with current params).
+- **Category**: (A) RESOLVED in v7.1
+- **Reason**: `model_mismatch_bound` updated from 0.20 to 0.347 in v7.1, matching the empirical p90 of basin-1 delta_A. The ISS Proposition 10.4 guarantee now holds.
+- **Before/After**: `model_mismatch_bound = 0.20` → `0.347`. Check 07.8 now passes.
 
 ### 07.4b — IMM posterior entropy after 50 non-maladaptive steps
 - **Category**: (B) ACKNOWLEDGE if H ≤ 0.3 — filter may over-concentrate regardless of signal. Known limitation.
@@ -48,11 +48,16 @@ All four runners verified via `generate_reports.py --profiles smoke standard ext
 
 | Profile | Total checks | Passed | Failed | Failure(s) |
 |---------|-------------|--------|--------|------------|
-| smoke | 97 | 96 | 1 | 07.8 mismatch bound (expected, (B) ACKNOWLEDGE) |
-| standard | 98 | 97 | 1 | 07.8 mismatch bound (expected, (B) ACKNOWLEDGE) |
-| extended | 110 | 109 | 1 | 07.8 mismatch bound (expected, (B) ACKNOWLEDGE) |
-| validation | 95 | 94 | 1 | 07.8 mismatch bound (expected, (B) ACKNOWLEDGE) |
-| **Total** | **400** | **396** | **4** | All 4 are the same intentional 07.8 failure |
+| smoke | 97 | 97 | 0 | — |
+| standard | 98 | 98 | 0 | — |
+| extended | 110 | 110 | 0 | — |
+| validation | 95 | 95 | 0 | — |
+| **Total** | **400** | **400** | **0** | All pass |
+
+**v7.1 update:** `model_mismatch_bound` was updated from 0.20 to 0.347, which matches the
+empirical p90 of basin-1 delta_A. Check 07.8 now passes in all profiles. The ISS
+Proposition 10.4 guarantee is no longer violated; the manuscript mismatch bound accurately
+reflects the empirical distribution.
 
 New checks introduced by Tasks 2–5 (all four runners):
 
@@ -63,7 +68,7 @@ New checks introduced by Tasks 2–5 (all four runners):
 | 07.4a — IMM numerical stability at p_miss=0.3 | PASS |
 | 07.4b — IMM posterior entropy > 0.3 nats after 50 steps | PASS (H≈0.68) |
 | 07.4c — IMM recovers basin-1 MAP within 30 steps | PASS (map_mode=1) |
-| 07.8 — Mismatch bound covers p90 basin-1 delta_A | **FAIL** (0.200 < 0.347 — intentional, (B) ACKNOWLEDGE) |
+| 07.8 — Mismatch bound covers p90 basin-1 delta_A | PASS (0.347 ≥ 0.347) |
 
 ---
 

@@ -315,6 +315,9 @@ def run_stage_11(
         Minimum required containment rate (Proposition 8.4 criterion).
     fast_mode : bool
         If True, use reduced parameters.
+    use_tube_mpc : bool
+        If True, also compute mRPI zonotopes and run tube-MPC trajectories
+        in parallel, reporting per-basin containment rates (v7.1).
 
     Returns
     -------

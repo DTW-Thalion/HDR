@@ -31,14 +31,16 @@ function `solve_mode_a`):
 **Why this is acceptable:** The approximation is consistent with the
 manuscript's architectural description at the level of concepts
 (tightened set, projected reference, Riccati terminal cost).  The gap
-is in degree of optimality, not architectural correctness.  A full
-QP-based tube-MPC was not implemented because cvxpy/osqp are not
-available in the target execution environment.
+is in degree of optimality, not architectural correctness.
 
-**Manuscript correction required:** Replace any phrase 'we implement
-robust tube MPC' with 'we implement an approximate finite-horizon
-tracking controller with chance-constraint tightening; see
-VALIDATION_PLAN.md for the precise implementation description.'
+**v7.1 update:** A tube-MPC implementation is now available in
+`hdr_validation/control/tube_mpc.py`. It computes a maximal Robust
+Positively Invariant (mRPI) set via the Raković et al. (2005) algorithm
+using zonotope representation, and wraps `solve_mode_a` with nominal +
+ancillary feedback decomposition: u = u_bar + K_fb @ (x_hat - x_bar).
+This can be activated via `use_tube_mpc=True` in Stage 11. The default
+Mode A controller (`solve_mode_a`) remains the approximate version
+described above.
 
 ## Time-grid assumption
 

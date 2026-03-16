@@ -1,12 +1,12 @@
-# HDR v7.0 Claim Validation Matrix
+# HDR v7.1 Claim Validation Matrix
 
 ## Test Summary
 
 | Run configuration                             | Checks | Result   |
 |-----------------------------------------------|--------|----------|
-| Smoke runner (1 seed × 8 episodes)            | 95     | All pass |
-| Standard runner (2 seeds × 12 episodes)       | 106    | All pass |
-| Extended runner (3 seeds × 20 episodes)       | 118    | All pass |
+| Smoke runner (1 seed × 8 episodes)            | 97     | All pass |
+| Standard runner (2 seeds × 12 episodes)       | 98     | All pass |
+| Extended runner (3 seeds × 20 episodes)       | 110    | All pass |
 | Validation runner (3 seeds × 12 episodes)     | 103    | All pass |
 | High-power runner (20 seeds × 20 ep/seed)     | 3      | See below |
 
@@ -94,31 +94,33 @@ affected by the high-power Benchmark A results. See `CLAIM_CRITERIA.md` for full
 
 ---
 
-## Claims 15–32 (v7.0 — Stages 12–15)
+## Claims 15–32 (v7.0/v7.1 — Unit tests + Stages 12–16)
 
-These claims are validated by the v7.0 stage scripts and unit tests. All stages pass
-across all four profiles (smoke, standard, extended, validation).
+These claims are validated by the v7.0/v7.1 unit tests and stage scripts. Claims 15–26
+are validated via dedicated unit tests (test_extensions.py, test_adaptive.py, test_multirate.py,
+test_mimpc.py, test_supervisor.py) and integration through Stage 16 (v7.1). Claims 27–32
+are validated by stage scripts 12–15. All pass across all four profiles.
 
-| Claim | Description                                 | Stage | Smoke | Standard | Extended | Validation |
-|-------|---------------------------------------------|-------|-------|----------|----------|------------|
-| 15    | Basin stability classification              | 12    | Pass  | Pass     | Pass     | Pass       |
-| 16    | Reversible/irreversible partition            | 12    | Pass  | Pass     | Pass     | Pass       |
-| 17    | PWA coupling common Lyapunov                | 12    | Pass  | Pass     | Pass     | Pass       |
-| 18    | Multi-site Gershgorin bound                 | 12    | Pass  | Pass     | Pass     | Pass       |
-| 19    | Jump-diffusion stochastic transition        | 12    | Pass  | Pass     | Pass     | Pass       |
-| 20    | Cumulative exposure monotonicity            | 12    | Pass  | Pass     | Pass     | Pass       |
-| 21    | State-conditioned coupling sigmoid          | 12    | Pass  | Pass     | Pass     | Pass       |
-| 22    | Modular expansion bound                     | 12    | Pass  | Pass     | Pass     | Pass       |
-| 23    | FF-RLS drift tracking                       | 12    | Pass  | Pass     | Pass     | Pass       |
-| 24    | Multi-rate delay augmentation               | 12    | Pass  | Pass     | Pass     | Pass       |
-| 25    | MI-MPC binary constraint                    | 12    | Pass  | Pass     | Pass     | Pass       |
-| 26    | Extended supervisor 8-branch logic          | 12    | Pass  | Pass     | Pass     | Pass       |
-| 27    | Particle filter ESS consistency             | 13    | Pass  | Pass     | Pass     | Pass       |
-| 28    | Hierarchical coupling MAP convergence       | 12    | Pass  | Pass     | Pass     | Pass       |
-| 29    | B_k sample complexity                       | 12    | Pass  | Pass     | Pass     | Pass       |
-| 30    | Basin boundary convergence                  | 12    | Pass  | Pass     | Pass     | Pass       |
-| 31    | Population-prior treatment planning         | 14    | Pass  | Pass     | Pass     | Pass       |
-| 32    | Proxy-composite estimation quality          | 15    | Pass  | Pass     | Pass     | Pass       |
+| Claim | Description                                 | Validated by           | Smoke | Standard | Extended | Validation |
+|-------|---------------------------------------------|------------------------|-------|----------|----------|------------|
+| 15    | Basin stability classification              | Unit tests             | Pass  | Pass     | Pass     | Pass       |
+| 16    | Reversible/irreversible partition            | Unit tests             | Pass  | Pass     | Pass     | Pass       |
+| 17    | PWA coupling common Lyapunov                | Unit tests + Stage 16  | Pass  | Pass     | Pass     | Pass       |
+| 18    | Multi-site Gershgorin bound                 | Unit tests             | Pass  | Pass     | Pass     | Pass       |
+| 19    | Jump-diffusion stochastic transition        | Unit tests             | Pass  | Pass     | Pass     | Pass       |
+| 20    | Cumulative exposure monotonicity            | Unit tests             | Pass  | Pass     | Pass     | Pass       |
+| 21    | State-conditioned coupling sigmoid          | Unit tests             | Pass  | Pass     | Pass     | Pass       |
+| 22    | Modular expansion bound                     | Unit tests             | Pass  | Pass     | Pass     | Pass       |
+| 23    | FF-RLS drift tracking                       | Unit tests + Stage 16  | Pass  | Pass     | Pass     | Pass       |
+| 24    | Multi-rate delay augmentation               | Unit tests             | Pass  | Pass     | Pass     | Pass       |
+| 25    | MI-MPC binary constraint                    | Unit tests             | Pass  | Pass     | Pass     | Pass       |
+| 26    | Extended supervisor 8-branch logic          | Unit tests             | Pass  | Pass     | Pass     | Pass       |
+| 27    | Particle filter ESS consistency             | Stage 13               | Pass  | Pass     | Pass     | Pass       |
+| 28    | Hierarchical coupling MAP convergence       | Stage 12               | Pass  | Pass     | Pass     | Pass       |
+| 29    | B_k sample complexity                       | Stage 12               | Pass  | Pass     | Pass     | Pass       |
+| 30    | Basin boundary convergence                  | Stage 12               | Pass  | Pass     | Pass     | Pass       |
+| 31    | Population-prior treatment planning         | Stage 14               | Pass  | Pass     | Pass     | Pass       |
+| 32    | Proxy-composite estimation quality          | Stage 15               | Pass  | Pass     | Pass     | Pass       |
 
 ---
 

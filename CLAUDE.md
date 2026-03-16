@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This repository is an **in-silico validation suite** for the **Homeodynamic Remediation Framework (HDR) v7.0** — a multi-mode adaptive control system for constrained stochastic linear dynamical systems (SLDS). The framework validates mathematical properties, implementation correctness, and empirical performance across synthetic physiological scenarios.
+This repository is an **in-silico validation suite** for the **Homeodynamic Remediation Framework (HDR) v7.1** — a multi-mode adaptive control system for constrained stochastic linear dynamical systems (SLDS). The framework validates mathematical properties, implementation correctness, and empirical performance across synthetic physiological scenarios.
 
 HDR models a latent physiological state (e.g., neuroendocrine system) with K discrete operating modes ("basins") and switches between three control strategies based on inference quality:
 
@@ -23,7 +23,8 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │   │   ├── mode_c.py            # Information-maximizing dither control (Mode C)
 │   │   ├── mimpc.py             # Mixed-Integer MPC (v7.0)
 │   │   ├── supervisor.py        # Extended 8-branch supervisor (v7.0)
-│   │   └── mpc.py               # Model Predictive Control (Mode A), solve_mode_a_unstable, solve_mode_a_irr
+│   │   ├── mpc.py               # Model Predictive Control (Mode A), solve_mode_a_unstable, solve_mode_a_irr
+│   │   └── tube_mpc.py          # mRPI terminal set and tube-MPC (v7.1)
 │   ├── inference/               # Inference/estimation subpackage
 │   │   ├── ici.py               # Inference-Control Interface (ICI) — core ICI conditions
 │   │   ├── imm.py               # IMM filter + RegionConditionedIMM, FactoredMultiSiteIMM, MultiRateIMM (v7.0)
@@ -39,7 +40,8 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │   │   ├── safety.py            # Safety analysis tools
 │   │   ├── target_set.py        # Target set geometry (box/ellipsoidal)
 │   │   ├── extensions.py        # v7.0 structural extensions (basin classifier, PWA, jump-diffusion, etc.)
-│   │   ├── adaptive.py          # Forgetting-factor RLS, drift detection (v7.0)
+│   │   ├── adaptive.py          # Forgetting-factor RLS, drift detection, adaptive mismatch bound (v7.1)
+│   │   ├── saturation.py        # Michaelis-Menten saturating dose-response (v7.1)
 │   │   └── multirate.py         # Multi-rate observer, delay augmentation (v7.0)
 │   ├── identification/          # v7.0 identification subpackage
 │   │   ├── hierarchical.py      # Hierarchical empirical-Bayes coupling estimation
@@ -49,7 +51,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │   │   ├── population_planning.py # Population-prior treatment planning
 │   │   ├── tau_estimation.py    # Tau burden estimation
 │   │   └── risk_information.py  # Risk-information frontier
-│   └── stages/                  # Stage scripts for stages 08–15
+│   └── stages/                  # Stage scripts for stages 08–16
 │       ├── stage_08_ablation.py
 │       ├── stage_09_baselines.py
 │       ├── stage_10_mode_b_sweep.py
@@ -57,7 +59,8 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │       ├── stage_12_hierarchical.py  # v7.0
 │       ├── stage_13_inference_backbone.py  # v7.0
 │       ├── stage_14_population_planning.py  # v7.0
-│       └── stage_15_proxy_composite.py  # v7.0
+│       ├── stage_15_proxy_composite.py  # v7.0
+│       └── stage_16_extensions.py  # v7.1 — model-failure extension integration
 ├── results/                     # Experiment outputs (auto-generated)
 │   ├── stage_04/ … stage_15/    # Per-stage result artifacts
 │   └── stage_03b/, stage_03c/   # Sub-stage artifacts
@@ -65,8 +68,8 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 ├── standard_runner.py           # Standard profile runner
 ├── extended_runner.py           # Extended profile runner
 ├── validation_runner.py         # Validation profile runner
-├── test_*.py                    # Pytest test modules (24 files, 211 tests)
-├── run_all.py                   # Orchestration script (stages 01–15)
+├── test_*.py                    # Pytest test modules (29 files, 243 tests)
+├── run_all.py                   # Orchestration script (stages 01–16)
 ├── plotting.py                  # Visualization utilities
 ├── config.json                  # Master configuration
 ├── paper_defaults.json          # Reference parameter values from paper
@@ -96,6 +99,8 @@ from hdr_validation.model.target_set import build_target_set, TargetSet
 from hdr_validation.model.hsmm import DwellModel
 from hdr_validation.model.extensions import BasinClassifier, JumpDiffusion, PWACoupling
 from hdr_validation.model.adaptive import FFRLSEstimator, DriftDetector
+from hdr_validation.model.saturation import michaelis_menten, apply_saturation
+from hdr_validation.control.tube_mpc import compute_mRPI_zonotope, solve_tube_mpc
 from hdr_validation.identification.hierarchical import HierarchicalCouplingEstimator
 from hdr_validation.identification.boed import BOEDEstimator
 from hdr_validation.utils import ensure_dir, atomic_write_text
@@ -103,7 +108,7 @@ from hdr_validation.packaging import zip_paths
 from hdr_validation.specification import observation_schedule, generate_observation
 ```
 
-Stage logic for stages 01–07 lives in the profile runner modules (`smoke_runner.py`, `standard_runner.py`, etc.). Stages 08–15 are in `hdr_validation/stages/`.
+Stage logic for stages 01–07 lives in the profile runner modules (`smoke_runner.py`, `standard_runner.py`, etc.). Stages 08–16 are in `hdr_validation/stages/`.
 
 ---
 
@@ -147,6 +152,7 @@ python run_all.py --stages 12 13 14 15                       # v7.0 stages only
 | 13   | `stage_13_inference_backbone.py` | Inference backbone benchmark (v7.0) |
 | 14   | `stage_14_population_planning.py` | Population planning (v7.0)         |
 | 15   | `stage_15_proxy_composite.py` | Proxy composite estimation (v7.0)    |
+| 16   | `stage_16_extensions.py` | Model-failure extension integration (v7.1) |
 
 ---
 
@@ -256,6 +262,11 @@ def test_mpc_returns_bounded_control():
 | `test_variational.py`     | Variational SLDS inference (v7.0)               |
 | `test_identification.py`  | Identification subpackage (v7.0, 15 tests)      |
 | `test_committor_jump.py`  | Committor with jumps (v7.0)                     |
+| `test_tube_mpc.py`        | mRPI terminal set and tube-MPC (v7.1)           |
+| `test_interaction_matrix.py` | Cross-column interaction matrix R_u_full (v7.1) |
+| `test_saturation.py`      | Michaelis-Menten dose-response (v7.1)           |
+| `test_stage_16.py`        | Stage 16 extension integration (v7.1)           |
+| `test_adaptive_delta.py`  | Adaptive mismatch bound via FF-RLS (v7.1)       |
 
 ---
 
@@ -276,14 +287,14 @@ K=3 basins with spectral radii `rho_reference = [0.72, 0.96, 0.55]`. Basin 1 (rh
 
 The ICI (`inference/ici.py`) defines three conditions for activating Mode C:
 
-1. **Condition (i)**: `μ̂_k > μ̄_required` — mode error exceeds tolerable bound
-2. **Condition (ii)**: `p_A^robust < ω_min` — robust Mode A probability too low
-3. **Condition (iii)**: `T_k^eff < T_C_max` — effective sample count insufficient
+1. **Condition (i)**: `μ̂ ≥ μ̄_required` — mode error exceeds tolerable bound
+2. **Condition (ii)**: `R_Brier ≥ R_Brier_max` — calibration error exceeds maximum
+3. **Condition (iii)**: `any T_k^eff < ω_min` — effective sample count below threshold
 
 Key ICI quantities:
 - `T_k^eff = T * π_k * (1 - p_miss) * (1 - ρ_k)` — effective sample count (Prop 9.2)
 - `p_A^robust = p_A_nominal + k_calib * R_Brier` — calibration-adjusted Mode A probability
-- `ω_min = omega_min_factor * T_k^eff` — minimum viable probability threshold
+- `ω_min` — regime boundary threshold for minimum effective sample count
 
 ### Control hierarchy
 
@@ -392,7 +403,7 @@ results/stage_03b/smoke/ici_diagnostic/
 
 ## Claim Validation
 
-The suite validates 32 claims across v5.0 and v7.0:
+The suite validates 32 claims across v5.0, v7.0, and v7.1:
 
 - **Claims 1–4**: ICI correctness, Mode A improvement, τ̃ correlation, chance-constraint calibration
 - **Claims 5–6**: ISS scaling, stability under drift
@@ -405,7 +416,7 @@ The suite validates 32 claims across v5.0 and v7.0:
 - **Claims 27–28** (v7.0): Particle filter consistency, hierarchical coupling convergence
 - **Claims 29–32** (v7.0): B_k sample complexity, basin boundary convergence, population planning, proxy-composite estimation
 
-Claims 1–14 are evaluated by stages 01–11; Claims 15–32 by stages 12–15.
+Claims 1–14 are evaluated by stages 01–11; Claims 15–32 by stages 12–16.
 A claim is marked `Supported` only when it passes its criterion in both smoke and standard profiles.
 
 See `CLAIM_CRITERIA.md` for full criterion definitions and `CLAIM_MATRIX.md` for current status.
@@ -418,7 +429,7 @@ See `CLAIM_CRITERIA.md` for full criterion definitions and `CLAIM_MATRIX.md` for
 2. **No internet access**: All data is synthetic and generated locally.
 3. **Python ≥ 3.10** required (`from __future__ import annotations` used throughout).
 4. **Deterministic seeds**: All randomness uses `np.random.default_rng(seed)`.
-5. **Mode A is approximate**: Uses Riccati recursion + box projection, not full robust tube MPC.
+5. **Mode A**: Uses Riccati recursion + box projection by default; tube-MPC with mRPI terminal set available via `tube_mpc.py` (v7.1).
 6. **EM updates are restricted**: Only `C_k`, `R_k`, and selected `A_k`, `B_k` via weighted regression.
 7. **Coherence**: Evaluated from PLV-like summary of oscillatory axes, not full predictive coherence model.
 8. **Control grid**: 30-minute steps (`dt_minutes=30`, `steps_per_day=48`).

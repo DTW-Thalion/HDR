@@ -191,7 +191,7 @@ def _run_subtest_16_12_baseline(cfg, n_seeds, T):
     from hdr_validation.model.target_set import build_target_set
     from hdr_validation.control.mpc import solve_mode_a
 
-    results = {"subtest": "16.12", "name": "PD baseline equivalence"}
+    results = {"subtest": "16.12", "name": "PD profile (no extensions)"}
     seeds = [101 + i * 101 for i in range(min(n_seeds, 3))]
     all_match = True
 
