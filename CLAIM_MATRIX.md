@@ -93,6 +93,24 @@ runner evaluates only Claims 1–2 (Benchmark A).
 | 13    | p\_A^robust FP reduction                 | 03b, 10         | Pass      | Pass      | Pass      | N/A       |
 | 14    | Compound bound correctness               | 01, 07          | Pass      | Pass      | Pass      | N/A       |
 
+### Profile-level threshold disclosure (Claims 1–2)
+
+The "+3% cost reduction" and "70% win rate" criteria are applied at **different stringency
+levels** depending on the profile. The authoritative validation is the highpower runner:
+
+| Profile | Claim 1 threshold | Claim 2 threshold | Rationale |
+|---------|-------------------|-------------------|-----------|
+| Smoke (1 seed, 8 ep) | CI lower ≥ −0.05 (catastrophic-failure guard only) | Not tested | Too few maladaptive episodes (~2–3) for meaningful gain/rate estimates. Smoke verifies mechanics, not effect sizes. |
+| Standard (2 seeds, 12 ep) | gain > 0.0; CI lower ≥ +0.01 | win rate > 0.70 | Low N\_mal (~11) limits power; relaxed thresholds avoid false failures from sampling noise. |
+| Extended (3 seeds, 20 ep) | gain > 0.0; CI lower ≥ +0.01 | win rate > 0.70 | N\_mal (~15) is still modest; same relaxed thresholds as standard. |
+| **Highpower (20 seeds, 30 ep)** | **gain ≥ +0.03; CI lower ≥ +0.03** | **win rate ≥ 0.70** | **Authoritative.** N\_mal=179 gives adequate power for the +3% CI criterion. |
+
+The "Pass" entries for smoke and standard in the matrix above indicate that those profiles
+pass their own (weaker) checks. Only the highpower column carries "Supported" status for
+the full claim as stated. This is consistent with the claiming assumption in VALIDATION\_PLAN.md
+§Claiming assumptions: "A claim can be marked Supported only when it passes its predeclared
+criterion in both smoke and standard runs, unless explicitly flagged otherwise."
+
 ### Changes from prior version
 
 - **Claim 9** now lists Stages 08 and 08b as additional validators. Stage 06 validates
@@ -300,9 +318,30 @@ are validated by stage scripts 12–15. All pass across all four profiles.
 | 27    | Particle filter ESS consistency             | test\_particle + Stage 13                     | Pass  | Pass     | Pass     | Pass       |
 | 28    | Hierarchical coupling MAP convergence       | test\_identification + Stage 12               | Pass  | Pass     | Pass     | Pass       |
 | 29    | B\_k sample complexity                      | test\_identification + Stage 12               | Pass  | Pass     | Pass     | Pass       |
-| 30    | Basin boundary convergence                  | test\_identification + Stage 12               | Pass  | Pass     | Pass     | Pass       |
+| 30    | Basin boundary convergence                  | test\_identification (+ Stage 12†)            | Pass  | Pass     | Pass     | Pass       |
 | 31    | Population-prior treatment planning         | test\_identification + Stage 14               | Pass  | Pass     | Pass     | Pass       |
 | 32    | Proxy-composite estimation quality          | test\_identification + Stage 15               | Pass  | Pass     | Pass     | Pass       |
+
+### Known limitations
+
+- **†Claim 30 (basin boundary convergence)**: Stage 12's docstring lists Claims 28–30,
+  but the stage only has dedicated checks for Claims 28 (MAP convergence) and 29
+  (sample complexity). Claim 30 is partially covered: the boundary correlation check
+  in Stage 12 verifies that estimated boundaries correlate with true boundaries at
+  T\_p=200, but there is no explicit convergence-rate check analogous to Claims 28–29.
+  The unit tests in `test_identification.py` provide the primary validation via the
+  `test_boed_boundary_convergence` test. This is flagged as a coverage gap to be
+  addressed in future revisions.
+
+- **Claims 10 and 12 share assertions**: Both claims are validated in part by
+  `stage03c_mode_c()`, which checks Fisher proxy non-negativity and persistent
+  excitation. Claim 10 (identifiability) has its primary validation in Stage 03
+  (IMM F1 score), but the Mode C Fisher check in Stage 03c contributes to both
+  Claims 10 and 12. The shared assertion is: `fish_data ≥ fish_nodata` (Fisher
+  information increases with data). This is a legitimate overlap — identifiability
+  improvement (Claim 10) and Mode C Fisher improvement (Claim 12) are related
+  properties — but reviewers should be aware that the two claims are not
+  independently validated by fully disjoint code paths.
 
 ### Changes from prior version
 
