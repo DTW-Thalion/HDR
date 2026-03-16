@@ -34,6 +34,7 @@
       "rho_basin": 0.55
     }
   },
+  "tube_mpc_enabled": false,
   "containment_threshold": 0.9,
   "n_sigma_disturbance": 5.0,
   "n_seeds": 5,
