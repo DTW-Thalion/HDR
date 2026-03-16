@@ -237,9 +237,12 @@ def _run_episode_8b(
         K_pool = np.zeros((n, n))
 
     # Initial state: displacement concentrated on WEAKLY-coupled axes [3..7]
-    x = np.zeros(n)
-    x[3:] = rng.normal(loc=0.8, scale=0.3, size=n - 3)  # strong displacement
-    x[:3] = rng.normal(loc=0.0, scale=0.1, size=3)       # minimal displacement
+    # Shared starting point for both policies
+    x0 = np.zeros(n)
+    x0[3:] = rng.normal(loc=0.8, scale=0.3, size=n - 3)  # strong displacement
+    x0[:3] = rng.normal(loc=0.0, scale=0.1, size=3)       # minimal displacement
+    x_hdr = x0.copy()
+    x_base = x0.copy()
     x_ref = np.zeros(n)
     P_hat = np.eye(n) * 0.2
 
@@ -252,14 +255,16 @@ def _run_episode_8b(
     u_base_norms: list[float] = []
 
     for t in range(T):
-        state_cost = float(np.dot(x, x))
+        # State costs on independent trajectories
+        hdr_state_cost = float(np.dot(x_hdr, x_hdr))
+        base_state_cost = float(np.dot(x_base, x_base))
 
         kappa_hat_t = _get_kappa_hat_8b(ablation_cfg, t, T, variant_cfg)
 
-        # HDR Mode A control
+        # HDR Mode A control (on HDR trajectory)
         try:
             res = solve_mode_a(
-                x, P_hat, basin, target,
+                x_hdr, P_hat, basin, target,
                 kappa_hat=kappa_hat_t,
                 config=variant_cfg, step=t,
             )
@@ -267,12 +272,12 @@ def _run_episode_8b(
         except Exception:
             u_hdr = np.zeros(cfg["control_dim"])
 
-        # Baseline control (pooled LQR)
-        u_base = -K_pool @ (x - x_ref)
+        # Baseline control on baseline trajectory (pooled LQR)
+        u_base = -K_pool @ (x_base - x_ref)
         u_base = np.clip(u_base, -0.6, 0.6)
 
-        hdr_cost += state_cost + lambda_u * float(np.dot(u_hdr, u_hdr))
-        baseline_cost += state_cost + lambda_u * float(np.dot(u_base, u_base))
+        hdr_cost += hdr_state_cost + lambda_u * float(np.dot(u_hdr, u_hdr))
+        baseline_cost += base_state_cost + lambda_u * float(np.dot(u_base, u_base))
 
         # Diagnostics
         g_pen_t = coherence_penalty(
@@ -288,9 +293,12 @@ def _run_episode_8b(
         u_hdr_norms.append(float(np.linalg.norm(u_hdr)))
         u_base_norms.append(float(np.linalg.norm(u_base)))
 
-        # Advance state
+        # Shared process noise for paired comparison
         w = rng.multivariate_normal(np.zeros(n), basin.Q)
-        x = basin.A @ x + basin.B @ u_hdr + basin.b + w
+
+        # Advance independent trajectories
+        x_hdr = basin.A @ x_hdr + basin.B @ u_hdr + basin.b + w
+        x_base = basin.A @ x_base + basin.B @ u_base + basin.b + w
 
     gain = (baseline_cost - hdr_cost) / max(baseline_cost, 1e-12)
 
