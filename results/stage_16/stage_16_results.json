@@ -1,0 +1,26 @@
+{
+  "16.01": {
+    "subtest": "16.01",
+    "name": "PWA SLDS",
+    "numerical_stability": true,
+    "region_consistency_rate": 1.0,
+    "pass": true,
+    "elapsed": 0.91
+  },
+  "16.05": {
+    "subtest": "16.05",
+    "name": "Adaptive estimation (FF-RLS)",
+    "drift_tracked_rate": 1.0,
+    "mode_c_trigger_rate": 1.0,
+    "numerical_stability": true,
+    "pass": true,
+    "elapsed": 0.03
+  },
+  "16.12": {
+    "subtest": "16.12",
+    "name": "PD baseline equivalence",
+    "backward_compatible": true,
+    "pass": true,
+    "elapsed": 0.17
+  }
+}
