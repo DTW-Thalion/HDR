@@ -1,5 +1,5 @@
 """
-Transition Rate Estimation — HDR v7.0
+Transition Rate Estimation — HDR v7.3
 ======================================
 Def 11.8: Fits HSMM to labelled trajectories via Baum-Welch.
 """

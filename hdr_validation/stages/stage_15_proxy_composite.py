@@ -1,5 +1,5 @@
 """
-Stage 15 — Proxy-Composite Estimation Benchmark (HDR v7.0)
+Stage 15 — Proxy-Composite Estimation Benchmark (HDR v7.3)
 ============================================================
 Validates Claim 32: Proxy-composite estimation quality.
 """

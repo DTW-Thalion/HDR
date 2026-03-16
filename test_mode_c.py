@@ -1,5 +1,5 @@
 """
-Unit tests for Mode C (Identification Mode) — HDR v5.0.
+Unit tests for Mode C (Identification Mode) — HDR v7.3.
 Covers Proposition 7.1 (well-posedness), supervisor logic, and ModeCTracker.
 """
 from __future__ import annotations

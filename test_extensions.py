@@ -1,4 +1,4 @@
-"""Tests for hdr_validation.model.extensions — HDR v7.0 model extensions."""
+"""Tests for hdr_validation.model.extensions — HDR v7.3 model extensions."""
 from __future__ import annotations
 
 import numpy as np

@@ -1,5 +1,5 @@
 """
-Mixed-Integer MPC — HDR v7.0
+Mixed-Integer MPC — HDR v7.3
 =============================
 Implements Def 6.12: MIQP with continuous u^c and binary u^d.
 """

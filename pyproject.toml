@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hdr_validation"
-version = "7.1.0"
+version = "7.3.0"
 requires-python = ">=3.10,<3.13"
 dependencies = [
     "numpy>=1.24,<3.0",

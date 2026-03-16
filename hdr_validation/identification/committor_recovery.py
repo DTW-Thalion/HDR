@@ -1,5 +1,5 @@
 """
-Empirical Committor Recovery — HDR v7.0
+Empirical Committor Recovery — HDR v7.3
 ========================================
 Def 11.6: Nadaraya-Watson kernel regression (Eq 11.7).
 Prop 11.7: boundary convergence rate O(N^{-1/(n+2)}).

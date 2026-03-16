@@ -1,5 +1,5 @@
 """
-Stage 11 — Riccati Invariant Set Verification (HDR v5.2)
+Stage 11 — Riccati Invariant Set Verification (HDR v7.3)
 ==========================================================
 
 Verifies numerically that Benchmark A trajectories stay within the Lyapunov
@@ -412,7 +412,9 @@ def run_stage_11(
             except Exception:
                 K_k = np.zeros((n, n))
             A_cl_k = basin.A - basin.B @ K_k
-            _, chi2_bound = compute_disturbance_set(basin.Q, n)
+            # beta=0.999 per Appendix J (Definition J.1) and consistent with
+            # test_tube_mpc.py and highpower_runner.py
+            _, chi2_bound = compute_disturbance_set(basin.Q, n, beta=0.999)
             mRPI_data = compute_mRPI_zonotope(A_cl_k, basin.Q, chi2_bound, epsilon=0.01)
             tube_mRPI_data[k_idx] = mRPI_data
             tube_K_banks[k_idx] = K_k

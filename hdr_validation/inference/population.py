@@ -1,5 +1,5 @@
 """
-Population-Prior Basin Assignment — HDR v7.0
+Population-Prior Basin Assignment — HDR v7.3
 =============================================
 Sec 8.3.3: Uses population-level transition rates + demographics
 to provide informative prior when T_eff_k < omega_min.

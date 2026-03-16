@@ -1,5 +1,5 @@
 """
-Mode C — Active Identification Mode — HDR v5.0
+Mode C — Active Identification Mode — HDR v7.3
 ================================================
 
 Mode C is the third operating mode of HDR (co-equal with Mode A and Mode B).
@@ -200,7 +200,7 @@ def supervisor_mode_select(
     degradation_flag: bool,
     t_k_eff_below_threshold: bool = False,
 ) -> str:
-    """Triple-mode supervisor logic (Table 3, HDR v5.0).
+    """Triple-mode supervisor logic (Table 3, HDR v7.3).
 
     Priority: Mode C > Mode B > Mode A
 

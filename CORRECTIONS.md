@@ -107,9 +107,9 @@ estimate (+3.6 %, N_mal ≈ 15) are inflated by small-sample positive
 bias.  This is expected and is not a code defect.  The high-power run
 (N_mal = 123) is the authoritative figure.
 
-# HDR Claim Matrix — v7.1
+# HDR Claim Matrix — v7.3
 
-**Framework version:** HDR v7.1
+**Framework version:** HDR v7.3
 **Validation suite version:** `hdr_validation`
 **Claims 1–10:** Inherited and reformulated from v4.3
 **Claims 11–14:** New ICI claims added in v5.0
@@ -259,3 +259,23 @@ profile is essentially unchanged (+3.6% → +3.5%). The high-power re-run
 **Basin-stratified analysis** shows HDR's advantage is concentrated in basin 1 (rho=0.96, slow-escaping maladaptive mode): 10/11 basin-1 episodes are HDR wins in standard profile. In easier basins (0, 2), the simpler pooled LQR slightly outperforms due to lower MPC overhead.
 
 *All results are in silico only. No biological or clinical validity is implied.*
+
+---
+
+## Stage 11 β-parameter harmonisation (2026-03-16)
+
+### Finding
+
+External reviewer identified that `stage_11_invariant_set.py` calls `compute_disturbance_set(basin.Q, n)` without overriding the default `beta=0.95`, while Appendix J specifies `beta=0.999` and both `test_tube_mpc.py` and `highpower_runner.py` correctly use `beta=0.999`.
+
+### Fix
+
+Single-line change: `compute_disturbance_set(basin.Q, n, beta=0.999)` in the tube-MPC path of `run_stage_11()`.
+
+### Impact
+
+Basin 1 tube-MPC zonotope containment rate changes from 0.7906 (β=0.95) to 0.9203 (β=0.999). Lyapunov RPI criterion is unaffected (uses different code path). All other stages unaffected.
+
+### Version string update
+
+`__init__.py` updated from `5.0.0-dev` to `7.3.0`. `pyproject.toml` updated to `7.3.0`. Module docstring version labels updated to `v7.3`.

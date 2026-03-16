@@ -1,5 +1,5 @@
 """
-Stage 09 — MJLS-SMPC and Belief-MPC Baselines (HDR v5.2)
+Stage 09 — MJLS-SMPC and Belief-MPC Baselines (HDR v7.3)
 ==========================================================
 
 Adds two additional baselines to situate HDR's novelty:

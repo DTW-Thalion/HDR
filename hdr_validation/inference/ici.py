@@ -1,5 +1,5 @@
 """
-Inference–Control Interface (ICI) — HDR v5.0
+Inference–Control Interface (ICI) — HDR v7.3
 =============================================
 
 Implements the three ICI conditions from Section 9 and the quantified ISS bound

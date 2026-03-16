@@ -1,4 +1,4 @@
-# HDR v7.1 Claim Validation Matrix
+# HDR v7.3 Claim Validation Matrix
 
 **Last updated:** 2026-03-16
 
