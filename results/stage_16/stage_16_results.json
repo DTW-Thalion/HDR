@@ -5,7 +5,7 @@
     "numerical_stability": true,
     "region_consistency_rate": 1.0,
     "pass": true,
-    "elapsed": 0.72
+    "elapsed": 0.61
   },
   "16.02": {
     "subtest": "16.02",
@@ -16,7 +16,7 @@
     "absorbing_detected": true,
     "drift_nonneg": true,
     "pass": true,
-    "elapsed": 0.01
+    "elapsed": 0.02
   },
   "16.03": {
     "subtest": "16.03",
@@ -27,7 +27,7 @@
     "mode_b_bypass_rate": 1.0,
     "projection_error": 0.0,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.04": {
     "subtest": "16.04",
@@ -37,7 +37,7 @@
     "composite_stable": true,
     "gershgorin_holds": true,
     "per_site_imm_converged": true,
-    "cross_site_response": 0.3165,
+    "cross_site_response": 0.3014,
     "pass": "True",
     "elapsed": 0.01
   },
@@ -48,7 +48,7 @@
     "mode_c_trigger_rate": 1.0,
     "numerical_stability": true,
     "pass": true,
-    "elapsed": 0.05
+    "elapsed": 0.07
   },
   "16.06": {
     "subtest": "16.06",
@@ -57,10 +57,10 @@
     "backward_compatible": true,
     "jump_rate_in_ci": true,
     "committor_shift_proportional": true,
-    "jump_magnitude_ks_p": 0.9595,
+    "jump_magnitude_ks_p": 0.5,
     "prophylactic_trigger_rate": 1.0,
     "pass": true,
-    "elapsed": 0.03
+    "elapsed": 0.04
   },
   "16.07": {
     "subtest": "16.07",
@@ -71,7 +71,7 @@
     "onetime_constraint_satisfied": true,
     "feasibility_rate": 1.0,
     "pass": true,
-    "elapsed": 0.07
+    "elapsed": 0.08
   },
   "16.08": {
     "subtest": "16.08",
@@ -83,7 +83,7 @@
     "observation_epoch_improvement": true,
     "mode_accuracy_above_threshold": true,
     "pass": true,
-    "elapsed": 0.04
+    "elapsed": 0.05
   },
   "16.09": {
     "subtest": "16.09",
@@ -94,7 +94,7 @@
     "exposure_violations": 0,
     "toxicity_correlation": 1.0,
     "pass": true,
-    "elapsed": 0.71
+    "elapsed": 0.6
   },
   "16.10": {
     "subtest": "16.10",
@@ -105,7 +105,7 @@
     "stability_preserved": true,
     "sign_reversal_observed": true,
     "pass": true,
-    "elapsed": 0.05
+    "elapsed": 0.08
   },
   "16.11": {
     "subtest": "16.11",
@@ -124,7 +124,7 @@
     "name": "PD profile (no extensions)",
     "backward_compatible": true,
     "pass": true,
-    "elapsed": 0.17
+    "elapsed": 0.32
   },
   "16.13": {
     "subtest": "16.13",
@@ -167,7 +167,7 @@
     "threshold_irr_coupling": true,
     "region_stability_during_blackout": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.17": {
     "subtest": "16.17",
@@ -175,8 +175,8 @@
     "numerical_stability": true,
     "backward_compatible": true,
     "expansion_invariants_pass": true,
-    "cost_ratio": 0.9618,
+    "cost_ratio": 1.0121,
     "pass": true,
-    "elapsed": 0.41
+    "elapsed": 0.32
   }
 }
