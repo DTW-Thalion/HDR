@@ -89,6 +89,7 @@ def solve_mode_a(
     used_burden: float = 0.0,
     with_tau: bool = True,
     with_coherence: bool = True,
+    R_u_full: np.ndarray | None = None,
 ) -> MPCResult:
     """
     Mode A finite-horizon MPC (fixed implementation).
@@ -160,7 +161,18 @@ def solve_mode_a(
             boost = float(config["w1"]) * max(1.0 - tight_margin[i] / constraint_boost_threshold, 0.0) * 2.0
             Q_eff[i, i] += boost
 
-    R_eff = np.eye(basin.B.shape[1]) * float(config["lambda_u"])
+    if R_u_full is not None:
+        R_u_full = np.asarray(R_u_full, dtype=float)
+        m_ctrl = basin.B.shape[1]
+        if R_u_full.shape != (m_ctrl, m_ctrl):
+            raise ValueError(f"R_u_full must have shape ({m_ctrl}, {m_ctrl})")
+        if not np.allclose(R_u_full, R_u_full.T):
+            raise ValueError("R_u_full must be symmetric")
+        if not np.all(np.linalg.eigvalsh(R_u_full) > 0):
+            raise ValueError("R_u_full must be positive definite")
+        R_eff = R_u_full
+    else:
+        R_eff = np.eye(basin.B.shape[1]) * float(config["lambda_u"])
 
     # ── Finite-horizon gains initialised from DARE terminal cost.
     # Uses robust gain (inflated R by mismatch_bound²) so that the closed-loop
