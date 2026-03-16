@@ -5,7 +5,7 @@
     "numerical_stability": true,
     "region_consistency_rate": 1.0,
     "pass": true,
-    "elapsed": 0.91
+    "elapsed": 1.02
   },
   "16.05": {
     "subtest": "16.05",
@@ -14,13 +14,13 @@
     "mode_c_trigger_rate": 1.0,
     "numerical_stability": true,
     "pass": true,
-    "elapsed": 0.03
+    "elapsed": 0.01
   },
   "16.12": {
     "subtest": "16.12",
     "name": "PD baseline equivalence",
     "backward_compatible": true,
     "pass": true,
-    "elapsed": 0.17
+    "elapsed": 0.51
   }
 }
