@@ -43,6 +43,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │   │   ├── extensions.py        # v7.0 structural extensions (basin classifier, PWA, jump-diffusion, etc.)
 │   │   ├── adaptive.py          # Forgetting-factor RLS, drift detection, adaptive mismatch bound (v7.1)
 │   │   ├── saturation.py        # Michaelis-Menten saturating dose-response (v7.1)
+│   │   ├── stability_check.py   # Basin spectral radius validation
 │   │   └── multirate.py         # Multi-rate observer, delay augmentation (v7.0)
 │   ├── identification/          # v7.0 identification subpackage
 │   │   ├── hierarchical.py      # Hierarchical empirical-Bayes coupling estimation
@@ -68,10 +69,16 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 ├── smoke_runner.py              # Smoke profile runner (stage functions + SMOKE_CONFIG)
 ├── standard_runner.py           # Standard profile runner
 ├── extended_runner.py           # Extended profile runner
+├── extended_512_runner.py       # Extended profile with T=512
 ├── validation_runner.py         # Validation profile runner
+├── highpower_runner.py          # High-power profile runner (20 seeds × 30 ep/seed)
 ├── test_*.py                    # Pytest test modules (29 files, 281 tests)
 ├── run_all.py                   # Orchestration script (stages 01–16)
 ├── plotting.py                  # Visualization utilities
+├── analyse_highpower.py         # High-power run analysis
+├── analyse_mismatch.py          # Model mismatch analysis
+├── derive_criterion.py          # Criterion derivation utility
+├── generate_reports.py          # Report generation utility
 ├── config.json                  # Master configuration
 ├── paper_defaults.json          # Reference parameter values from paper
 └── config (N).json              # Parameter sweep variants
@@ -162,7 +169,7 @@ python run_all.py --stages 12 13 14 15                       # v7.0 stages only
 
 ### Profile hierarchy
 
-Each profile runner (e.g., `smoke_runner.py`) defines its own config dict inline (e.g., `SMOKE_CONFIG`). The master defaults come from `config.json`.
+Each profile runner (e.g., `smoke_runner.py`) defines its own config dict inline (e.g., `SMOKE_CONFIG`). Additional runners include `extended_512_runner.py` (T=512 variant) and `highpower_runner.py` (20-seed Benchmark A). The master defaults come from `config.json`.
 
 ### Key configuration parameters
 
@@ -192,12 +199,14 @@ Each profile runner (e.g., `smoke_runner.py`) defines its own config dict inline
 
 ### Profile sizes
 
-| Profile    | Seeds     | Episodes | Steps/ep | MC Rollouts |
-|------------|-----------|----------|----------|-------------|
-| smoke      | [101]     | 8        | 128      | 50          |
-| standard   | [101,202] | 12       | 128      | 100         |
-| extended   | [101,202,303] | 20   | 256      | 150         |
-| validation | [101,202,303] | 12   | 128      | 150         |
+| Profile      | Seeds           | Episodes | Steps/ep | MC Rollouts |
+|--------------|-----------------|----------|----------|-------------|
+| smoke        | [101]           | 8        | 128      | 50          |
+| standard     | [101,202]       | 12       | 128      | 100         |
+| extended     | [101,202,303]   | 20       | 256      | 150         |
+| extended_512 | [101,202,303]   | 10       | 512      | 150         |
+| validation   | [101,202,303]   | 12       | 128      | 150         |
+| highpower    | 20 seeds        | 30/seed  | 256      | —           |
 
 ---
 
@@ -240,16 +249,16 @@ def test_mpc_returns_bounded_control():
 
 | File                      | Tests                                          |
 |---------------------------|-------------------------------------------------|
-| `test_packaging.py`       | Zip archive creation                            |
-| `test_ici.py`             | ICI state computation and bounds                |
+| `test_mpc.py`             | MPC/Mode A control bounds (`solve_mode_a`)      |
+| `test_ici.py`             | ICI state computation, mu_erg bounds            |
+| `test_ici_compound.py`    | ICI compound bound (T_k_eff), Brier, calibration |
 | `test_imm.py`             | IMM inference filter                            |
-| `test_mpc.py`             | MPC/Mode A control bounds                       |
-| `test_mode_c.py`          | Mode C dither injection                         |
+| `test_committor.py`       | Committor and value iteration (Mode B)          |
+| `test_mode_c.py`          | Mode C dither injection/supervisor/tracker      |
 | `test_mode_c_fisher.py`   | Mode C Fisher information proxy                 |
 | `test_hsmm.py`            | HSMM dwell distribution models                  |
-| `test_target_set.py`      | Target set geometry                             |
-| `test_committor.py`       | Committor BVP solution                          |
-| `test_recovery.py`        | Recovery trajectory analysis                    |
+| `test_recovery.py`        | Recovery trajectory analysis (`tau_tilde`)      |
+| `test_safety.py`          | Safety analysis (Gaussian calibration toy)      |
 | `test_stability_check.py` | Basin stability classification                  |
 | `test_stage_08.py`        | Stage 08 ablation study                         |
 | `test_stage_09.py`        | Stage 09 baseline comparison                    |
@@ -389,7 +398,7 @@ np.savez_compressed(path,
 
 ## Result Artifacts
 
-Each stage outputs to `results/stage_{id}/{profile_name}/{component}/`:
+Stages 01–07 (profile-runner stages) output to `results/stage_{id}/{profile_name}/{component}/`:
 
 ```
 results/stage_03b/smoke/ici_diagnostic/
@@ -399,6 +408,14 @@ results/stage_03b/smoke/ici_diagnostic/
 ├── metrics.csv       # Tabular results
 ├── manifest.json     # Artifact manifest
 └── plots/            # Optional visualizations
+```
+
+Stages 08–16 (profile-independent stages) output flat JSON files directly:
+
+```
+results/stage_08/
+├── ablation_results.json      # Production-scale ablation output
+└── ablation_diagnosis.json    # Diagnostic/fix history
 ```
 
 ---
@@ -458,4 +475,4 @@ matplotlib    # visualization in plotting.py
 
 ## File Naming Note
 
-Some files at the repository root have names that do not match their content due to upload history (multiple "Add files via upload" commits). When navigating the codebase, verify file content rather than relying solely on filename. The canonical organized package is in `control/`, `inference/`, and `model/` subdirectories.
+Some production source files in `hdr_validation/` may have names that do not perfectly match their content due to upload history (multiple "Add files via upload" commits). The canonical organized package is in `control/`, `inference/`, `model/`, and `identification/` subdirectories. Test files at the repo root have been renamed to match their actual content.

@@ -1237,20 +1237,280 @@
       "stage": "stage_07",
       "started_at": "2026-03-08T21:51:04Z",
       "status": "completed"
+    },
+    {
+      "stage": "stage_08",
+      "profile": "smoke",
+      "status": "completed",
+      "started_at": "2026-03-16T00:00:00Z",
+      "finished_at": "2026-03-16T18:25:26Z",
+      "random_seeds": [
+        101
+      ],
+      "output_files": [
+        "ablation_results.json",
+        "ablation_diagnosis.json"
+      ],
+      "config_hash": "",
+      "failure_traceback": "",
+      "notes": "Production run: n_seeds=20, n_ep=30, T=256. ablation_criterion_met=true."
+    },
+    {
+      "stage": "stage_08b",
+      "profile": "smoke",
+      "status": "completed",
+      "started_at": "2026-03-12T00:00:00Z",
+      "finished_at": "2026-03-12T00:00:00Z",
+      "random_seeds": [
+        101
+      ],
+      "output_files": [
+        "ablation_asymmetric_results.json"
+      ],
+      "config_hash": "",
+      "failure_traceback": "",
+      "notes": "Multi-axis asymmetric ablation (coherence + calibration marginal gains)."
+    },
+    {
+      "stage": "stage_09",
+      "profile": "smoke",
+      "status": "completed",
+      "started_at": "2026-03-16T00:00:00Z",
+      "finished_at": "2026-03-16T18:25:26Z",
+      "random_seeds": [
+        101
+      ],
+      "output_files": [
+        "baseline_comparison.json"
+      ],
+      "config_hash": "",
+      "failure_traceback": "",
+      "notes": "Baseline comparison: belief_mpc, mjls_smpc, pooled_lqr vs HDR."
+    },
+    {
+      "stage": "stage_10",
+      "profile": "smoke",
+      "status": "completed",
+      "started_at": "2026-03-16T00:00:00Z",
+      "finished_at": "2026-03-16T18:25:26Z",
+      "random_seeds": [
+        101
+      ],
+      "output_files": [
+        "mode_b_fp_fn_sweep.json"
+      ],
+      "config_hash": "",
+      "failure_traceback": "",
+      "notes": "Mode B FP/FN sweep: robust threshold FP <= fixed threshold FP at all levels."
+    },
+    {
+      "stage": "stage_11",
+      "profile": "smoke",
+      "status": "completed",
+      "started_at": "2026-03-16T00:00:00Z",
+      "finished_at": "2026-03-16T18:25:26Z",
+      "random_seeds": [
+        101
+      ],
+      "output_files": [
+        "invariant_set_results.json",
+        "invariant_set_verification.json"
+      ],
+      "config_hash": "",
+      "failure_traceback": "",
+      "notes": "Riccati invariant set: Proposition 8.4 RPI rate >= 90% for all basins."
+    },
+    {
+      "stage": "stage_12",
+      "profile": "smoke",
+      "status": "completed",
+      "started_at": "2026-03-08T00:00:00Z",
+      "finished_at": "2026-03-08T00:00:00Z",
+      "random_seeds": [
+        101
+      ],
+      "output_files": [
+        "results.json"
+      ],
+      "config_hash": "",
+      "failure_traceback": "",
+      "notes": "Hierarchical coupling estimation (v7.0). Claims 28-30."
+    },
+    {
+      "stage": "stage_13",
+      "profile": "smoke",
+      "status": "completed",
+      "started_at": "2026-03-08T00:00:00Z",
+      "finished_at": "2026-03-08T00:00:00Z",
+      "random_seeds": [
+        101
+      ],
+      "output_files": [
+        "results.json"
+      ],
+      "config_hash": "",
+      "failure_traceback": "",
+      "notes": "Inference backbone benchmark (v7.0). Claim 27."
+    },
+    {
+      "stage": "stage_14",
+      "profile": "smoke",
+      "status": "completed",
+      "started_at": "2026-03-08T00:00:00Z",
+      "finished_at": "2026-03-08T00:00:00Z",
+      "random_seeds": [
+        101
+      ],
+      "output_files": [
+        "results.json"
+      ],
+      "config_hash": "",
+      "failure_traceback": "",
+      "notes": "Population planning (v7.0). Claim 31."
+    },
+    {
+      "stage": "stage_15",
+      "profile": "smoke",
+      "status": "completed",
+      "started_at": "2026-03-08T00:00:00Z",
+      "finished_at": "2026-03-08T00:00:00Z",
+      "random_seeds": [
+        101
+      ],
+      "output_files": [
+        "results.json"
+      ],
+      "config_hash": "",
+      "failure_traceback": "",
+      "notes": "Proxy composite estimation (v7.0). Claim 32."
+    },
+    {
+      "stage": "stage_16",
+      "profile": "smoke",
+      "status": "completed",
+      "started_at": "2026-03-08T00:00:00Z",
+      "finished_at": "2026-03-08T00:00:00Z",
+      "random_seeds": [
+        101
+      ],
+      "output_files": [
+        "stage_16_results.json"
+      ],
+      "config_hash": "",
+      "failure_traceback": "",
+      "notes": "Model-failure extension integration (v7.1). Claims 17, 23."
     }
   ],
   "project": "hdr_validation",
-  "updated_at": "2026-03-08T21:52:59Z",
+  "updated_at": "2026-03-16T18:25:26Z",
   "claim_criteria": {
     "claim_1": {
       "description": "ICI correctly identifies when Mode A guarantees hold",
-      "metrics": ["hdr_vs_pooled_estimated_gain_maladaptive >= +0.03", "hdr_maladaptive_win_rate >= 0.70"],
+      "metrics": [
+        "hdr_vs_pooled_estimated_gain_maladaptive >= +0.03",
+        "hdr_maladaptive_win_rate >= 0.70"
+      ],
       "note": "Claims 1 and 2 are evaluated on maladaptive-basin episodes (basin index 1, rho=0.96) because HDR is a remediation framework. The fair baseline is pooled_lqr_estimated (IMM x_hat), not oracle-state pooled_lqr."
     },
     "claim_2": {
       "description": "Mode A improves over baselines without exceeding safety budget",
-      "metrics": ["hdr_vs_pooled_estimated_gain_maladaptive >= +0.03", "hdr_maladaptive_win_rate >= 0.70"],
+      "metrics": [
+        "hdr_vs_pooled_estimated_gain_maladaptive >= +0.03",
+        "hdr_maladaptive_win_rate >= 0.70"
+      ],
       "note": "Claims 1 and 2 are evaluated on maladaptive-basin episodes (basin index 1, rho=0.96) because HDR is a remediation framework. The fair baseline is pooled_lqr_estimated (IMM x_hat), not oracle-state pooled_lqr."
+    },
+    "claim_3": {
+      "description": "\u03c4\u0303 sandwich inequality: \u03c4_L \u2264 \u03c4\u0303 with strict gap (Prop H.1)",
+      "metrics": [
+        "tau_sandwich lower \u2264 tau_tilde",
+        "tau_tilde strictly > tau_L"
+      ],
+      "stage": "stage_01"
+    },
+    "claim_4": {
+      "description": "Chance-constraint calibration: tightening delta \u2265 0",
+      "metrics": [
+        "chance tightening delta \u2265 0"
+      ],
+      "stage": "stage_01"
+    },
+    "claim_5": {
+      "description": "ISS scaling: DARE contraction and mu_bar_required bounds",
+      "metrics": [
+        "alpha_from_dare in (0,1)",
+        "beta contraction in [0,1)",
+        "mu_bar_required \u2208 (0,1]"
+      ],
+      "stage": "stage_01, stage_07"
+    },
+    "claim_6": {
+      "description": "Stability under drift: Mode A finite control across mismatch sweep",
+      "metrics": [
+        "Mismatch \u03b4={0.05,0.10,0.20} Mode A finite"
+      ],
+      "stage": "stage_07"
+    },
+    "claim_7": {
+      "description": "Mode B improvement: aggressive > passive escape probability",
+      "metrics": [
+        "Mode B aggressive > passive escape prob"
+      ],
+      "stage": "stage_05"
+    },
+    "claim_8": {
+      "description": "DP approximation quality: heuristic gap \u2264 0.10, suboptimality bound \u2265 \u03b5_H",
+      "metrics": [
+        "Mode B heuristic gap \u2264 0.10",
+        "suboptimality bound \u2265 \u03b5_H"
+      ],
+      "stage": "stage_05"
+    },
+    "claim_9": {
+      "description": "Coherence penalty: monotone in w3, TIB non-inferior to baselines",
+      "metrics": [
+        "coherence contribution monotone in w3",
+        "TIB non-inferior to open-loop",
+        "TIB non-inferior to budget-constrained LQR"
+      ],
+      "stage": "stage_06"
+    },
+    "claim_10": {
+      "description": "Identifiability improvement: Fisher proxy increases with diverse data",
+      "metrics": [
+        "Fisher proxy increases with data"
+      ],
+      "stage": "stage_03c"
+    },
+    "claim_11": {
+      "description": "ICI regime identification: conditions fire correctly",
+      "metrics": [
+        "condition_iii fires when T_k_eff < omega_min",
+        "ICI state has required keys"
+      ],
+      "stage": "stage_03b"
+    },
+    "claim_12": {
+      "description": "Mode C Fisher improvement: proxy \u2265 0 and increases with data",
+      "metrics": [
+        "Fisher proxy \u2265 0 always",
+        "Fisher proxy increases with data"
+      ],
+      "stage": "stage_03c"
+    },
+    "claim_13": {
+      "description": "p_A^robust FP reduction: robust threshold FP \u2264 fixed threshold FP",
+      "metrics": [
+        "FP rate with robust threshold <= FP rate with fixed (all levels)"
+      ],
+      "stage": "stage_10"
+    },
+    "claim_14": {
+      "description": "Compound bound correctness: T_k_eff formula verified across \u03c1 values",
+      "metrics": [
+        "T_k_eff formula rho={0.72,0.85,0.96}"
+      ],
+      "stage": "stage_01, stage_07"
     }
   }
 }
