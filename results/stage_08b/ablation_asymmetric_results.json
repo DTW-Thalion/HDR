@@ -1,0 +1,80 @@
+{
+  "scenario": "multi_axis_asymmetric",
+  "variants": {
+    "hdr_full": {
+      "mean_gain": 0.0702,
+      "ci_lo": 0.0622,
+      "ci_hi": 0.0804,
+      "win_rate": 1.0,
+      "N_mal": 6,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.3125,
+        "coherence_mean_coupling": 0.008184595312500003,
+        "kappa_hat_mean": 0.61709375
+      }
+    },
+    "mpc_only": {
+      "mean_gain": 0.0719,
+      "ci_lo": 0.0644,
+      "ci_hi": 0.0814,
+      "win_rate": 1.0,
+      "N_mal": 6,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.0,
+        "coherence_mean_coupling": 0.0,
+        "kappa_hat_mean": 0.61709375
+      }
+    },
+    "mpc_plus_surrogate": {
+      "mean_gain": 0.0702,
+      "ci_lo": 0.0622,
+      "ci_hi": 0.0804,
+      "win_rate": 1.0,
+      "N_mal": 6,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.0,
+        "coherence_mean_coupling": 0.0,
+        "kappa_hat_mean": 0.61709375
+      }
+    },
+    "mpc_plus_coherence": {
+      "mean_gain": 0.0719,
+      "ci_lo": 0.0644,
+      "ci_hi": 0.0813,
+      "win_rate": 1.0,
+      "N_mal": 6,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.3125,
+        "coherence_mean_coupling": 0.008184595312500003,
+        "kappa_hat_mean": 0.61709375
+      }
+    },
+    "hdr_no_calib": {
+      "mean_gain": 0.0702,
+      "ci_lo": 0.0622,
+      "ci_hi": 0.0804,
+      "win_rate": 1.0,
+      "N_mal": 6,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.28125,
+        "coherence_mean_coupling": 0.007253906250000003,
+        "kappa_hat_mean": 0.6296875000000001
+      }
+    }
+  },
+  "n_seeds": 2,
+  "n_ep_per_seed": 3,
+  "T": 32,
+  "total_maladaptive_episodes": 6,
+  "J_diagnostics": {
+    "strong_axis_mean_norm": 0.5886,
+    "weak_axis_mean_norm": 0.0673,
+    "row_norm_ratio": 8.75
+  },
+  "results_are_valid": true,
+  "validity_note": "N_mal=6: valid",
+  "ablation_criterion_met": false,
+  "coherence_marginal_gain": 0.0,
+  "calibration_marginal_gain": 0.0,
+  "ablation_criterion_note": "hdr_full (+0.0702) < mpc_only (+0.0719) \u2014 EXPECTED_AT_SHORT_T: tau-tilde weight w_tau=6.38 penalises recovery attempts at T=32 before escape benefit is realised."
+}

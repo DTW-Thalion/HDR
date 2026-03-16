@@ -21,6 +21,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │   │   ├── lqr.py               # DLQR, committor calculations, value iteration, committor_with_jumps
 │   │   ├── mode_b.py            # Structured exploration control (Mode B)
 │   │   ├── mode_c.py            # Information-maximizing dither control (Mode C)
+│   │   ├── mode_c_fisher.py     # Fisher-information dither policy and proxy (Mode C)
 │   │   ├── mimpc.py             # Mixed-Integer MPC (v7.0)
 │   │   ├── supervisor.py        # Extended 8-branch supervisor (v7.0)
 │   │   ├── mpc.py               # Model Predictive Control (Mode A), solve_mode_a_unstable, solve_mode_a_irr
@@ -53,6 +54,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │   │   └── risk_information.py  # Risk-information frontier
 │   └── stages/                  # Stage scripts for stages 08–16
 │       ├── stage_08_ablation.py
+│       ├── stage_08b_ablation.py # Multi-axis asymmetric ablation (coherence + calibration marginal gains)
 │       ├── stage_09_baselines.py
 │       ├── stage_10_mode_b_sweep.py
 │       ├── stage_11_invariant_set.py
@@ -62,8 +64,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │       ├── stage_15_proxy_composite.py  # v7.0
 │       └── stage_16_extensions.py  # v7.1 — model-failure extension integration
 ├── results/                     # Experiment outputs (auto-generated)
-│   ├── stage_04/ … stage_15/    # Per-stage result artifacts
-│   └── stage_03b/, stage_03c/   # Sub-stage artifacts
+│   └── stage_04/ … stage_16/    # Per-stage result artifacts (incl. stage_08b)
 ├── smoke_runner.py              # Smoke profile runner (stage functions + SMOKE_CONFIG)
 ├── standard_runner.py           # Standard profile runner
 ├── extended_runner.py           # Extended profile runner
@@ -108,7 +109,7 @@ from hdr_validation.packaging import zip_paths
 from hdr_validation.specification import observation_schedule, generate_observation
 ```
 
-Stage logic for stages 01–07 lives in the profile runner modules (`smoke_runner.py`, `standard_runner.py`, etc.). Stages 08–16 are in `hdr_validation/stages/`.
+Stage logic for stages 01–07 lives in the profile runner modules (`smoke_runner.py`, `standard_runner.py`, etc.). Stages 08–16 (including 08b) are in `hdr_validation/stages/`.
 
 ---
 
@@ -145,6 +146,7 @@ python run_all.py --stages 12 13 14 15                       # v7.0 stages only
 | 06   | (in profile runner)       | State coherence checks                   |
 | 07   | (in profile runner)       | Robustness across parameter sweeps       |
 | 08   | `stage_08_ablation.py`    | Ablation study                           |
+| 08b  | `stage_08b_ablation.py`   | Multi-axis asymmetric ablation           |
 | 09   | `stage_09_baselines.py`   | Baseline comparison                      |
 | 10   | `stage_10_mode_b_sweep.py` | Mode B FP/FN sweep                      |
 | 11   | `stage_11_invariant_set.py` | Riccati invariant set verification     |
