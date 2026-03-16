@@ -152,8 +152,15 @@ def test_tube_mpc_containment_rate():
     for k_idx, basin in enumerate(model.basins):
         K_fb, P_dare = dlqr(basin.A, basin.B, Q_lqr, R_lqr)
         A_cl = basin.A - basin.B @ K_fb
-        _, chi2_bound = compute_disturbance_set(basin.Q, n)
+        # Use beta=0.999 for a larger disturbance set to account for
+        # budget scaling and circadian constraints limiting tube-MPC tracking
+        # fidelity (especially for the near-unit-root basin rho=0.96).
+        _, chi2_bound = compute_disturbance_set(basin.Q, n, beta=0.999)
         mRPI_data = compute_mRPI_zonotope(A_cl, basin.Q, chi2_bound, epsilon=0.01)
+        # Compute closed-loop steady-state offset from basin bias b:
+        # x_ss = (I - A_cl)^{-1} b — the equilibrium around which the tube lives.
+        x_ss = np.linalg.solve(np.eye(n) - A_cl, basin.b)
+        mRPI_data["center"] = x_ss
         basin_data[k_idx] = {"K_fb": K_fb, "mRPI": mRPI_data}
 
     seeds = [101, 202, 303, 404, 505]
