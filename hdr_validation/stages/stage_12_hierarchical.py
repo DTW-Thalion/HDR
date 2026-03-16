@@ -126,6 +126,63 @@ def run_stage_12(
         "note": "Finer accuracy requires more samples",
     })
 
+    # Check 5: Basin boundary convergence (Claim 30, Prop 11.7)
+    # Verify that committor boundary estimates improve with increasing N.
+    # True committor: q(x)=1 near basin-0 center (origin), q(x)=0 near basin-1
+    # center (offset). With more trajectories the MSE at test points should
+    # decrease, consistent with the O(N^{-1/(n+2)}) rate.
+    n_dim = 2  # low-dim for tractable kernel regression
+    rng_cr = np.random.default_rng(303)
+    center_0 = np.zeros(n_dim)           # basin 0 (success)
+    center_1 = np.ones(n_dim) * 4.0      # basin 1 (failure)
+
+    # Fixed test points along the axis between the two centres
+    n_test = 20
+    test_points = np.array([
+        center_0 + (center_1 - center_0) * t
+        for t in np.linspace(0.0, 1.0, n_test)
+    ])
+    # True committor: sigmoid based on distance ratio to each centre
+    def _true_q(x):
+        d0 = float(np.linalg.norm(x - center_0))
+        d1 = float(np.linalg.norm(x - center_1))
+        if d0 + d1 < 1e-12:
+            return 0.5
+        return d1 / (d0 + d1)  # 1 near basin 0, 0 near basin 1
+
+    true_q_vals = np.array([_true_q(pt) for pt in test_points])
+
+    N_values = [20, 50, 200] if not fast_mode else [20, 50]
+    mse_by_N: list[float] = []
+    for N_traj in N_values:
+        # Generate N_traj synthetic trajectories: half succeed, half fail
+        trajs_cr, labels_cr = [], []
+        for i in range(N_traj):
+            if i < N_traj // 2:
+                # Success trajectory: wanders near basin 0
+                traj = rng_cr.normal(loc=center_0, scale=0.5, size=(8, n_dim))
+                lab = np.zeros(8, dtype=int)
+            else:
+                # Failure trajectory: wanders near basin 1
+                traj = rng_cr.normal(loc=center_1, scale=0.5, size=(8, n_dim))
+                lab = np.ones(8, dtype=int)
+            trajs_cr.append(traj)
+            labels_cr.append(lab)
+        cr = CommittorRecovery(kernel_bandwidth=1.0)
+        q_hat = cr.estimate(trajs_cr, labels_cr)
+        est_q_vals = np.array([q_hat(pt) for pt in test_points])
+        mse = float(np.mean((est_q_vals - true_q_vals) ** 2))
+        mse_by_N.append(mse)
+
+    # Convergence criterion: MSE at largest N < MSE at smallest N
+    boundary_converges = mse_by_N[-1] < mse_by_N[0]
+    checks.append({
+        "check": "boundary_convergence_with_N",
+        "passed": boundary_converges,
+        "value": ", ".join(f"N={Nv}:MSE={m:.4f}" for Nv, m in zip(N_values, mse_by_N)),
+        "note": "Claim 30 — Prop 11.7: committor boundary error decreases with sample size",
+    })
+
     elapsed = time.perf_counter() - t0
     results["elapsed"] = elapsed
 

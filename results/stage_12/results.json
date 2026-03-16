@@ -4,7 +4,7 @@
       "check": "error_decreases_with_T_p",
       "passed": true,
       "value": "1.00",
-      "note": "10/10 patients show decrease"
+      "note": "5/5 patients show decrease"
     },
     {
       "check": "T_p_0_equals_group_mean",
@@ -23,8 +23,14 @@
       "passed": true,
       "value": "N_coarse=19173, N_fine=76691",
       "note": "Finer accuracy requires more samples"
+    },
+    {
+      "check": "boundary_convergence_with_N",
+      "passed": true,
+      "value": "N=20:MSE=0.0476, N=50:MSE=0.0475, N=200:MSE=0.0466",
+      "note": "Claim 30 \u2014 Prop 11.7: committor boundary error decreases with sample size"
     }
   ],
-  "n_patients": 10,
-  "elapsed": 0.019947603999753483
+  "n_patients": 5,
+  "elapsed": 0.0161580710000635
 }

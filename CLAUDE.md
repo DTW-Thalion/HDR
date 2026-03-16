@@ -72,8 +72,8 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 ├── extended_512_runner.py       # Extended profile with T=512
 ├── validation_runner.py         # Validation profile runner
 ├── highpower_runner.py          # High-power profile runner (20 seeds × 30 ep/seed)
-├── test_*.py                    # Pytest test modules (29 files, 281 tests)
-├── run_all.py                   # Orchestration script (stages 01–16)
+├── test_*.py                    # Pytest test modules (30 files, 295 tests)
+├── run_all.py                   # Orchestration script (stages 01–16, --full-validation)
 ├── plotting.py                  # Visualization utilities
 ├── analyse_highpower.py         # High-power run analysis
 ├── analyse_mismatch.py          # Model mismatch analysis
@@ -122,7 +122,25 @@ Stage logic for stages 01–07 lives in the profile runner modules (`smoke_runne
 
 ## Running the Validation Pipeline
 
-### Full pipeline
+### Recommended: full validation (all 32 claims)
+
+```bash
+python run_all.py --full-validation        # Complete validation of all 32 claims
+```
+
+This is the **recommended entry point** for reviewers. It runs four phases:
+
+| Phase | What runs | Claims covered |
+|-------|-----------|----------------|
+| 1 | Extended profile, stages 01–03c + 05–07 | 3–14 |
+| 2 | Highpower benchmark (20 seeds × 30 ep/seed) | 1–2 (authoritative) |
+| 3 | Stages 08–16 at production scale + pytest | 9, 13, 15–32 |
+| 4 | Full pytest suite (295 tests, 30 files) | 15–32 (unit test layer) |
+
+Output ends with a per-claim pass/fail summary table. Supports `--resume --skip-done`
+for resuming interrupted runs, and `--force` to re-run completed stages.
+
+### Per-profile runs
 
 ```bash
 python run_all.py                          # Run all stages, all profiles
@@ -137,6 +155,7 @@ python run_all.py --profiles smoke standard extended validation
 python run_all.py --profiles smoke --stages 03 04 --force    # Force-rerun stages 3 & 4
 python run_all.py --stages 01 03b 03c                        # Multiple stages
 python run_all.py --stages 12 13 14 15                       # v7.0 stages only
+python run_all.py --stages 08 08b --run-tests                # Run stages then pytest
 ```
 
 ### Stage IDs
@@ -261,6 +280,7 @@ def test_mpc_returns_bounded_control():
 | `test_safety.py`          | Safety analysis (Gaussian calibration toy)      |
 | `test_stability_check.py` | Basin stability classification                  |
 | `test_stage_08.py`        | Stage 08 ablation study                         |
+| `test_stage_08b.py`       | Stage 08b asymmetric ablation (14 tests)        |
 | `test_stage_09.py`        | Stage 09 baseline comparison                    |
 | `test_stage_10.py`        | Stage 10 Mode B sweep                           |
 | `test_stage_11.py`        | Stage 11 invariant set                          |
@@ -436,7 +456,10 @@ The suite validates 32 claims across v5.0, v7.0, and v7.1:
 - **Claims 29–32** (v7.0): B_k sample complexity, basin boundary convergence, population planning, proxy-composite estimation
 
 Claims 1–14 are evaluated by stages 01–11; Claims 15–32 by stages 12–16.
-A claim is marked `Supported` only when it passes its criterion in both smoke and standard profiles.
+A claim is marked `Supported` only when it passes its criterion in the appropriate profile.
+Claims 1–2 require the highpower runner (20 seeds × 30 ep/seed) for authoritative validation.
+
+**To validate all 32 claims in a single run:** `python run_all.py --full-validation`
 
 See `CLAIM_CRITERIA.md` for full criterion definitions and `CLAIM_MATRIX.md` for current status.
 
