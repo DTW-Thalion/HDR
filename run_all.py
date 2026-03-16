@@ -11,6 +11,7 @@ Usage:
     python run_all.py --profiles standard --stages 04 --force
     python run_all.py --stages 01 03b 03c          # selected stages, all profiles
     python run_all.py --resume --skip-done         # skip already-completed stages
+    python run_all.py --stages 08 08b --run-tests  # run stages then pytest tests
 """
 from __future__ import annotations
 
@@ -66,6 +67,17 @@ PROFILE_MODULES = {
     "standard":   "standard_runner",
     "extended":   "extended_runner",
     "validation": "validation_runner",
+}
+
+# Mapping of stage IDs to their pytest test files (relative to ROOT).
+# Stages without a dedicated test file are omitted.
+STAGE_TEST_FILES: dict[str, str] = {
+    "08":  "test_stage_08.py",
+    "08b": "test_stage_08b.py",
+    "09":  "test_stage_09.py",
+    "10":  "test_stage_10.py",
+    "11":  "test_stage_11.py",
+    "16":  "test_stage_16.py",
 }
 
 # ── Manifest (checkpoint) ──────────────────────────────────────────────────────
@@ -233,6 +245,44 @@ def call_stage(mod: Any, stage_id: str, state: dict) -> None:
         raise ValueError(f"Unknown stage: {stage_id!r}")
 
 
+# ── Test runner ────────────────────────────────────────────────────────────
+
+def run_stage_tests(stage_id: str) -> tuple[bool, str]:
+    """Run the pytest test file for a stage, if one exists.
+
+    Skips production-scale tests (marked with 'production' in name) to keep
+    runtime reasonable.  Returns (passed, summary_message).
+    """
+    import subprocess
+
+    test_file = STAGE_TEST_FILES.get(stage_id)
+    if test_file is None:
+        return True, f"No test file for stage {stage_id}"
+
+    test_path = ROOT / test_file
+    if not test_path.exists():
+        return False, f"Test file {test_file} not found"
+
+    cmd = [
+        sys.executable, "-m", "pytest",
+        str(test_path),
+        "-v", "-x",
+        "-k", "not production",
+    ]
+    print(f"\n  Running tests: {test_file} (excluding production-scale)")
+    result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
+    print(result.stdout)
+    if result.stderr:
+        print(result.stderr)
+
+    passed = result.returncode == 0
+    if passed:
+        summary = f"{test_file}: all tests passed"
+    else:
+        summary = f"{test_file}: tests FAILED (exit code {result.returncode})"
+    return passed, summary
+
+
 # ── Profile runner ─────────────────────────────────────────────────────────────
 
 def run_profile(
@@ -242,6 +292,7 @@ def run_profile(
     skip_done: bool,
     manifest: dict,
     fast: bool = False,
+    run_tests: bool = False,
 ) -> dict[str, list[dict]]:
     """
     Run the requested stages for a profile.
@@ -319,6 +370,21 @@ def run_profile(
                 "note": f"Profile-independent stage {stage_id}",
             })
 
+        # Optionally run pytest test file for this stage
+        if run_tests and stage_id in STAGE_TEST_FILES:
+            test_passed, test_summary = run_stage_tests(stage_id)
+            mod.results.append({
+                "stage": stage_id,
+                "check": "pytest",
+                "passed": test_passed,
+                "value": test_summary,
+                "note": f"pytest {STAGE_TEST_FILES[stage_id]}",
+            })
+            if not test_passed:
+                print(f"  [FAIL] {test_summary}")
+            else:
+                print(f"  [PASS] {test_summary}")
+
         stage_results[stage_id] = list(mod.results[idx_before:])
 
     return stage_results
@@ -395,6 +461,10 @@ def parse_args() -> argparse.Namespace:
         "--fast", action="store_true",
         help="Run stages 08-16 with reduced parameters for smoke testing",
     )
+    parser.add_argument(
+        "--run-tests", action="store_true",
+        help="Run pytest test files for each stage that has one (skips production-scale tests)",
+    )
     return parser.parse_args()
 
 
@@ -411,10 +481,11 @@ def main() -> None:
     manifest = load_manifest() if (args.resume or args.skip_done) else {}
 
     print("HDR Validation Suite")
-    print(f"  Profiles : {args.profiles}")
-    print(f"  Stages   : {args.stages}")
-    print(f"  Force    : {args.force}")
-    print(f"  SkipDone : {args.skip_done}")
+    print(f"  Profiles  : {args.profiles}")
+    print(f"  Stages    : {args.stages}")
+    print(f"  Force     : {args.force}")
+    print(f"  SkipDone  : {args.skip_done}")
+    print(f"  RunTests  : {args.run_tests}")
 
     all_results: dict[str, dict[str, list[dict]]] = {}
 
@@ -426,6 +497,7 @@ def main() -> None:
             skip_done=args.skip_done,
             manifest=manifest,
             fast=args.fast,
+            run_tests=args.run_tests,
         )
 
     n_fail = print_summary(all_results)
