@@ -75,6 +75,30 @@ class FFRLSEstimator:
         """||delta_A_hat|| = ||A_hat - A_hat_initial||_F"""
         return float(np.linalg.norm(self.A_hat - self.A_hat_initial, "fro"))
 
+    def sigma_rls(self) -> float:
+        """RLS estimation uncertainty: sqrt(tr(P_rls) / n^2).
+
+        Measures the average per-element estimation uncertainty
+        from the RLS covariance matrix.
+        """
+        return float(np.sqrt(np.trace(self.P_rls) / self.n**2))
+
+    def adaptive_delta_A(self, gamma_margin: float = 2.0) -> float:
+        """Adaptive mismatch bound: ||A_hat - A_initial||_2 + gamma * sigma_rls.
+
+        Parameters
+        ----------
+        gamma_margin : float
+            Safety margin multiplier on estimation uncertainty.
+
+        Returns
+        -------
+        float — instantaneous adaptive mismatch bound hat_Delta_A(t).
+        """
+        drift = float(np.linalg.norm(
+            self.A_hat - self.A_hat_initial, ord=2))
+        return drift + gamma_margin * self.sigma_rls()
+
 
 class DriftDetector:
     """Detect when drift exceeds ISS margin: ||delta_A|| > Delta_A_max.
@@ -88,3 +112,38 @@ class DriftDetector:
     def check(self, estimator: FFRLSEstimator) -> bool:
         """Returns True if drift exceeds threshold."""
         return estimator.drift_magnitude() > self.Delta_A_max
+
+    def adaptive_mubar_required(
+        self,
+        estimator: FFRLSEstimator,
+        c_ISS: float,
+        Delta_B: float,
+        K_norm: float,
+        alpha: float,
+        epsilon_ctrl: float,
+        gamma_margin: float = 2.0,
+    ) -> float:
+        """Time-varying required mode accuracy using adaptive Delta_A.
+
+        mubar(t) = [epsilon_ctrl * alpha / (c_ISS * (hat_Delta_A(t) + Delta_B * ||K||))]^2
+
+        Parameters
+        ----------
+        estimator : FFRLSEstimator — current estimator state.
+        c_ISS : float — ISS condition number.
+        Delta_B : float — input matrix mismatch bound.
+        K_norm : float — ||K_k||_2 (LQR gain spectral norm).
+        alpha : float — Lyapunov decrease rate.
+        epsilon_ctrl : float — target steady-state deviation tolerance.
+        gamma_margin : float — passed to adaptive_delta_A.
+
+        Returns
+        -------
+        float — time-varying mubar_required(t) in [0, 1].
+        """
+        delta_A = estimator.adaptive_delta_A(gamma_margin)
+        denom = c_ISS * (delta_A + Delta_B * K_norm)
+        if denom < 1e-12:
+            return 1.0
+        mubar = (epsilon_ctrl * alpha / denom) ** 2
+        return float(min(mubar, 1.0))

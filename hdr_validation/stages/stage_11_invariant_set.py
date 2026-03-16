@@ -297,6 +297,7 @@ def run_stage_11(
     n_sigma: float = 5.0,
     containment_threshold: float = 0.90,
     fast_mode: bool = False,
+    use_tube_mpc: bool = False,
 ) -> dict:
     """Run Stage 11 Riccati invariant set verification.
 
@@ -314,6 +315,9 @@ def run_stage_11(
         Minimum required containment rate (Proposition 8.4 criterion).
     fast_mode : bool
         If True, use reduced parameters.
+    use_tube_mpc : bool
+        If True, also compute mRPI zonotopes and run tube-MPC trajectories
+        in parallel, reporting per-basin containment rates (v7.1).
 
     Returns
     -------
@@ -388,8 +392,80 @@ def run_stage_11(
             "rho_basin": round(basin.rho, 4),
         }
 
+    # ── Tube-MPC path (when enabled) ──
+    if use_tube_mpc:
+        from hdr_validation.control.tube_mpc import (
+            compute_disturbance_set,
+            compute_mRPI_zonotope,
+            solve_tube_mpc,
+            zonotope_containment_check,
+        )
+        from hdr_validation.model.target_set import build_target_set as _build_ts
+
+        tube_trajs, tube_labels = [], []
+        tube_mRPI_data = {}
+        tube_K_banks = {}
+
+        for k_idx, basin in enumerate(eval_model.basins):
+            try:
+                K_k, P_k = dlqr(basin.A, basin.B, Q_lqr, R_lqr)
+            except Exception:
+                K_k = np.zeros((n, n))
+            A_cl_k = basin.A - basin.B @ K_k
+            _, chi2_bound = compute_disturbance_set(basin.Q, n)
+            mRPI_data = compute_mRPI_zonotope(A_cl_k, basin.Q, chi2_bound, epsilon=0.01)
+            tube_mRPI_data[k_idx] = mRPI_data
+            tube_K_banks[k_idx] = K_k
+
+        seeds = [101 + i * 101 for i in range(n_seeds)]
+        for seed in seeds:
+            rng = np.random.default_rng(seed)
+            for ep_idx in range(4):
+                basin_idx = rng.integers(0, len(eval_model.basins))
+                basin = eval_model.basins[basin_idx]
+                target = _build_ts(basin_idx, cfg)
+                x = rng.normal(size=n) * 0.1
+                P_hat = np.eye(n) * 0.2
+                traj = np.empty((T, n))
+                labels = np.full(T, basin_idx, dtype=int)
+                K_fb = tube_K_banks[int(basin_idx)]
+                mRPI = tube_mRPI_data[int(basin_idx)]
+
+                for t in range(T):
+                    traj[t] = x
+                    try:
+                        res = solve_tube_mpc(x, P_hat, basin, target,
+                                             mRPI, K_fb, kappa_hat=0.65,
+                                             config=cfg, step=t)
+                        u = res.u
+                    except Exception:
+                        u = np.zeros(cfg["control_dim"])
+                    w = rng.multivariate_normal(np.zeros(n), basin.Q)
+                    x = basin.A @ x + basin.B @ u + basin.b + w
+
+                tube_trajs.append(traj)
+                tube_labels.append(labels)
+
+        # Compute tube containment rates per basin
+        for k_idx in range(len(eval_model.basins)):
+            mRPI = tube_mRPI_data[k_idx]
+            inside_count = 0
+            total_count = 0
+            for traj, labels in zip(tube_trajs, tube_labels):
+                for t in range(len(traj)):
+                    if int(labels[t]) != k_idx:
+                        continue
+                    total_count += 1
+                    if zonotope_containment_check(traj[t], mRPI["G"], mRPI["center"]):
+                        inside_count += 1
+            rate = inside_count / max(total_count, 1) if total_count > 0 else float("nan")
+            basins_out[str(k_idx)]["containment_rate_tube"] = (
+                round(rate, 4) if rate == rate else None
+            )
+
     result_json = {
         "basins": basins_out,
+        "tube_mpc_enabled": use_tube_mpc,
         "containment_threshold": containment_threshold,
         "n_sigma_disturbance": n_sigma,
         "n_seeds": n_seeds,

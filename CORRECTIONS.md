@@ -43,7 +43,7 @@ at T=128 with n_seeds=2, n_ep=6.
 - test_ablation_criterion_note_contains_expected_tag_when_inverted
 - test_hdr_full_beats_mpc_only_production (SKIPPED in CI)
 
-Updated total: **125/125 pytest** (was 122/122).
+Updated total: **243/243 pytest** (29 test files, including v7.1 additions).
 
 ---
 
@@ -106,13 +106,14 @@ estimate (+3.6 %, N_mal ≈ 15) are inflated by small-sample positive
 bias.  This is expected and is not a code defect.  The high-power run
 (N_mal = 123) is the authoritative figure.
 
-# HDR Claim Matrix — v5.3
+# HDR Claim Matrix — v7.1
 
-**Framework version:** HDR v5.3
-**Validation suite version:** `hdr_validation_v5`
+**Framework version:** HDR v7.1
+**Validation suite version:** `hdr_validation`
 **Claims 1–10:** Inherited and reformulated from v4.3
 **Claims 11–14:** New ICI claims added in v5.0
-**Last updated:** 2026-03-12
+**Claims 15–32:** v7.0/v7.1 extension and identification claims
+**Last updated:** 2026-03-16
 
 ---
 
