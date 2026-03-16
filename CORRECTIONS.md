@@ -43,7 +43,8 @@ at T=128 with n_seeds=2, n_ep=6.
 - test_ablation_criterion_note_contains_expected_tag_when_inverted
 - test_hdr_full_beats_mpc_only_production (SKIPPED in CI)
 
-Updated total: **243/243 pytest** (29 test files, including v7.1 additions).
+Updated total: **281 defined, 280 passed, 1 skipped** (29 test files, including v7.1 additions).
+See the Test Summary table below for the full per-suite breakdown.
 
 ---
 
@@ -119,6 +120,8 @@ bias.  This is expected and is not a code defect.  The high-power run
 
 ## Test Summary
 
+*Verified 2026-03-16. Authoritative artefact: `pytest_final.txt`.*
+
 | Suite | Tests | Result |
 |-------|------:|--------|
 | Model unit tests (`test_hsmm`, `test_target_set`, `test_recovery`) | 53 | 53/53 passed |
@@ -127,11 +130,26 @@ bias.  This is expected and is not a code defect.  The high-power run
 | Packaging tests (`test_packaging`) | 2 | 2/2 passed |
 | Fisher trace tests (`test_mode_c_fisher`) | 12 | 12/12 passed |
 | Stability check tests (`test_stability_check`) | 7 | 7/7 passed |
-| Stage 08 ablation tests (`test_stage_08`) | 8 | 7/7 passed, 1 skipped |
+| Stage 08 ablation tests (`test_stage_08`) | 8 | 7/8 passed, 1 skipped |
 | Stage 09 baseline tests (`test_stage_09`) | 6 | 6/6 passed |
 | Stage 10 Mode B sweep tests (`test_stage_10`) | 7 | 7/7 passed |
 | Stage 11 invariant set tests (`test_stage_11`) | 9 | 9/9 passed |
-| **Total pytest** | **125** | **124/124 passed, 1 skipped** |
+| *v7.0/v7.1 additions (14 files):* | | |
+| Extensions (`test_extensions`) | 25 | 25/25 passed |
+| Identification (`test_identification`) | 15 | 15/15 passed |
+| Stage 16 extensions (`test_stage_16`) | 44 | 44/44 passed |
+| Supervisor (`test_supervisor`) | 10 | 10/10 passed |
+| MI-MPC (`test_mimpc`) | 8 | 8/8 passed |
+| Adaptive / FF-RLS (`test_adaptive`) | 8 | 8/8 passed |
+| Tube MPC / mRPI (`test_tube_mpc`) | 8 | 8/8 passed |
+| Saturation (`test_saturation`) | 7 | 7/7 passed |
+| Particle filter (`test_particle`) | 6 | 6/6 passed |
+| Multi-rate (`test_multirate`) | 6 | 6/6 passed |
+| Adaptive delta (`test_adaptive_delta`) | 6 | 6/6 passed |
+| Variational SLDS (`test_variational`) | 5 | 5/5 passed |
+| Committor with jumps (`test_committor_jump`) | 4 | 4/4 passed |
+| Interaction matrix (`test_interaction_matrix`) | 4 | 4/4 passed |
+| **Total pytest** | **281** | **280/281 passed, 1 skipped** |
 | Standard profile (T=128, 2 seeds, 12 ep/seed) | — | 95/95 checks passed |
 | Extended profile (T=256, 3 seeds, 20 ep/seed) | — | 107/107 checks passed |
 

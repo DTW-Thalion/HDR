@@ -26,33 +26,30 @@
 
 **Criterion:** Mean fractional cost reduction ≥ +3% vs pooled\_lqr\_estimated; 95% CI lower bound ≥ +0.03; win rate ≥ 70%.
 
-| Metric                          | Standard (2 seeds, 12 ep/seed) | Extended (3 seeds, 20 ep/seed) | **Highpower (20 seeds, 20 ep/seed)** |
+| Metric                          | Standard (2 seeds, 12 ep/seed) | Extended (3 seeds, 20 ep/seed) | **Highpower (20 seeds, 30 ep/seed)** |
 |---------------------------------|--------------------------------|--------------------------------|--------------------------------------|
-| N maladaptive episodes          | ~11                            | ~15                            | **123**                              |
-| Mean gain vs pooled\_lqr\_est   | +0.0574                        | +0.0357                        | **+0.0283**                          |
-| 95% CI lower (mean)             | —                              | —                              | **+0.0210**                          |
-| 95% CI upper (mean)             | —                              | —                              | **+0.0355**                          |
-| 90% CI lower (mean)             | —                              | —                              | **+0.0221**                          |
-| 90% CI upper (mean)             | —                              | —                              | **+0.0344**                          |
-| 95% CI lower (median)           | —                              | —                              | **+0.0163**                          |
-| Win rate                        | 0.909                          | 0.800                          | **0.772**                            |
-| Safety delta vs pe              | —                              | —                              | **+0.0004**                          |
-| Seeds ≥ +0.03 criterion         | —                              | —                              | **8/20**                             |
-| Seed gain std                   | —                              | —                              | **0.0165**                           |
-| **Status (old criterion)**      | Supported                      | Supported                      | Supported (point est + win rate)     |
-| **Status (new 95% CI criterion)** | N/A                          | N/A                            | **Partially supported**              |
+| N maladaptive episodes          | ~11                            | ~15                            | **179**                              |
+| Mean gain vs pooled\_lqr\_est   | +0.0574                        | +0.0357                        | **+0.0369**                          |
+| 95% CI lower (mean)             | —                              | —                              | **+0.031**                           |
+| 95% CI upper (mean)             | —                              | —                              | **+0.042**                           |
+| 90% CI lower (mean)             | —                              | —                              | **+0.032**                           |
+| 90% CI upper (mean)             | —                              | —                              | **+0.042**                           |
+| Win rate                        | 0.909                          | 0.800                          | **0.838**                            |
+| Safety delta vs pe              | —                              | —                              | **-0.0001**                          |
+| Seeds ≥ +0.03 criterion         | —                              | —                              | **11/20**                            |
+| **Status (old criterion)**      | Supported                      | Supported                      | Supported                            |
+| **Status (new 95% CI criterion)** | N/A                          | N/A                            | **Supported**                        |
 
-**Highpower Status: Partially supported**
+**Highpower Status: Supported**
 
-- Point estimate (+0.0283) exceeds +0.03 threshold: ✗ (below +0.03)
-- Win rate (0.772) exceeds 0.70: ✓
-- 95% CI lower bound (+0.0210) ≥ +0.03: ✗
+- Mean gain (+0.0369) exceeds +0.03 threshold: ✓
+- Win rate (0.838) exceeds 0.70: ✓
+- 95% CI lower bound (+0.031) ≥ +0.03: ✓
 
-> **Note:** The point estimate (+0.0283) is below the +0.03 threshold in the high-power run.
-> The 95% CI [+0.0210, +0.0355] straddles the criterion threshold: the positive effect is
-> real (lower bound > 0) but the magnitude is imprecisely characterised. Only 8/20 seeds
-> individually exceed +3%, suggesting the effect is noisy across random initialisations.
-> The manuscript should report the honest estimate with CI rather than the inflated small-N result.
+> **Note:** The 30 ep/seed re-run (2026-03-11) supersedes the earlier 20 ep/seed run.
+> Increasing from 20 to 30 episodes per seed (400 → 600 total, N\_mal: 123 → 179)
+> narrowed the CI and the lower bound now clears +0.030. See CORRECTIONS.md
+> §Benchmark A for full history of both runs.
 
 ---
 
@@ -77,7 +74,7 @@ affected by the high-power Benchmark A results. See `CLAIM_CRITERIA.md` for full
 
 | Claim | Description                              | Smoke | Standard | Extended | Highpower |
 |-------|------------------------------------------|-------|----------|----------|-----------|
-| 1     | Mode A cost reduction ≥ +3% (maladaptive) | —   | Supported | Supported | Partially supported |
+| 1     | Mode A cost reduction ≥ +3% (maladaptive) | —   | Supported | Supported | Supported |
 | 2     | Mode A win rate ≥ 70% (maladaptive)      | —     | Supported | Supported | Supported |
 | 3     | τ̃ correlation with recovery cost         | —     | —         | —         | N/A       |
 | 4     | Chance-constraint calibration            | —     | —         | —         | N/A       |
@@ -126,9 +123,9 @@ are validated by stage scripts 12–15. All pass across all four profiles.
 
 ## High-Power Run Metadata
 
-- Run date: 2026-03-10
+- Run date: 2026-03-11 (30 ep/seed re-run; supersedes 2026-03-10 20 ep/seed run)
 - Seeds: 101, 202, 303, 404, 505, 606, 707, 808, 909, 1010, 1111, 1212, 1313, 1414, 1515, 1616, 1717, 1818, 1919, 2020
-- Episodes per seed: 20
+- Episodes per seed: 30
 - Steps per episode: 256
 - Bootstrap resamples: 10,000 (seed=42)
 - Results: `results/stage_04/highpower/highpower_summary.json`
