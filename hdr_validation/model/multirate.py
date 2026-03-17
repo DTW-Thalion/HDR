@@ -1,5 +1,5 @@
 """
-Multi-rate observation and delay augmentation — HDR v7.3
+Multi-rate observation and delay augmentation
 ========================================================
 Implements Def 5.20 (multi-rate observation) and Def 5.21 (delay augmentation).
 """

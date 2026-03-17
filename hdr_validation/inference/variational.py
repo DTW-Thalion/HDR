@@ -1,5 +1,5 @@
 """
-Variational SLDS Inference — HDR v7.3
+Variational SLDS Inference
 ======================================
 Mean-field variational inference for SLDS (Sec 8.3.2).
 """

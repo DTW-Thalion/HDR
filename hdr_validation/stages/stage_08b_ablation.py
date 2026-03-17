@@ -1,5 +1,5 @@
 """
-Stage 08b — Multi-Axis Asymmetric Ablation (HDR v7.3)
+Stage 08b — Multi-Axis Asymmetric Ablation
 =====================================================
 
 Companion to Stage 08 that uses an asymmetric J coupling matrix to
@@ -76,42 +76,15 @@ def _make_benchmark_config_8b(
     n_seeds: int = 20, n_ep: int = 30, T: int = 256,
 ) -> dict[str, Any]:
     """Create the Stage 8b benchmark configuration with asymmetric J."""
+    from hdr_validation.defaults import DEFAULTS
+
     n = 8
     J = _build_asymmetric_J(n)
 
-    cfg: dict[str, Any] = {
-        "state_dim": n,
-        "obs_dim": 16,
-        "control_dim": n,
-        "disturbance_dim": n,
-        "K": 3,
-        "H": 6,
-        "w1": 1.0,
-        "w2": 0.5,
-        "w3": 0.3,
-        "lambda_u": 0.1,
-        "alpha_i": 0.05,
-        "eps_safe": 0.01,
-        "rho_reference": [0.72, 0.96, 0.55],
+    cfg: dict[str, Any] = dict(DEFAULTS)
+    cfg.update({
         "max_dwell_len": 256,
-        "model_mismatch_bound": 0.347,
-        "kappa_lo": 0.55,
-        "kappa_hi": 0.75,
-        "pA": 0.70,
-        "qmin": 0.15,
-        "steps_per_day": 48,
-        "dt_minutes": 30,
-        "coherence_window": 24,
         "default_burden_budget": 56.0,
-        "circadian_locked_controls": [5, 6],
-        "R_brier_max": 0.05,
-        "omega_min_factor": 0.005,
-        "T_C_max": 50,
-        "k_calib": 1.0,
-        "sigma_dither": 0.08,
-        "epsilon_control": 0.50,
-        "missing_fraction_target": 0.516,
-        "mode1_base_rate": 0.16,
         # Benchmark parameters
         "n_seeds": n_seeds,
         "n_ep_per_seed": n_ep,
@@ -119,7 +92,7 @@ def _make_benchmark_config_8b(
         "profile_name": "asymmetric_ablation",
         # Asymmetric J coupling matrix (JSON-serialisable)
         "J_coupling": J.tolist(),
-    }
+    })
 
     # Verify J does not destabilise A_k for the maladaptive basin
     from hdr_validation.model.slds import make_evaluation_model, spectral_radius
@@ -509,6 +482,8 @@ def run_stage_08b(
         )
 
     # Save JSON
+    from hdr_validation.provenance import get_provenance
+    result_json["provenance"] = get_provenance()
     out_path = output_dir / "ablation_asymmetric_results.json"
     out_path.write_text(json.dumps(result_json, indent=2))
 

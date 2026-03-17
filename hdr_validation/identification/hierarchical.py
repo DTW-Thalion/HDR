@@ -1,5 +1,5 @@
 """
-Hierarchical Coupling Estimation — HDR v7.3
+Hierarchical Coupling Estimation
 ============================================
 Def 11.1: Three-level model (mechanistic -> group -> patient).
 Prop 11.2: MAP estimate via penalised least-squares.

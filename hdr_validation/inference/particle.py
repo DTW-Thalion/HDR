@@ -1,5 +1,5 @@
 """
-Particle Filter — HDR v7.3
+Particle Filter
 ===========================
 Sequential Monte Carlo with population-informed proposals.
 Prop 8.5: ||E_PF[f] - E_true[f]|| = O(1/sqrt(N)).

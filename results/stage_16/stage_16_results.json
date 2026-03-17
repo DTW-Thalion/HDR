@@ -5,7 +5,7 @@
     "numerical_stability": true,
     "region_consistency_rate": 1.0,
     "pass": true,
-    "elapsed": 0.11
+    "elapsed": 0.09
   },
   "16.02": {
     "subtest": "16.02",
@@ -94,7 +94,7 @@
     "exposure_violations": 0,
     "toxicity_correlation": 1.0,
     "pass": true,
-    "elapsed": 0.09
+    "elapsed": 0.08
   },
   "16.10": {
     "subtest": "16.10",
@@ -178,5 +178,10 @@
     "cost_ratio": 1.0085,
     "pass": true,
     "elapsed": 0.04
+  },
+  "provenance": {
+    "hdr_version": "7.3.0",
+    "generated_at": "2026-03-17T01:10:13.342488Z",
+    "git_commit": "b712afa"
   }
 }

@@ -1,4 +1,4 @@
-"""mRPI terminal set and tube-MPC for HDR v7.3 (IG1 Path B).
+"""mRPI terminal set and tube-MPC (IG1 Path B).
 
 Implements the Raković et al. (2005) algorithm for computing the maximal
 robust positively invariant (mRPI) set as a zonotope, and a tube-MPC
@@ -14,7 +14,7 @@ from .mpc import MPCResult, solve_mode_a
 from .lqr import dlqr
 
 
-def compute_disturbance_set(Q_w: np.ndarray, n: int, beta: float = 0.95):
+def compute_disturbance_set(Q_w: np.ndarray, n: int, beta: float = 0.999):
     """Compute ellipsoidal disturbance set W_k = {w : w^T Q_w^{-1} w <= chi2}.
 
     Parameters
@@ -24,7 +24,7 @@ def compute_disturbance_set(Q_w: np.ndarray, n: int, beta: float = 0.95):
     n : int
         State dimension.
     beta : float
-        Quantile of chi-squared distribution (default 0.95).
+        Quantile of chi-squared distribution (default 0.999, per Appendix J).
 
     Returns
     -------

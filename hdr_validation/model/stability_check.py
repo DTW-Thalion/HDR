@@ -1,5 +1,5 @@
 """
-Stability Checking Utilities — HDR v7.3
+Stability Checking Utilities
 ========================================
 
 Provides explicit assertions that rho(A_k) < 1 after every parameter update.

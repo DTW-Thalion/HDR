@@ -42,29 +42,15 @@ STAGE_16_SUBTESTS = {
 
 def _make_stage16_config(n_seeds=5, T=128):
     """Create config dict for Stage 16, matching standard suite parameters."""
-    return {
-        "state_dim": 8, "obs_dim": 16, "control_dim": 8,
-        "disturbance_dim": 8, "K": 3, "H": 6,
-        "w1": 1.0, "w2": 0.5, "w3": 0.3, "lambda_u": 0.1,
-        "alpha_i": 0.05, "eps_safe": 0.01,
-        "rho_reference": [0.72, 0.96, 0.55],
-        "max_dwell_len": 128,
-        "model_mismatch_bound": 0.347,
-        "kappa_lo": 0.55, "kappa_hi": 0.75,
-        "pA": 0.70, "qmin": 0.15,
-        "steps_per_day": 48, "dt_minutes": 30,
-        "coherence_window": 24,
-        "default_burden_budget": 28.0,
-        "circadian_locked_controls": [5, 6],
+    from hdr_validation.defaults import DEFAULTS
+
+    cfg = dict(DEFAULTS)
+    cfg.update({
         "n_seeds": n_seeds, "T": T,
         "steps_per_episode": T,
-        # Extension-specific defaults
-        "n_irr": 2, "n_sites": 2, "epsilon_G": 0.02,
-        "R_k_regions": 2, "lambda_cat_max": 0.05,
-        "drift_rate": 0.001, "lambda_ff": 0.98,
-        "delay_steps": 10, "n_cum_exp": 1, "xi_max": 100.0,
-        "n_expansion": 2, "delta_J_max": 0.05, "m_d": 1,
-    }
+        "lambda_ff": 0.98,
+    })
+    return cfg
 
 
 def _check_numerical_stability(trajectories):
@@ -1852,6 +1838,8 @@ def run_stage_16(n_seeds=5, T=128, output_dir=None, fast_mode=False,
         status = "PASS" if result.get("pass", False) else "FAIL"
         print(f"    [{status}] {result}")
 
+    from hdr_validation.provenance import get_provenance
+    all_results["provenance"] = get_provenance()
     out_path = output_dir / "stage_16_results.json"
     out_path.write_text(json.dumps(all_results, indent=2, default=str))
     print(f"\nStage 16 results saved to {out_path}")

@@ -1,5 +1,5 @@
 """
-Population-Prior Treatment Planning — HDR v7.3
+Population-Prior Treatment Planning
 ================================================
 Def 11.10: Offline optimisation over approved regimen set.
 """

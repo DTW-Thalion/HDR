@@ -173,7 +173,7 @@ full pytest suite. See CLAUDE.md §Running the Validation Pipeline for details.
 
 | # | Claim | Stage(s) | Criterion | Standard | Extended | Status |
 |---|-------|----------|-----------|----------|----------|--------|
-| 1 | **ICI correctly identifies when Mode A guarantees hold** | 03b, 04 | `hdr_vs_pooled_estimated_gain_maladaptive >= +0.03`; `hdr_maladaptive_win_rate >= 0.70` | gain=+0.057, rate=0.909 | gain=+0.036, rate=0.800 | **Supported** — Win-rate criterion (≥ 70 %): MET (0.838). Mean-gain CI criterion (95 % lower bound ≥ +3 %): MET (+0.031 ≥ +0.030). High-power run (20 seeds × 30 ep/seed, N_mal=179): mean gain +3.7 %, 95 % CI [+3.1 %, +4.2 %]. See CORRECTIONS.md §Benchmark A for full history. |
+| 1 | **ICI correctly identifies when Mode A guarantees hold** | 03b, 04 | `hdr_vs_pooled_estimated_gain_maladaptive >= +0.03`; `hdr_maladaptive_win_rate >= 0.70` | gain=+0.057, rate=0.909 | gain=+0.036, rate=0.800 | **Supported** — Win-rate criterion (≥ 70 %): MET (0.838). Mean-gain CI criterion (95 % lower bound ≥ +3 %): MET (+0.031 ≥ +0.030). High-power run (20 seeds × 30 ep/seed, N_mal=179): mean gain +3.7 %, 95 % CI [+3.1 %, +4.2 %]. See §Benchmark A above for full history. |
 | 2 | Mode A improves over baselines without exceeding safety budget | 04 | `hdr_vs_pooled_estimated_gain_maladaptive >= +0.03`; `hdr_maladaptive_win_rate >= 0.70`; safety delta ≤ 0.015 | gain=+0.057, rate=0.909, delta=-0.001 | gain=+0.036, rate=0.800, delta=+0.002 | **Supported** |
 | 3 | τ̃ tracks true recovery burden (Spearman ρ ≥ 0.70) | 01 | τ̃ rank correlation ≥ 0.70; τ sandwich holds | tau_tilde=66.4, tau_L=11.4 | tau_tilde=66.4, tau_L=11.4 | **Supported** |
 | 4 | Chance-constraint tightening calibrated in Gaussian settings | 01, 04 | Abs error ≤ 0.015; heavy-tail degradation < 0.10 | abs_err=0.0012 | abs_err=0.0001 | **Supported** |
@@ -279,3 +279,27 @@ Basin 1 tube-MPC zonotope containment rate changes from 0.7906 (β=0.95) to 0.92
 ### Version string update
 
 `__init__.py` updated from `5.0.0-dev` to `7.3.0`. `pyproject.toml` updated to `7.3.0`. Module docstring version labels updated to `v7.3`.
+
+---
+
+## Repository hygiene infrastructure (2026-03-16)
+
+### Changes
+
+1. **Single-source configuration** (`hdr_validation/defaults.py`): All shared parameters consolidated into `DEFAULTS` dict with `make_config(**overrides)` factory. All six profile runners and nine stage modules refactored to use it, eliminating ~400 lines of duplicated inline config.
+
+2. **Provenance stamping** (`hdr_validation/provenance.py`): All stage result JSON files now include `hdr_version`, `generated_at`, and `git_commit` metadata via `get_provenance()`.
+
+3. **Manuscript claims checker** (`check_claims.py` + `manuscript_claims.json`): Machine-readable claim definitions validated against pytest output and stage result artifacts. Run `python check_claims.py --verbose` to verify.
+
+4. **Version string consolidation**: Version labels removed from all module docstrings. `__init__.py` cross-checks runtime version against `defaults.HDR_VERSION`.
+
+5. **Documentation consolidation**: `audit_report.json` deleted (stale v5.3 artifact). `CORRECTIONS.md` renamed to `CHANGELOG.md`. CLAUDE.md test file table replaced with cross-reference. Automated validation note added to CLAIM_MATRIX.md header.
+
+6. **CI gate** (`.github/workflows/python-package.yml`): Version consistency check (blocking) and claims checker (non-blocking) added after pytest step.
+
+### Verification
+
+- pytest: 295 passed, 0 failed
+- check_claims.py: 8/8 passed, 3 skipped (non-critical)
+- No mathematical logic, control algorithms, or test assertions changed

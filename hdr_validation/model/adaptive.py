@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Adaptive parameter estimation and drift detection for HDR v7.3.
+"""Adaptive parameter estimation and drift detection.
 
 Provides forgetting-factor RLS (FF-RLS) for tracking within-basin parameter
 drift and a drift detector that triggers Mode C re-identification when the

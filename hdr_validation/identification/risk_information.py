@@ -1,5 +1,5 @@
 """
-Risk-Information Pareto Frontier — HDR v7.3
+Risk-Information Pareto Frontier
 ============================================
 Def 11.12: For each candidate perturbation, compute Fisher info
 and safety violation probability.

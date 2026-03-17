@@ -1,5 +1,5 @@
 """
-Mode C — Active Identification Mode — HDR v7.3
+Mode C — Active Identification Mode
 ================================================
 
 Mode C is the third operating mode of HDR (co-equal with Mode A and Mode B).

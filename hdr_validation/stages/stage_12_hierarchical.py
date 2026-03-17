@@ -1,5 +1,5 @@
 """
-Stage 12 — Hierarchical-Prior Coupling Estimation Benchmark (HDR v7.3)
+Stage 12 — Hierarchical-Prior Coupling Estimation Benchmark
 =======================================================================
 Validates Claims 28-30: MAP coupling convergence, B_k sample complexity,
 basin boundary convergence.
@@ -17,17 +17,15 @@ ROOT = Path(__file__).parent.parent.parent
 
 
 def _make_config(n_patients: int = 10, T_p_values: list | None = None) -> dict[str, Any]:
-    return {
-        "state_dim": 8,
-        "obs_dim": 16,
-        "control_dim": 8,
-        "disturbance_dim": 8,
-        "K": 3,
-        "rho_reference": [0.72, 0.96, 0.55],
+    from hdr_validation.defaults import DEFAULTS
+
+    cfg = dict(DEFAULTS)
+    cfg.update({
         "max_dwell_len": 64,
         "n_patients": n_patients,
         "T_p_values": T_p_values or [0, 10, 50, 200],
-    }
+    })
+    return cfg
 
 
 def run_stage_12(
@@ -187,6 +185,8 @@ def run_stage_12(
     results["elapsed"] = elapsed
 
     # Save results
+    from hdr_validation.provenance import get_provenance
+    results["provenance"] = get_provenance()
     out_dir = ROOT / "results" / "stage_12"
     out_dir.mkdir(parents=True, exist_ok=True)
     with open(out_dir / "results.json", "w") as f:

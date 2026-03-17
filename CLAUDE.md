@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This repository is an **in-silico validation suite** for the **Homeodynamic Remediation Framework (HDR) v7.1** — a multi-mode adaptive control system for constrained stochastic linear dynamical systems (SLDS). The framework validates mathematical properties, implementation correctness, and empirical performance across synthetic physiological scenarios.
+This repository is an **in-silico validation suite** for the **Homeodynamic Remediation Framework (HDR) v7.3** — a multi-mode adaptive control system for constrained stochastic linear dynamical systems (SLDS). The framework validates mathematical properties, implementation correctness, and empirical performance across synthetic physiological scenarios.
 
 HDR models a latent physiological state (e.g., neuroendocrine system) with K discrete operating modes ("basins") and switches between three control strategies based on inference quality:
 
@@ -266,38 +266,9 @@ def test_mpc_returns_bounded_control():
 
 ### Test files
 
-| File                      | Tests                                          |
-|---------------------------|-------------------------------------------------|
-| `test_mpc.py`             | MPC/Mode A control bounds (`solve_mode_a`)      |
-| `test_ici.py`             | ICI state computation, mu_erg bounds            |
-| `test_ici_compound.py`    | ICI compound bound (T_k_eff), Brier, calibration |
-| `test_imm.py`             | IMM inference filter                            |
-| `test_committor.py`       | Committor and value iteration (Mode B)          |
-| `test_mode_c.py`          | Mode C dither injection/supervisor/tracker      |
-| `test_mode_c_fisher.py`   | Mode C Fisher information proxy                 |
-| `test_hsmm.py`            | HSMM dwell distribution models                  |
-| `test_recovery.py`        | Recovery trajectory analysis (`tau_tilde`)      |
-| `test_safety.py`          | Safety analysis (Gaussian calibration toy)      |
-| `test_stability_check.py` | Basin stability classification                  |
-| `test_stage_08.py`        | Stage 08 ablation study                         |
-| `test_stage_08b.py`       | Stage 08b asymmetric ablation (14 tests)        |
-| `test_stage_09.py`        | Stage 09 baseline comparison                    |
-| `test_stage_10.py`        | Stage 10 Mode B sweep                           |
-| `test_stage_11.py`        | Stage 11 invariant set                          |
-| `test_extensions.py`      | v7.0 model extensions (25 tests)                |
-| `test_adaptive.py`        | FF-RLS and drift detection (v7.0)               |
-| `test_multirate.py`       | Multi-rate observation (v7.0)                   |
-| `test_mimpc.py`           | Mixed-integer MPC (v7.0)                        |
-| `test_supervisor.py`      | Extended supervisor 8-branch logic (v7.0)       |
-| `test_particle.py`        | Particle filter / SMC (v7.0)                    |
-| `test_variational.py`     | Variational SLDS inference (v7.0)               |
-| `test_identification.py`  | Identification subpackage (v7.0, 15 tests)      |
-| `test_committor_jump.py`  | Committor with jumps (v7.0)                     |
-| `test_tube_mpc.py`        | mRPI terminal set and tube-MPC (v7.1)           |
-| `test_interaction_matrix.py` | Cross-column interaction matrix R_u_full (v7.1) |
-| `test_saturation.py`      | Michaelis-Menten dose-response (v7.1)           |
-| `test_stage_16.py`        | Stage 16 extension integration (v7.1)           |
-| `test_adaptive_delta.py`  | Adaptive mismatch bound via FF-RLS (v7.1)       |
+30 test files at the repo root (`test_*.py`) cover all 32 claims. See `CLAIM_MATRIX.md`
+for the per-claim test file mapping. Run `python check_claims.py --verbose` for automated
+validation of claim criteria against test results and stage artifacts.
 
 ---
 
