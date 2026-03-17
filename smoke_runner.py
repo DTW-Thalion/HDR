@@ -204,7 +204,7 @@ def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0,
     for t in range(T):
         u = np.zeros(u_dim)
         w = rng.multivariate_normal(np.zeros(n), basin.Q)
-        x_next = basin.A @ x + basin.B @ u + basin.E[:, :basin.Q.shape[0]] @ w + basin.b
+        x_next = basin.A @ x + basin.B @ u + w + basin.b
         R_t = heteroskedastic_R(basin.R, x, mask_sched[t], t)
         y = generate_observation(x, basin.C, basin.c, R_t, mask_sched[t], rng)
 
@@ -792,9 +792,9 @@ def stage06_coherence() -> None:
                     u_lqr = u_lqr_raw
                 used_burden_lqr += float(np.sum(np.abs(u_lqr)))
                 w = rng_ep.multivariate_normal(np.zeros(n), basin.Q)
-                x_hdr = basin.A @ x_hdr + basin.B @ u_hdr + basin.E[:, :n] @ w + basin.b
-                x_ol  = basin.A @ x_ol  + basin.B @ np.zeros(m_u) + basin.E[:, :n] @ w + basin.b
-                x_lqr = basin.A @ x_lqr + basin.B @ u_lqr + basin.E[:, :n] @ w + basin.b
+                x_hdr = basin.A @ x_hdr + basin.B @ u_hdr + w + basin.b
+                x_ol  = basin.A @ x_ol  + w + basin.b
+                x_lqr = basin.A @ x_lqr + basin.B @ u_lqr + w + basin.b
         return (
             hdr_steps / max(total, 1),
             ol_steps  / max(total, 1),
@@ -962,7 +962,7 @@ def stage07_robustness() -> None:
             in_band_cnt += int(np.linalg.norm(x_w3) <= kappa_hi_07)
             res_w3 = solve_mode_a(x_w3, P_w3, basin_w3, target_w3, kappa_hat=0.6, config=cfg_w3, step=t)
             ww = rng_w3s.multivariate_normal(np.zeros(n), basin_w3.Q)
-            x_w3 = basin_w3.A @ x_w3 + basin_w3.B @ res_w3.u + basin_w3.E[:, :n] @ ww + basin_w3.b
+            x_w3 = basin_w3.A @ x_w3 + basin_w3.B @ res_w3.u + ww + basin_w3.b
         tib_by_w3[w3] = in_band_cnt / max(T_w3, 1)
 
     best_w3_tib = max(tib_by_w3.values())
