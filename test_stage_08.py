@@ -65,9 +65,18 @@ def test_run_stage_08_fast(tmp_path: Path):
     assert "variants" in data
 
 
-def test_hdr_full_gain_ge_mpc_only_gain(tmp_path: Path):
+# ---- Module-scoped fixture for (n_seeds=2, n_ep=4, T=32) group ----
+
+@pytest.fixture(scope="module")
+def stage_08_result_ep4(tmp_path_factory):
+    tmp = tmp_path_factory.mktemp("stage_08_ep4")
+    return run_stage_08(n_seeds=2, n_ep=4, T=32,
+                        output_dir=tmp, fast_mode=False)
+
+
+def test_hdr_full_gain_ge_mpc_only_gain(stage_08_result_ep4):
     """hdr_full gain should be >= mpc_only gain (ablating components should not improve)."""
-    result = run_stage_08(n_seeds=2, n_ep=4, T=32, output_dir=tmp_path, fast_mode=False)
+    result = stage_08_result_ep4
     hdr_gain = result["variants"]["hdr_full"]["mean_gain"]
     mpc_gain = result["variants"]["mpc_only"]["mean_gain"]
     # This is a soft assertion — a diagnostic, not guaranteed to hold on tiny samples
@@ -75,17 +84,18 @@ def test_hdr_full_gain_ge_mpc_only_gain(tmp_path: Path):
     assert np.isfinite(hdr_gain) and np.isfinite(mpc_gain)
 
 
-def test_ablation_criterion_noted_when_inverted(tmp_path: Path):
+def test_ablation_criterion_noted_when_inverted(stage_08_result_ep4):
     """When hdr_full gain < mpc_only gain (expected at T=32),
     ablation_criterion_met=False and note contains EXPECTED_AT_SHORT_T."""
-    result = run_stage_08(n_seeds=2, n_ep=4, T=32,
-                          output_dir=tmp_path, fast_mode=False)
+    result = stage_08_result_ep4
     # At T=32 the criterion may or may not be inverted depending on seeds,
     # but the field must always be present
     assert "ablation_criterion_met" in result
     assert "ablation_criterion_note" in result
     assert isinstance(result["ablation_criterion_met"], bool)
 
+
+# ---- Single-caller tests ----
 
 def test_ablation_criterion_note_contains_expected_tag_when_inverted(tmp_path: Path):
     """If criterion fails at short T, the note must contain EXPECTED_AT_SHORT_T."""

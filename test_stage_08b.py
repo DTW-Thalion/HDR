@@ -58,10 +58,20 @@ def test_benchmark_config_8b_J_strong_weak_structure():
     )
 
 
-def test_run_stage_08b_fast(tmp_path: Path):
-    """Smoke test: run with small parameters and check output structure."""
+# ---- Module-scoped fixture for the base (n_seeds=2, n_ep=3, T=32) group ----
+
+@pytest.fixture(scope="module")
+def stage_08b_with_path(tmp_path_factory):
+    """Run Stage 08b once with standard fast parameters; return (result, output_dir)."""
+    tmp = tmp_path_factory.mktemp("stage_08b")
     result = run_stage_08b(n_seeds=2, n_ep=3, T=32,
-                           output_dir=tmp_path, fast_mode=False)
+                           output_dir=tmp, fast_mode=False)
+    return result, tmp
+
+
+def test_run_stage_08b_fast(stage_08b_with_path):
+    """Smoke test: run with small parameters and check output structure."""
+    result, tmp = stage_08b_with_path
 
     # All five variants present
     assert "variants" in result
@@ -80,12 +90,11 @@ def test_run_stage_08b_fast(tmp_path: Path):
         assert "diagnostics_mean" in v, f"diagnostics_mean missing from {name}"
 
 
-def test_run_stage_08b_output_file(tmp_path: Path):
+def test_run_stage_08b_output_file(stage_08b_with_path):
     """JSON output file is written with correct name."""
-    run_stage_08b(n_seeds=2, n_ep=3, T=32,
-                  output_dir=tmp_path, fast_mode=False)
+    result, tmp = stage_08b_with_path
 
-    out_file = tmp_path / "ablation_asymmetric_results.json"
+    out_file = tmp / "ablation_asymmetric_results.json"
     assert out_file.exists()
     data = json.loads(out_file.read_text())
     assert "variants" in data
@@ -93,10 +102,9 @@ def test_run_stage_08b_output_file(tmp_path: Path):
     assert data["scenario"] == "multi_axis_asymmetric"
 
 
-def test_run_stage_08b_J_diagnostics(tmp_path: Path):
+def test_run_stage_08b_J_diagnostics(stage_08b_with_path):
     """Result includes J_diagnostics with row-norm ratio."""
-    result = run_stage_08b(n_seeds=2, n_ep=3, T=32,
-                           output_dir=tmp_path, fast_mode=False)
+    result, tmp = stage_08b_with_path
 
     assert "J_diagnostics" in result
     jd = result["J_diagnostics"]
@@ -106,10 +114,9 @@ def test_run_stage_08b_J_diagnostics(tmp_path: Path):
     assert jd["row_norm_ratio"] >= 5.0
 
 
-def test_run_stage_08b_marginal_gains(tmp_path: Path):
+def test_run_stage_08b_marginal_gains(stage_08b_with_path):
     """Result includes coherence and calibration marginal gain fields."""
-    result = run_stage_08b(n_seeds=2, n_ep=3, T=32,
-                           output_dir=tmp_path, fast_mode=False)
+    result, tmp = stage_08b_with_path
 
     assert "coherence_marginal_gain" in result
     assert "calibration_marginal_gain" in result
@@ -117,10 +124,9 @@ def test_run_stage_08b_marginal_gains(tmp_path: Path):
     assert np.isfinite(result["calibration_marginal_gain"])
 
 
-def test_run_stage_08b_gains_are_finite(tmp_path: Path):
+def test_run_stage_08b_gains_are_finite(stage_08b_with_path):
     """All variant gains and CIs must be finite."""
-    result = run_stage_08b(n_seeds=2, n_ep=3, T=32,
-                           output_dir=tmp_path, fast_mode=False)
+    result, tmp = stage_08b_with_path
 
     for name, v in result["variants"].items():
         assert np.isfinite(v["mean_gain"]), f"{name} mean_gain not finite"
@@ -128,6 +134,8 @@ def test_run_stage_08b_gains_are_finite(tmp_path: Path):
         assert np.isfinite(v["ci_hi"]), f"{name} ci_hi not finite"
         assert v["ci_lo"] <= v["ci_hi"], f"{name} CI inverted"
 
+
+# ---- Single-caller tests: no fixture needed ----
 
 def test_run_stage_08b_ablation_criterion_fields(tmp_path: Path):
     """Ablation criterion fields are present and typed correctly."""
