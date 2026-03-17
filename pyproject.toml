@@ -1,0 +1,20 @@
+[project]
+name = "hdr-validation"
+version = "7.4.0"
+description = "In-silico validation suite for the Homeodynamic Remediation Framework (HDR) v5.0"
+requires-python = ">=3.10"
+
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "pytest",
+]
+
+[project.optional-dependencies]
+plot = ["matplotlib"]
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+collect_ignore = ["hdr_validation"]
+norecursedirs = ["hdr_validation", "results", "reports", ".claude"]

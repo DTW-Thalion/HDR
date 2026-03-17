@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+__version__ = "7.4.0"
+
 from pathlib import Path
 from typing import Any
 

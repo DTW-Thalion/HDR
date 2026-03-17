@@ -2,13 +2,13 @@
   "burden_adherence_hdr_nominal": 1.0,
   "circadian_adherence_hdr_nominal": 1.0,
   "gaussian_calibration_abs_error": 0.0011718750000000028,
-  "hdr_vs_open_loop_gain_nominal": 0.0006109834023548781,
-  "hdr_vs_pooled_gain_nominal": -0.009732581669693778,
-  "hdr_vs_pooled_estimated_gain_nominal": -0.0016048896570391366,
-  "pooled_estimated_vs_oracle_cost_ratio": 0.9871007262162687,
+  "hdr_vs_open_loop_gain_nominal": 0.0006109834023548714,
+  "hdr_vs_pooled_gain_nominal": -0.009732581669693544,
+  "hdr_vs_pooled_estimated_gain_nominal": -0.0016048896570391767,
+  "pooled_estimated_vs_oracle_cost_ratio": 0.9871007262162682,
   "heavy_tail_calibration_degradation": 0.07117187500000001,
-  "mode_error_fit_r2": 0.9987822326760412,
-  "mode_error_fit_slope": 0.1743108477183217,
+  "mode_error_fit_r2": 0.9987822326760408,
+  "mode_error_fit_slope": 0.17431084771831898,
   "n_episode_rows": 3072,
   "safety_delta_vs_pooled_nominal": -0.0013020833333333148,
   "selected_policies": [
@@ -22,6 +22,6 @@
     "nominal",
     "model_mismatch"
   ],
-  "target_drift_fit_r2": 0.9987452891124541,
-  "target_drift_fit_slope": 3.2656541499248406
+  "target_drift_fit_r2": 0.998745289112454,
+  "target_drift_fit_slope": 3.2656541499248526
 }

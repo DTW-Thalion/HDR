@@ -1,39 +1,100 @@
-from __future__ import annotations
+# HDR Validation Suite v7.4.0
 
-import numpy as np
-from scipy.linalg import solve_discrete_are, solve_discrete_lyapunov
+In-silico validation suite for the **Homeodynamic Remediation Framework (HDR) v5.0** — a multi-mode adaptive control system for constrained stochastic linear dynamical systems (SLDS). The suite validates mathematical properties, implementation correctness, and empirical performance across synthetic physiological scenarios using three control strategies: nominal LQR/MPC (Mode A), structured exploration (Mode B), and information-maximizing identification (Mode C).
 
-from .target_set import TargetSet
+## Repository Structure
 
+```
+├── control/                  # Control policy subpackage (LQR, MPC, Mode B, Mode C)
+├── inference/                # Inference subpackage (Kalman, IMM, ICI)
+├── model/                    # System model subpackage (SLDS, HSMM, target sets, safety)
+├── results/                  # Per-stage result artifacts (auto-generated)
+├── reports/                  # Aggregated profile reports (auto-generated)
+├── smoke_runner.py           # Smoke profile runner (fastest)
+├── standard_runner.py        # Standard profile runner
+├── extended_runner.py        # Extended profile runner
+├── extended_512_runner.py    # Extended-512 profile runner
+├── validation_runner.py      # Validation profile runner
+├── run_all.py                # Orchestration script (all profiles, all stages)
+├── generate_reports.py       # Report generation across profiles
+├── config.json               # Master configuration defaults
+├── smoke.json                # Smoke profile overrides
+├── standard.json             # Standard profile overrides
+├── extended_512.json         # Extended-512 profile overrides
+├── validation.json           # Validation profile overrides
+├── test_*.py                 # Pytest test modules (9 files)
+└── pyproject.toml            # Package metadata and version
+```
 
-def tau_tilde(x: np.ndarray, target: TargetSet, Q: np.ndarray, rho: float, method: str = "box") -> float:
-    dist2 = target.dist2(x, Q=Q, method=method)
-    denom = max(1.0 - rho**2, 1e-6)
-    return float(dist2 / denom)
+## Running the Validation Suite
 
+Requires Python 3.10+ with `numpy`, `scipy`, `pandas`, and `pytest`.
 
-def lyapunov_cost(A: np.ndarray, Q: np.ndarray, x: np.ndarray) -> tuple[float, np.ndarray]:
-    P = solve_discrete_lyapunov(A, Q)
-    x = np.asarray(x, dtype=float)
-    return float(x.T @ P @ x), P
+```bash
+pip install numpy scipy pandas pytest
+```
 
+### Individual profiles
 
-def dare_terminal_cost(A: np.ndarray, B: np.ndarray, Q: np.ndarray, R: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    P = solve_discrete_are(A, B, Q, R)
-    K = np.linalg.solve(R + B.T @ P @ B, B.T @ P @ A)
-    return P, K
+```bash
+python smoke_runner.py          # ~3s, 1 seed, 8 episodes
+python standard_runner.py       # ~4s, 2 seeds, 12 episodes
+python extended_runner.py       # ~16s, 3 seeds, 20 episodes
+python validation_runner.py     # ~5s, 3 seeds, 12 episodes
+```
 
+### Orchestrated runs
 
-def tau_sandwich(A: np.ndarray, Q: np.ndarray, x: np.ndarray, target: TargetSet, rho: float) -> dict[str, float]:
-    proj = target.project_box(x)
-    xbar = np.asarray(x) - proj
-    tau_h = tau_tilde(x, target, Q, rho, method="box")
-    tau_L, P = lyapunov_cost(A, Q, xbar)
-    eigvals = np.linalg.eigvalsh(np.sqrt(Q) @ P @ np.linalg.pinv(np.sqrt(Q)))
-    eigvals = np.real(eigvals)
-    return {
-        "tau_tilde": float(tau_h),
-        "tau_L": float(tau_L),
-        "lower_coeff": float(np.min(eigvals)),
-        "upper_coeff": float(np.max(eigvals)),
-    }
+```bash
+python run_all.py                                    # All profiles, all stages
+python run_all.py --profiles smoke                   # Smoke only
+python run_all.py --profiles smoke standard --stages 01 04
+python run_all.py --resume --skip-done               # Resume, skip completed
+```
+
+### Stage IDs
+
+| ID   | Description                          |
+|------|--------------------------------------|
+| 01   | Mathematical validation              |
+| 02   | Synthetic dataset generation         |
+| 03   | IMM inference                        |
+| 03b  | ICI calibration and diagnostics      |
+| 03c  | Mode C validation                    |
+| 04   | Mode A control performance           |
+| 05   | Mode B structured exploration        |
+| 06   | State coherence                      |
+| 07   | Robustness sweeps                    |
+
+## Regenerating Result Artifacts
+
+```bash
+# Regenerate all reports (writes to reports/)
+python generate_reports.py
+
+# Regenerate specific profiles
+python generate_reports.py --profiles smoke standard
+
+# Force re-run all stages for a profile
+python run_all.py --profiles standard --force
+```
+
+Result artifacts are written to `results/stage_{id}/{profile}/` and include `config.json`, `summary.json`, `metrics.csv`, and optional plots.
+
+## Running Tests
+
+```bash
+pytest                    # All tests
+pytest test_mpc.py -v     # Specific test file
+pytest -q                 # Quiet summary
+```
+
+Nine test files cover inference (ICI, IMM), control (MPC, Mode C, committor), model (HSMM, target set, recovery), and packaging.
+
+## Configuration
+
+Configs compose from `config.json` (master defaults) plus a profile override file. Key parameters include 8-dimensional state/control, K=3 basins with spectral radii [0.72, 0.96, 0.55], and ICI thresholds for Mode C activation.
+
+## Claim Validation
+
+The suite validates 14 claims (Claims 1-14) covering ICI correctness, control improvement, recovery cost bounds, calibration, stability, and identifiability. A claim is marked `Supported` only when it passes in both smoke and standard profiles. See `CLAIM_MATRIX.md` for current status.
