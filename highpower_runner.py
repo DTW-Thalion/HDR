@@ -102,15 +102,12 @@ def _bootstrap_ci(
     stat: str = "mean",
 ) -> tuple[float, float]:
     rng = np.random.default_rng(rng_seed)
-    data = np.asarray(data)
+    data = np.asarray(data, dtype=float)
+    indices = rng.integers(0, len(data), size=(n_boot, len(data)))
     if stat == "mean":
-        boot_stats = np.array(
-            [rng.choice(data, size=len(data), replace=True).mean() for _ in range(n_boot)]
-        )
+        boot_stats = data[indices].mean(axis=1)
     else:
-        boot_stats = np.array(
-            [np.median(rng.choice(data, size=len(data), replace=True)) for _ in range(n_boot)]
-        )
+        boot_stats = np.median(data[indices], axis=1)
     lo = float(np.percentile(boot_stats, 100 * (1 - ci) / 2))
     hi = float(np.percentile(boot_stats, 100 * (1 + ci) / 2))
     return lo, hi

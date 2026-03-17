@@ -132,7 +132,7 @@ def _run_episode(
     """
     from hdr_validation.model.slds import make_evaluation_model
     from hdr_validation.model.target_set import build_target_set
-    from hdr_validation.control.mpc import solve_mode_a
+    from hdr_validation.control.mpc import solve_mode_a, precompute_mode_a_cache
     from hdr_validation.control.lqr import dlqr
     from hdr_validation.model.coherence import coherence_grad, coherence_penalty
 
@@ -152,6 +152,9 @@ def _run_episode(
     if not ablation_cfg.use_calibration:
         variant_cfg["R_brier_max"] = 1.0
         variant_cfg["k_calib"] = 0.0
+
+    # Pre-compute expensive invariants for this episode
+    mpc_cache = precompute_mode_a_cache(basin, variant_cfg)
 
     # Pooled LQR baseline (estimated model, no mode switching)
     Q_lqr = np.eye(n)
@@ -191,6 +194,8 @@ def _run_episode(
                 x_hdr, P_hat, basin, target,
                 kappa_hat=kappa_hat_t,
                 config=variant_cfg, step=t,
+                P_terminal_precomputed=mpc_cache["P_terminal"],
+                C_pinv_precomputed=mpc_cache["C_pinv"],
             )
             u_hdr = res.u
         except Exception:
@@ -217,8 +222,8 @@ def _run_episode(
         u_hdr_norms.append(float(np.linalg.norm(u_hdr)))
         u_base_norms.append(float(np.linalg.norm(u_base)))
 
-        # Shared process noise for paired comparison
-        w = rng.multivariate_normal(np.zeros(n), basin.Q)
+        # Shared process noise for paired comparison (pre-computed Cholesky)
+        w = basin.Q_cholesky @ rng.standard_normal(n)
 
         # Advance independent trajectories
         x_hdr = basin.A @ x_hdr + basin.B @ u_hdr + basin.b + w
@@ -253,7 +258,7 @@ def _bootstrap_ci(
     ci: float = 0.95,
     rng_seed: int = 42,
 ) -> tuple[float, float]:
-    """Bootstrap percentile CI for the mean."""
+    """Bootstrap percentile CI for the mean (vectorized)."""
     rng = np.random.default_rng(rng_seed)
     data = np.asarray(data, dtype=float)
     if len(data) == 0:
@@ -262,10 +267,9 @@ def _bootstrap_ci(
             "This indicates zero maladaptive episodes were collected. "
             "Check N_MAL_MIN guard in run_stage_08."
         )
-    boot_means = np.array([
-        rng.choice(data, size=len(data), replace=True).mean()
-        for _ in range(n_boot)
-    ])
+    # Vectorized: draw all bootstrap samples at once
+    indices = rng.integers(0, len(data), size=(n_boot, len(data)))
+    boot_means = data[indices].mean(axis=1)
     lo = float(np.percentile(boot_means, 100 * (1 - ci) / 2))
     hi = float(np.percentile(boot_means, 100 * (1 + ci) / 2))
     return lo, hi

@@ -588,13 +588,11 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     gains_maladaptive = np.array(gains_maladaptive)
 
     def _bootstrap_ci(data, n_boot=10_000, ci=0.95, rng_seed=42):
-        """Bootstrap percentile CI for the mean."""
+        """Bootstrap percentile CI for the mean (vectorized)."""
         rng = np.random.default_rng(rng_seed)
-        data = np.asarray(data)
-        boot_means = np.array([
-            rng.choice(data, size=len(data), replace=True).mean()
-            for _ in range(n_boot)
-        ])
+        data = np.asarray(data, dtype=float)
+        indices = rng.integers(0, len(data), size=(n_boot, len(data)))
+        boot_means = data[indices].mean(axis=1)
         lo = float(np.percentile(boot_means, 100 * (1 - ci) / 2))
         hi = float(np.percentile(boot_means, 100 * (1 + ci) / 2))
         return lo, hi
