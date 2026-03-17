@@ -9,8 +9,7 @@
       "max_lyapunov_value": 2.1123,
       "n_steps_checked": 1024,
       "proposition_8_4_criterion_met": true,
-      "rho_basin": 0.72,
-      "containment_rate_tube": 1.0
+      "rho_basin": 0.72
     },
     "1": {
       "c_k": 14.9867,
@@ -21,8 +20,7 @@
       "max_lyapunov_value": 22.2522,
       "n_steps_checked": 640,
       "proposition_8_4_criterion_met": true,
-      "rho_basin": 0.96,
-      "containment_rate_tube": 0.9203
+      "rho_basin": 0.96
     },
     "2": {
       "c_k": 2.072,
@@ -33,15 +31,19 @@
       "max_lyapunov_value": 2.0335,
       "n_steps_checked": 896,
       "proposition_8_4_criterion_met": true,
-      "rho_basin": 0.55,
-      "containment_rate_tube": 1.0
+      "rho_basin": 0.55
     }
   },
-  "tube_mpc_enabled": true,
+  "tube_mpc_enabled": false,
   "containment_threshold": 0.9,
   "n_sigma_disturbance": 5.0,
   "n_seeds": 5,
   "T": 128,
   "note": "Lyapunov level-set RPI approximation per Proposition 8.4 (revised paper)",
-  "rpi_semantics_note": "containment_rate_rpi measures RPI forward-invariance: fraction of steps where the system stays inside the ellipsoid given it was inside at the previous step. This is the correct empirical test of Proposition 8.4. containment_rate measures overall occupancy and will be lower when trajectories are initialised at the ellipsoid boundary."
+  "rpi_semantics_note": "containment_rate_rpi measures RPI forward-invariance: fraction of steps where the system stays inside the ellipsoid given it was inside at the previous step. This is the correct empirical test of Proposition 8.4. containment_rate measures overall occupancy and will be lower when trajectories are initialised at the ellipsoid boundary.",
+  "provenance": {
+    "hdr_version": "7.3.0",
+    "generated_at": "2026-03-17T02:36:21.928009Z",
+    "git_commit": "45df68f"
+  }
 }

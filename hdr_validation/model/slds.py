@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
@@ -27,6 +27,22 @@ class BasinModel:
     multisite_coupling: Any = None
     adaptive_params: Any = None
     cumulative_exposure_params: Any = None
+    _C_pinv: np.ndarray | None = field(default=None, repr=False, compare=False)
+    _Q_cholesky: np.ndarray | None = field(default=None, repr=False, compare=False)
+
+    @property
+    def C_pinv(self) -> np.ndarray:
+        """Cached pseudoinverse of C. Computed once on first access."""
+        if self._C_pinv is None:
+            self._C_pinv = np.linalg.pinv(self.C)
+        return self._C_pinv
+
+    @property
+    def Q_cholesky(self) -> np.ndarray:
+        """Cached Cholesky factor of Q. Computed once on first access."""
+        if self._Q_cholesky is None:
+            self._Q_cholesky = np.linalg.cholesky(self.Q)
+        return self._Q_cholesky
 
 
 @dataclass

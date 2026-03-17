@@ -182,12 +182,14 @@ def stage01_math():
 # ═══════════════════════════════════════════════════════════════════════════════
 # Stage 02 — Synthetic episode generation
 # ═══════════════════════════════════════════════════════════════════════════════
-def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -> dict:
+def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0,
+                      eval_model=None) -> dict:
     """Simplified inline episode generator for smoke testing."""
     from hdr_validation.model.slds import make_evaluation_model
     from hdr_validation.specification import observation_schedule, generate_observation, heteroskedastic_R
 
-    eval_model = make_evaluation_model(cfg, rng)
+    if eval_model is None:
+        eval_model = make_evaluation_model(cfg, rng)
     basin = eval_model.basins[basin_idx]
     T = cfg["steps_per_episode"]
     n, m = cfg["state_dim"], cfg["obs_dim"]
@@ -588,13 +590,11 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     gains_maladaptive = np.array(gains_maladaptive)
 
     def _bootstrap_ci(data, n_boot=10_000, ci=0.95, rng_seed=42):
-        """Bootstrap percentile CI for the mean."""
+        """Bootstrap percentile CI for the mean (vectorized)."""
         rng = np.random.default_rng(rng_seed)
-        data = np.asarray(data)
-        boot_means = np.array([
-            rng.choice(data, size=len(data), replace=True).mean()
-            for _ in range(n_boot)
-        ])
+        data = np.asarray(data, dtype=float)
+        indices = rng.integers(0, len(data), size=(n_boot, len(data)))
+        boot_means = data[indices].mean(axis=1)
         lo = float(np.percentile(boot_means, 100 * (1 - ci) / 2))
         hi = float(np.percentile(boot_means, 100 * (1 + ci) / 2))
         return lo, hi

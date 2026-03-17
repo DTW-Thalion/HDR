@@ -192,7 +192,7 @@ def _simulate_benchmark_trajectories(
     """
     from hdr_validation.model.slds import make_evaluation_model
     from hdr_validation.model.target_set import build_target_set
-    from hdr_validation.control.mpc import solve_mode_a
+    from hdr_validation.control.mpc import solve_mode_a, precompute_mode_a_cache
     from hdr_validation.control.lqr import dlqr
 
     trajectories: list[np.ndarray] = []
@@ -251,15 +251,20 @@ def _simulate_benchmark_trajectories(
             traj = np.empty((T, n))
             labels = np.full(T, basin_idx, dtype=int)
 
+            # Pre-compute expensive invariants for this episode
+            mpc_cache = precompute_mode_a_cache(basin, cfg)
+
             for t in range(T):
                 traj[t] = x
                 try:
-                    res = solve_mode_a(x, P_hat, basin, target, kappa_hat=0.65, config=cfg, step=t)
+                    res = solve_mode_a(x, P_hat, basin, target, kappa_hat=0.65, config=cfg, step=t,
+                                       P_terminal_precomputed=mpc_cache["P_terminal"],
+                                       C_pinv_precomputed=mpc_cache["C_pinv"])
                     u = res.u
                 except Exception:
                     u = np.zeros(cfg["control_dim"])
 
-                w = rng.multivariate_normal(np.zeros(n), basin.Q)
+                w = basin.Q_cholesky @ rng.standard_normal(n)
                 x = basin.A @ x + basin.B @ u + basin.b + w
 
             trajectories.append(traj)
@@ -420,7 +425,7 @@ def run_stage_11(
                         u = res.u
                     except Exception:
                         u = np.zeros(cfg["control_dim"])
-                    w = rng.multivariate_normal(np.zeros(n), basin.Q)
+                    w = basin.Q_cholesky @ rng.standard_normal(n)
                     x = basin.A @ x + basin.B @ u + basin.b + w
 
                 tube_trajs.append(traj)
@@ -436,7 +441,8 @@ def run_stage_11(
                     if int(labels[t]) != k_idx:
                         continue
                     total_count += 1
-                    if zonotope_containment_check(traj[t], mRPI["G"], mRPI["center"]):
+                    if zonotope_containment_check(traj[t], mRPI["G"], mRPI["center"],
+                                                    G_pinv=mRPI.get("G_pinv")):
                         inside_count += 1
             rate = inside_count / max(total_count, 1) if total_count > 0 else float("nan")
             basins_out[str(k_idx)]["containment_rate_tube"] = (

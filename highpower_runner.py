@@ -49,7 +49,8 @@ def _atomic_write_json(path: Path, data: Any) -> None:
 
 
 # ── Episode generation (mirrors extended_runner._generate_episode) ─────────────
-def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -> dict:
+def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0,
+                      eval_model=None) -> dict:
     from hdr_validation.model.slds import make_evaluation_model
     from hdr_validation.specification import (
         observation_schedule,
@@ -57,7 +58,8 @@ def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -
         heteroskedastic_R,
     )
 
-    eval_model = make_evaluation_model(cfg, rng)
+    if eval_model is None:
+        eval_model = make_evaluation_model(cfg, rng)
     basin = eval_model.basins[basin_idx]
     T = cfg["steps_per_episode"]
     n = cfg["state_dim"]
@@ -102,15 +104,12 @@ def _bootstrap_ci(
     stat: str = "mean",
 ) -> tuple[float, float]:
     rng = np.random.default_rng(rng_seed)
-    data = np.asarray(data)
+    data = np.asarray(data, dtype=float)
+    indices = rng.integers(0, len(data), size=(n_boot, len(data)))
     if stat == "mean":
-        boot_stats = np.array(
-            [rng.choice(data, size=len(data), replace=True).mean() for _ in range(n_boot)]
-        )
+        boot_stats = data[indices].mean(axis=1)
     else:
-        boot_stats = np.array(
-            [np.median(rng.choice(data, size=len(data), replace=True)) for _ in range(n_boot)]
-        )
+        boot_stats = np.median(data[indices], axis=1)
     lo = float(np.percentile(boot_stats, 100 * (1 - ci) / 2))
     hi = float(np.percentile(boot_stats, 100 * (1 + ci) / 2))
     return lo, hi

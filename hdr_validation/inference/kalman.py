@@ -37,10 +37,26 @@ def update(
     innov = y_o - (C_o @ state.mean + c_o)
     S = C_o @ state.cov @ C_o.T + R_o
     S = 0.5 * (S + S.T)
-    K = state.cov @ C_o.T @ np.linalg.pinv(S)
+
+    # Single factorization for both Kalman gain and log-likelihood
+    try:
+        from scipy.linalg import cho_factor, cho_solve
+        L_S, low = cho_factor(S)
+        # K = P @ C_o^T @ S^{-1}  via  solve S @ Z = (P @ C_o^T)^T
+        PCT = state.cov @ C_o.T
+        Z = cho_solve((L_S, low), PCT.T)  # (m_obs, n)
+        K = Z.T                           # (n, m_obs)
+        quad = float(innov @ cho_solve((L_S, low), innov))
+        logdet = float(2.0 * np.sum(np.log(np.diag(L_S))))
+    except (np.linalg.LinAlgError, Exception):
+        # Fallback to pinv if Cholesky fails (S not SPD due to numerics)
+        S_inv = np.linalg.pinv(S)
+        K = state.cov @ C_o.T @ S_inv
+        quad = float(innov.T @ S_inv @ innov)
+        sign, logdet = np.linalg.slogdet(S + 1e-8 * np.eye(S.shape[0]))
+        logdet = float(logdet)
+
     mean = state.mean + K @ innov
     cov = (np.eye(state.cov.shape[0]) - K @ C_o) @ state.cov
-    sign, logdet = np.linalg.slogdet(S + 1e-8 * np.eye(S.shape[0]))
-    quad = float(innov.T @ np.linalg.pinv(S) @ innov)
     log_like = float(-0.5 * (quad + logdet + len(obs_idx) * np.log(2 * np.pi)))
     return KalmanState(mean=mean, cov=cov), log_like

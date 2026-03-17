@@ -176,7 +176,7 @@ def _run_episode_8b(
     """
     from hdr_validation.model.slds import make_evaluation_model
     from hdr_validation.model.target_set import build_target_set
-    from hdr_validation.control.mpc import solve_mode_a
+    from hdr_validation.control.mpc import solve_mode_a, precompute_mode_a_cache
     from hdr_validation.control.lqr import dlqr
     from hdr_validation.model.coherence import coherence_grad, coherence_penalty
 
@@ -200,6 +200,9 @@ def _run_episode_8b(
     # so that mpc_only and mpc_plus_surrogate use standard MPC
     if ablation_cfg.w3 <= 0:
         variant_cfg.pop("J_coupling", None)
+
+    # Pre-compute expensive invariants for this episode
+    mpc_cache = precompute_mode_a_cache(basin, variant_cfg)
 
     # Pooled LQR baseline
     Q_lqr = np.eye(n)
@@ -240,6 +243,8 @@ def _run_episode_8b(
                 x_hdr, P_hat, basin, target,
                 kappa_hat=kappa_hat_t,
                 config=variant_cfg, step=t,
+                P_terminal_precomputed=mpc_cache["P_terminal"],
+                C_pinv_precomputed=mpc_cache["C_pinv"],
             )
             u_hdr = res.u
         except Exception:
@@ -266,8 +271,8 @@ def _run_episode_8b(
         u_hdr_norms.append(float(np.linalg.norm(u_hdr)))
         u_base_norms.append(float(np.linalg.norm(u_base)))
 
-        # Shared process noise for paired comparison
-        w = rng.multivariate_normal(np.zeros(n), basin.Q)
+        # Shared process noise for paired comparison (pre-computed Cholesky)
+        w = basin.Q_cholesky @ rng.standard_normal(n)
 
         # Advance independent trajectories
         x_hdr = basin.A @ x_hdr + basin.B @ u_hdr + basin.b + w

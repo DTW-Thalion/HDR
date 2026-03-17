@@ -23,7 +23,7 @@
       "FP_rate_fixed_threshold": 0.0,
       "FP_rate_robust_threshold": 0.0,
       "FN_rate_fixed_threshold": 0.0,
-      "FN_rate_robust_threshold": 0.0049,
+      "FN_rate_robust_threshold": 0.0055,
       "threshold_fixed": 0.7,
       "threshold_robust": 0.8
     },
@@ -31,8 +31,8 @@
       "R_Brier_target": 0.15,
       "FP_rate_fixed_threshold": 0.0,
       "FP_rate_robust_threshold": 0.0,
-      "FN_rate_fixed_threshold": 0.0003,
-      "FN_rate_robust_threshold": 0.1081,
+      "FN_rate_fixed_threshold": 0.0002,
+      "FN_rate_robust_threshold": 0.1146,
       "threshold_fixed": 0.7,
       "threshold_robust": 0.85
     },
@@ -40,8 +40,8 @@
       "R_Brier_target": 0.2,
       "FP_rate_fixed_threshold": 0.0,
       "FP_rate_robust_threshold": 0.0,
-      "FN_rate_fixed_threshold": 0.0005,
-      "FN_rate_robust_threshold": 0.4893,
+      "FN_rate_fixed_threshold": 0.0012,
+      "FN_rate_robust_threshold": 0.5004,
       "threshold_fixed": 0.7,
       "threshold_robust": 0.9
     }
@@ -49,6 +49,11 @@
   "p_A_base": 0.7,
   "k_calib": 1.0,
   "q_min": 0.15,
-  "N_sim": 200,
-  "T": 50
+  "N_sim": 5000,
+  "T": 50,
+  "provenance": {
+    "hdr_version": "7.3.0",
+    "generated_at": "2026-03-17T02:36:19.269194Z",
+    "git_commit": "45df68f"
+  }
 }
