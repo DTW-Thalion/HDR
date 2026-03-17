@@ -2,6 +2,10 @@
 
 **Last updated:** 2026-03-16
 
+> **Automated validation:** Run `python check_claims.py --verbose` to verify all
+> claim criteria against test results and stage artifacts. See `manuscript_claims.json`
+> for the machine-readable claim definitions.
+
 ## Test Summary
 
 **Recommended entry point:** `python run_all.py --full-validation` — validates all 32 claims
@@ -55,7 +59,7 @@ in a single run (extended stages 01–07, highpower stage 04, stages 08–16, fu
 
 > **Note:** The 30 ep/seed re-run (2026-03-11) supersedes the earlier 20 ep/seed run.
 > Increasing from 20 to 30 episodes per seed (400 → 600 total, N\_mal: 123 → 179)
-> narrowed the CI and the lower bound now clears +0.030. See CORRECTIONS.md
+> narrowed the CI and the lower bound now clears +0.030. See CHANGELOG.md
 > §Benchmark A for full history of both runs.
 
 ---
@@ -168,7 +172,7 @@ criterion in both smoke and standard runs, unless explicitly flagged otherwise."
 **Criterion:** Mode A returns finite control across mismatch sweep δ ∈ {0.05, 0.10, 0.20}.
 **Parameters and rationale:**
 - `mismatch_values = [0.05, 0.10, 0.20]` — three levels spanning light to moderate model mismatch. The production bound is `model_mismatch_bound = 0.347` (empirical p90 of basin-1 delta\_A); the sweep verifies stability well below this bound.
-- `model_mismatch_bound = 0.347` — updated from 0.20 in v7.1 to match the empirical p90 of basin-1 delta\_A. See CORRECTIONS.md §07.8.
+- `model_mismatch_bound = 0.347` — updated from 0.20 in v7.1 to match the empirical p90 of basin-1 delta\_A. See CHANGELOG.md §07.8.
 - The check verifies that `solve_mode_a` produces finite, bounded control (`||u|| ≤ 0.6 + eps`) even under perturbed dynamics, confirming ISS Proposition 10.4.
 
 ### Claim 7 — Mode B improvement
@@ -267,13 +271,13 @@ non-negatively. These stages support Claims 1, 2, and 9 but are not standalone n
 **Production parameters and rationale:**
 - `n_seeds = 20` — matches the high-power runner seed count for consistency.
 - `n_ep = 30` — 30 episodes per seed (600 total) produces ~179 maladaptive episodes (30% selection rate), giving adequate power for the bootstrap CI.
-- `T = 256` — steps per episode. Must be ≥ 128 for the τ̃ temporal crossover to occur (see Root Cause C in CORRECTIONS.md). At T < 128, the w\_tau = w2/(1−ρ²) ≈ 6.4 penalty for ρ=0.96 penalises recovery attempts before the escape benefit is realised, causing `mpc_only` to appear superior. This is tagged as `EXPECTED_AT_SHORT_T` in the output.
+- `T = 256` — steps per episode. Must be ≥ 128 for the τ̃ temporal crossover to occur (see Root Cause C in CHANGELOG.md). At T < 128, the w\_tau = w2/(1−ρ²) ≈ 6.4 penalty for ρ=0.96 penalises recovery attempts before the escape benefit is realised, causing `mpc_only` to appear superior. This is tagged as `EXPECTED_AT_SHORT_T` in the output.
 - `burden_budget = 56.0` — computed as 28.0 × T/128 = 56.0, scaling the default budget proportionally with episode length.
 - `R_Brier = 0.03` — proxy calibration error used in `_get_kappa_hat`. Set to 60% of `R_Brier_max = 0.05` to model a moderately miscalibrated posterior.
 - `N_MAL_MIN = 6` — minimum forced maladaptive episodes in fast/smoke mode to prevent vacuous output. In production (600 episodes), ~179 are maladaptive by the 30% selection rate.
 - `MIN_MAL_FOR_VALID_RESULT = 5` — minimum N\_mal to consider results statistically valid.
-- `kappa_hat` follows a time-varying ramp from `kappa_lo − 0.15 = 0.40` to `kappa_hi = 0.75`, reaching kappa\_hi at t = 2T/3. This exercises the coherence penalty during the initial below-target phase (see CORRECTIONS.md §Root Cause B).
-- **Independent rollouts**: Each variant and the baseline LQR policy maintain separate state trajectories (`x_hdr` and `x_base`), sharing only the initial state and process noise for a fair paired comparison. This was corrected from a shared-trajectory design (see CORRECTIONS.md §Stage 08).
+- `kappa_hat` follows a time-varying ramp from `kappa_lo − 0.15 = 0.40` to `kappa_hi = 0.75`, reaching kappa\_hi at t = 2T/3. This exercises the coherence penalty during the initial below-target phase (see CHANGELOG.md §Root Cause B).
+- **Independent rollouts**: Each variant and the baseline LQR policy maintain separate state trajectories (`x_hdr` and `x_base`), sharing only the initial state and process noise for a fair paired comparison. This was corrected from a shared-trajectory design (see CHANGELOG.md §Stage 08).
 
 ### Stage 08b — Multi-Axis Asymmetric Ablation
 

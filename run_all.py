@@ -425,7 +425,8 @@ def _run_all_unit_tests() -> list[dict]:
         "-k", "not production",
         "-q",
     ]
-    print("\n  Running full pytest suite (excluding production-scale)...")
+    from hdr_validation.defaults import HDR_VERSION
+    print(f"\n  Running full pytest suite (HDR v{HDR_VERSION}, excluding production-scale)...")
     result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
     print(result.stdout[-2000:] if len(result.stdout) > 2000 else result.stdout)
     if result.stderr:

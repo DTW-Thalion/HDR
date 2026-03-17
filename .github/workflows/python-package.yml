@@ -40,3 +40,19 @@ jobs:
         export OMP_NUM_THREADS=1
         export MKL_NUM_THREADS=1
         pytest
+    - name: Version consistency check
+      run: |
+        python -c "
+        from hdr_validation.defaults import HDR_VERSION
+        import importlib.metadata, sys
+        pkg = importlib.metadata.version('hdr-validation')
+        if pkg != HDR_VERSION:
+            print(f'MISMATCH: pyproject.toml={pkg}, defaults.py={HDR_VERSION}')
+            sys.exit(1)
+        print(f'Version consistent: {HDR_VERSION}')
+        "
+    - name: Claims checker (non-blocking)
+      if: always()
+      continue-on-error: true
+      run: |
+        python check_claims.py --verbose || echo "::warning::Claims checker found mismatches — see output above"

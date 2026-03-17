@@ -1,5 +1,5 @@
 """
-Stage 11 — Riccati Invariant Set Verification (HDR v7.3)
+Stage 11 — Riccati Invariant Set Verification
 ==========================================================
 
 Verifies numerically that Benchmark A trajectories stay within the Lyapunov
@@ -163,39 +163,17 @@ def check_trajectory_containment(
 
 def _make_benchmark_config(n_seeds: int = 5, T: int = 128) -> dict[str, Any]:
     """Create benchmark configuration for Stage 11."""
-    return {
-        "state_dim": 8,
-        "obs_dim": 16,
-        "control_dim": 8,
-        "disturbance_dim": 8,
-        "K": 3,
-        "H": 6,
-        "w1": 1.0,
-        "w2": 0.5,
-        "w3": 0.3,
-        "lambda_u": 0.1,
-        "alpha_i": 0.05,
-        "eps_safe": 0.01,
-        "rho_reference": [0.72, 0.96, 0.55],
+    from hdr_validation.defaults import DEFAULTS
+
+    cfg = dict(DEFAULTS)
+    cfg.update({
         "max_dwell_len": 256,
-        "model_mismatch_bound": 0.347,
-        "kappa_lo": 0.55,
-        "kappa_hi": 0.75,
-        "pA": 0.70,
-        "qmin": 0.15,
-        "steps_per_day": 48,
-        "dt_minutes": 30,
-        "coherence_window": 24,
         "default_burden_budget": 56.0,
-        "circadian_locked_controls": [5, 6],
-        "R_brier_max": 0.05,
-        "k_calib": 1.0,
-        "sigma_dither": 0.08,
-        "missing_fraction_target": 0.516,
         "n_seeds": n_seeds,
         "steps_per_episode": T,
         "profile_name": "highpower",
-    }
+    })
+    return cfg
 
 
 def _simulate_benchmark_trajectories(
@@ -483,6 +461,8 @@ def run_stage_11(
         ),
     }
 
+    from hdr_validation.provenance import get_provenance
+    result_json["provenance"] = get_provenance()
     out_path = output_dir / "invariant_set_verification.json"
     out_path.write_text(json.dumps(result_json, indent=2))
 

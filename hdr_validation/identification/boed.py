@@ -1,5 +1,5 @@
 """
-Bayesian Optimal Experimental Design — HDR v7.3
+Bayesian Optimal Experimental Design
 ================================================
 Def 11.4: Maximises expected KL divergence subject to safety constraints.
 """

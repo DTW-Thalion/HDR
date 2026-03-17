@@ -1,5 +1,5 @@
 """
-Unit tests for the Inference–Control Interface (ICI) — HDR v7.3.
+Unit tests for the Inference–Control Interface (ICI).
 Tests cover Propositions 9.1, 9.2, Definitions 8.1/8.2, and Theorem H.10.
 """
 from __future__ import annotations
