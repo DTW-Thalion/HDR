@@ -52,8 +52,8 @@
   "N_sim": 5000,
   "T": 50,
   "provenance": {
-    "hdr_version": "7.3.0",
-    "generated_at": "2026-03-17T02:36:19.269194Z",
-    "git_commit": "45df68f"
+    "hdr_version": "7.4.0",
+    "generated_at": "2026-03-17T15:48:59.816351Z",
+    "git_commit": "81d18c4"
   }
 }

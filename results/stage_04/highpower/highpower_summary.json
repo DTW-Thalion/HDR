@@ -428,8 +428,8 @@
     "control_dim": 8
   },
   "provenance": {
-    "hdr_version": "7.3.0",
-    "generated_at": "2026-03-17T02:59:55.595615Z",
-    "git_commit": "df2c6fc"
+    "hdr_version": "7.4.0",
+    "generated_at": "2026-03-17T16:05:04.163858Z",
+    "git_commit": "81d18c4"
   }
 }

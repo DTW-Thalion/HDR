@@ -16,7 +16,7 @@ from typing import Any
 
 # ── Package version (single source of truth) ──────────────────────────────
 # Also declared in pyproject.toml; keep them in sync via CI gate.
-HDR_VERSION = "7.3.0"
+HDR_VERSION = "7.4.0"
 
 # ── Shared defaults ───────────────────────────────────────────────────────
 DEFAULTS: dict[str, Any] = {

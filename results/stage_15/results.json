@@ -19,10 +19,10 @@
       "note": "RMSE should remain bounded"
     }
   ],
-  "elapsed": 0.0679106130000946,
+  "elapsed": 0.036776900000404567,
   "provenance": {
-    "hdr_version": "7.3.0",
-    "generated_at": "2026-03-17T02:36:24.301726Z",
-    "git_commit": "45df68f"
+    "hdr_version": "7.4.0",
+    "generated_at": "2026-03-17T15:49:00.840880Z",
+    "git_commit": "81d18c4"
   }
 }
