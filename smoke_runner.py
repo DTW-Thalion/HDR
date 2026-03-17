@@ -19,56 +19,17 @@ from typing import Any
 
 import numpy as np
 
-# ── Inline smoke config ────────────────────────────────────────────────────────
-SMOKE_CONFIG: dict[str, Any] = {
-    # Dimensions
-    "state_dim": 8,
-    "obs_dim": 16,
-    "control_dim": 8,
-    "disturbance_dim": 8,
-    "K": 3,
-    # Control
-    "H": 6,
-    "w1": 1.0,
-    "w2": 0.5,
-    "w3": 0.3,
-    "lambda_u": 0.1,
-    "alpha_i": 0.05,
-    "eps_safe": 0.01,
-    # Dynamics
-    "rho_reference": [0.72, 0.96, 0.55],
-    "max_dwell_len": 128,
-    "model_mismatch_bound": 0.20,
-    # Target set
-    "kappa_lo": 0.55,
-    "kappa_hi": 0.75,
-    "pA": 0.70,
-    "qmin": 0.15,
-    # Safety / time
-    "steps_per_day": 48,
-    "dt_minutes": 30,
-    "coherence_window": 24,
-    "default_burden_budget": 28.0,
-    "circadian_locked_controls": [5, 6],
-    # ICI
-    "R_brier_max": 0.05,
-    "omega_min_factor": 0.005,
-    "T_C_max": 50,
-    "k_calib": 1.0,
-    "sigma_dither": 0.08,
-    "epsilon_control": 0.50,
-    "missing_fraction_target": 0.516,
-    "mode1_base_rate": 0.16,
-    "observer_mode_accuracy_approx": 0.55,
-    "w3_sweep_values": [0.05, 0.10, 0.20, 0.30, 0.50],
-    # Smoke profile
-    "profile_name": "smoke",
-    "seeds": [101],
-    "episodes_per_experiment": 8,
-    "steps_per_episode": 128,
-    "mc_rollouts": 50,
-    "selected_trace_cap": 5,
-}
+from hdr_validation.defaults import make_config
+
+# ── Smoke profile config (overrides only) ─────────────────────────────────────
+SMOKE_CONFIG: dict[str, Any] = make_config(
+    profile_name="smoke",
+    seeds=[101],
+    episodes_per_experiment=8,
+    steps_per_episode=128,
+    mc_rollouts=50,
+    selected_trace_cap=5,
+)
 
 # ── Setup sys.path ─────────────────────────────────────────────────────────────
 ROOT = Path(__file__).parent
@@ -134,6 +95,15 @@ def stage01_math():
     lower_ok = result["tau_L"] <= result["tau_tilde"] + 1e-6
     record("stage01", "tau sandwich lower ≤ tau_tilde", lower_ok,
            f"tau_L={result['tau_L']:.4f} tau_tilde={result['tau_tilde']:.4f}")
+    # Counterexample to equality: at reference params with
+    # heterogeneous spectral radii, tau_tilde > tau_L strictly.
+    # This is the numerical demonstration of the corrected
+    # Proposition H.1 (sandwich inequality, not equality).
+    gap_ok = result["tau_tilde"] > result["tau_L"] + 1e-3
+    record("stage01",
+           "tau_tilde strictly > tau_L (Prop H.1 gap confirmed)",
+           gap_ok,
+           f"gap={result['tau_tilde'] - result['tau_L']:.4f}")
 
     # 01.3 committor: boundary conditions q[A]=0, q[B]=1
     K = cfg["K"]
@@ -152,6 +122,31 @@ def stage01_math():
     P_pd = bool(np.all(np.linalg.eigvalsh(P_dare) > 0))
     record("stage01", "DARE P positive-definite", P_pd)
     record("stage01", "DARE K finite", bool(np.all(np.isfinite(K_gain))))
+
+    # 01.x — alpha from DARE and beta contraction coefficient
+    from hdr_validation.control.lqr import (
+        compute_alpha_from_dare, transient_contraction_beta
+    )
+    Q_lqr_loc = np.eye(n)
+    R_lqr_loc = np.eye(m_u) * 0.1
+    alpha_k = compute_alpha_from_dare(
+        basin.A, basin.B, Q_lqr_loc, R_lqr_loc
+    )
+    record("stage01", "alpha_from_dare in (0,1)",
+           0.0 < alpha_k < 1.0, f"{alpha_k:.4f}")
+
+    # Build a minimal 2-state transient sub-matrix for beta check
+    K_local = cfg["K"]
+    P_trans = np.ones((K_local, K_local)) / K_local
+    # Remove absorbing (target) basin column to get sub-stochastic
+    P_sub = np.delete(np.delete(P_trans, 0, axis=0), 0, axis=1)
+    beta_val = transient_contraction_beta(P_sub)
+    rho_sub  = float(np.max(np.abs(np.linalg.eigvals(P_sub))))
+    record("stage01", "beta contraction in [0,1)",
+           0.0 <= beta_val < 1.0, f"beta={beta_val:.4f}")
+    record("stage01", "rho(Q_transient) <= beta",
+           rho_sub <= beta_val + 1e-9,
+           f"rho={rho_sub:.4f} beta={beta_val:.4f}")
 
     # 01.5 finite_horizon_tracking returns H gains
     gains = finite_horizon_tracking(basin.A, basin.B, Q_lqr, R_lqr, H=6, P_terminal=P_dare)
@@ -187,12 +182,14 @@ def stage01_math():
 # ═══════════════════════════════════════════════════════════════════════════════
 # Stage 02 — Synthetic episode generation
 # ═══════════════════════════════════════════════════════════════════════════════
-def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -> dict:
+def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0,
+                      eval_model=None) -> dict:
     """Simplified inline episode generator for smoke testing."""
     from hdr_validation.model.slds import make_evaluation_model
     from hdr_validation.specification import observation_schedule, generate_observation, heteroskedastic_R
 
-    eval_model = make_evaluation_model(cfg, rng)
+    if eval_model is None:
+        eval_model = make_evaluation_model(cfg, rng)
     basin = eval_model.basins[basin_idx]
     T = cfg["steps_per_episode"]
     n, m = cfg["state_dim"], cfg["obs_dim"]
@@ -207,7 +204,7 @@ def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -
     for t in range(T):
         u = np.zeros(u_dim)
         w = rng.multivariate_normal(np.zeros(n), basin.Q)
-        x_next = basin.A @ x + basin.B @ u + basin.E[:, :basin.Q.shape[0]] @ w + basin.b
+        x_next = basin.A @ x + basin.B @ u + w + basin.b
         R_t = heteroskedastic_R(basin.R, x, mask_sched[t], t)
         y = generate_observation(x, basin.C, basin.c, R_t, mask_sched[t], rng)
 
@@ -534,6 +531,29 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     record("stage04", "Mode A produces non-zero control",
            nonzero > 0, f"{nonzero}/{total_calls} calls")
 
+    # 04.3b — Mode A active fraction from far states
+    rng_far = np.random.default_rng(888)
+    directions = rng_far.normal(size=(20, n))
+    directions /= np.linalg.norm(directions, axis=1, keepdims=True)
+    radii = rng_far.uniform(1.5, 3.0, size=20)
+    far_states = directions * radii[:, None]
+
+    basin_far = eval_model.basins[1]   # maladaptive basin (rho=0.96)
+    target_far = build_target_set(1, cfg)
+    P_hat_far = np.eye(n) * 0.2
+    far_u_norms = []
+    for x_far_i in far_states:
+        res_far = solve_mode_a(x_far_i, P_hat_far, basin_far, target_far,
+                               kappa_hat=0.65, config=cfg, step=0)
+        far_u_norms.append(float(np.linalg.norm(res_far.u)))
+
+    active_fraction = sum(1 for v in far_u_norms if v > 0.05) / 20
+    mean_u_norm_far = float(np.mean(far_u_norms))
+    record("stage04",
+           "Mode A active fraction >= 0.75 from far states (||x|| in [1.5, 3.0], basin 1)",
+           active_fraction >= 0.75,
+           f"active={active_fraction:.2f} mean_u={mean_u_norm_far:.4f}")
+
     # 04.4 Test on maladaptive basin (rho≈0.96) - most important case
     basin_mal = eval_model.basins[1]
     target_mal = build_target_set(1, cfg)
@@ -543,6 +563,59 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     record("stage04", "Mode A on rho=0.96 basin finite u", bool(np.all(np.isfinite(res_mal.u))))
     record("stage04", "Mode A on rho=0.96 risk computed", np.isfinite(res_mal.risk),
            f"risk={res_mal.risk:.4f}")
+
+    # 04.5 Bootstrap CI for Benchmark A — compute per-episode cost gain
+    # on maladaptive (basin 1) episodes: HDR vs open-loop (u=0)
+    lambda_u = float(cfg.get("lambda_u", 0.1))
+    gains_maladaptive = []
+    noise_rng = np.random.default_rng(42)
+    for ep in episodes:
+        if int(ep["z_true"][0]) != 1:
+            continue
+        hdr_cost = 0.0
+        ol_cost = 0.0
+        T_ep = min(len(ep["x_true"]), cfg["steps_per_episode"])
+        P_ep = np.eye(n) * 0.1
+        for t in range(T_ep):
+            x_t = ep["x_true"][t]
+            ol_cost += float(np.dot(x_t, x_t))
+            r_hdr = solve_mode_a(x_t, P_ep, basin_mal, target_mal,
+                                 kappa_hat=0.6, config=cfg, step=t)
+            hdr_cost += float(np.dot(x_t, x_t) + lambda_u * np.dot(r_hdr.u, r_hdr.u))
+        if ol_cost > 1e-12:
+            gains_maladaptive.append(float((ol_cost - hdr_cost) / ol_cost))
+
+    if not gains_maladaptive:
+        gains_maladaptive = [0.0]
+    gains_maladaptive = np.array(gains_maladaptive)
+
+    def _bootstrap_ci(data, n_boot=10_000, ci=0.95, rng_seed=42):
+        """Bootstrap percentile CI for the mean (vectorized)."""
+        rng = np.random.default_rng(rng_seed)
+        data = np.asarray(data, dtype=float)
+        indices = rng.integers(0, len(data), size=(n_boot, len(data)))
+        boot_means = data[indices].mean(axis=1)
+        lo = float(np.percentile(boot_means, 100 * (1 - ci) / 2))
+        hi = float(np.percentile(boot_means, 100 * (1 + ci) / 2))
+        return lo, hi
+
+    ci_lo, ci_hi = _bootstrap_ci(gains_maladaptive)
+    ci_passes_criterion = ci_lo >= -0.05   # smoke sanity guard: CI must not be catastrophically negative
+    record("stage04",
+           "Benchmark A 95% CI lower bound >= -0.05 (smoke catastrophic-failure guard)",
+           ci_passes_criterion,
+           f"CI=[{ci_lo:+.4f}, {ci_hi:+.4f}]")
+
+    # 04.13 — Adaptive-basin episode count documented
+    ep_basins_smoke = [int(ep["z_true"][0]) for ep in episodes]
+    n_adaptive = sum(1 for b in ep_basins_smoke if b != 1)
+    record("stage04",
+           "Adaptive-basin N documented (n_adaptive)",
+           True,
+           f"n_adaptive={n_adaptive}",
+           note=("UNDERPOWERED: n_adaptive < 20, no performance claims valid for adaptive basins"
+                 if n_adaptive < 20 else
+                 "n_adaptive >= 20"))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -662,6 +735,98 @@ def stage06_coherence() -> None:
     record("stage06", "coherence contribution monotone in w3",
            is_monotone, f"{[f'{c:.4f}' for c in contributions]}")
 
+    # 06.4 Time-in-band: biologically stratified TIB checks
+    #
+    # (a) Normal basin (basin 0, rho=0.72): non-inferiority vs open-loop (delta >= -0.05)
+    # (b) Maladaptive basin (basin 1, rho=0.96): superiority vs open-loop (delta > 0)
+    #     AND non-inferiority vs burden-constrained LQR (delta >= -0.05)
+    from hdr_validation.model.slds import make_evaluation_model
+    from hdr_validation.control.mpc import solve_mode_a
+    from hdr_validation.control.lqr import dlqr
+    from hdr_validation.model.target_set import build_target_set
+
+    n = cfg["state_dim"]
+    m_u = cfg["control_dim"]
+    T_tib = cfg["steps_per_episode"]
+    budget = float(cfg["default_burden_budget"])
+    rng_tib = np.random.default_rng(606)
+    eval_model_tib = make_evaluation_model(cfg, rng_tib)
+    target_tib = build_target_set(0, cfg)   # shared geometry (center=0, radius=1)
+
+    A_pool = np.mean([b.A for b in eval_model_tib.basins], axis=0)
+    B_pool = np.mean([b.B for b in eval_model_tib.basins], axis=0)
+    K_pool, _ = dlqr(A_pool, B_pool, np.eye(n), np.eye(m_u) * 0.1)
+
+    kappa_hi = cfg["kappa_hi"]
+    n_tib_eps = 4
+
+    def _tib_rollouts(basin, n_eps, seed_base):
+        """Return (hdr_tib, ol_tib, lqr_tib) over n_eps episodes in `basin`.
+        LQR is budget-constrained to the same episode budget as HDR."""
+        hdr_steps = ol_steps = lqr_steps = total = 0
+        for ep_i in range(n_eps):
+            rng_ep = np.random.default_rng(seed_base + ep_i)
+            x0 = rng_ep.normal(size=n) * 1.5
+            x_hdr, x_ol, x_lqr = x0.copy(), x0.copy(), x0.copy()
+            P_ep = np.eye(n) * 0.1
+            used_burden_hdr = 0.0
+            used_burden_lqr = 0.0
+            for t in range(T_tib):
+                hdr_steps += int(np.linalg.norm(x_hdr) <= kappa_hi)
+                ol_steps  += int(np.linalg.norm(x_ol)  <= kappa_hi)
+                lqr_steps += int(np.linalg.norm(x_lqr) <= kappa_hi)
+                total += 1
+                res_hdr = solve_mode_a(
+                    x_hdr, P_ep, basin, target_tib,
+                    kappa_hat=0.6, config=cfg, step=t,
+                    used_burden=used_burden_hdr,
+                )
+                u_hdr = res_hdr.u
+                used_burden_hdr += float(np.sum(np.abs(u_hdr)))
+                u_lqr_raw = np.clip(-K_pool @ x_lqr, -0.6, 0.6)
+                cost_lqr = float(np.sum(np.abs(u_lqr_raw)))
+                remaining_lqr = max(budget - used_burden_lqr, 0.0)
+                if cost_lqr > remaining_lqr and cost_lqr > 1e-12:
+                    u_lqr = u_lqr_raw * (remaining_lqr / cost_lqr)
+                else:
+                    u_lqr = u_lqr_raw
+                used_burden_lqr += float(np.sum(np.abs(u_lqr)))
+                w = rng_ep.multivariate_normal(np.zeros(n), basin.Q)
+                x_hdr = basin.A @ x_hdr + basin.B @ u_hdr + w + basin.b
+                x_ol  = basin.A @ x_ol  + w + basin.b
+                x_lqr = basin.A @ x_lqr + basin.B @ u_lqr + w + basin.b
+        return (
+            hdr_steps / max(total, 1),
+            ol_steps  / max(total, 1),
+            lqr_steps / max(total, 1),
+        )
+
+    # (a) Normal basin: HDR must not worsen TIB vs open-loop
+    basin_normal = eval_model_tib.basins[0]   # rho=0.72
+    hdr_tib_n, ol_tib_n, _ = _tib_rollouts(basin_normal, n_tib_eps, seed_base=606)
+    delta_vs_open_normal = hdr_tib_n - ol_tib_n
+    record("stage06",
+           "TIB non-inferior to open-loop in normal basin (delta >= -0.05)",
+           delta_vs_open_normal >= -0.05,
+           f"HDR={hdr_tib_n:.3f} open={ol_tib_n:.3f} "
+           f"delta={delta_vs_open_normal:+.3f}")
+
+    # (b) Maladaptive basin: HDR must improve over both baselines
+    basin_mal = eval_model_tib.basins[1]      # rho=0.96
+    hdr_tib_m, ol_tib_m, lqr_tib_m = _tib_rollouts(basin_mal, n_tib_eps, seed_base=607)
+    delta_vs_open_mal = hdr_tib_m - ol_tib_m
+    delta_vs_lqr_mal  = hdr_tib_m - lqr_tib_m
+    record("stage06",
+           "TIB superior to open-loop in maladaptive basin (delta > 0)",
+           delta_vs_open_mal > 0,
+           f"HDR={hdr_tib_m:.3f} open={ol_tib_m:.3f} "
+           f"delta={delta_vs_open_mal:+.3f}")
+    record("stage06",
+           "TIB non-inferior to budget-constrained LQR in maladaptive basin (delta >= -0.05)",
+           delta_vs_lqr_mal >= -0.05,
+           f"HDR={hdr_tib_m:.3f} budget_lqr={lqr_tib_m:.3f} "
+           f"delta={delta_vs_lqr_mal:+.3f}")
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Stage 07 — Robustness sweeps
@@ -711,23 +876,125 @@ def stage07_robustness() -> None:
         record("stage07", f"Mismatch δ={mismatch} Mode A finite",
                bool(np.all(np.isfinite(res.u))), f"‖u‖={np.linalg.norm(res.u):.4f}")
 
-    # 07.4 Missing data sweep: IMM remains stable
+    # 07.4 Missing data / inference quality checks (replaced trivial sweep)
     from hdr_validation.inference.imm import IMMFilter
-    for p_miss in [0.0, 0.3, 0.6, 0.9]:
-        rng = np.random.default_rng(7)
-        eval_model = make_evaluation_model(cfg, rng)
-        filt = IMMFilter(eval_model)
-        m_obs = cfg["obs_dim"]
-        for _ in range(20):
-            y = rng.normal(size=m_obs)
-            mask = (rng.uniform(size=m_obs) > p_miss).astype(int)
-            y = np.where(mask.astype(bool), y, np.nan)
-            y_clean = np.where(np.isnan(y), 0.0, y)
-            state = filt.step(y_clean, mask, np.zeros(cfg["control_dim"]))
-        probs_ok = bool(np.all(np.isfinite(state.mode_probs)) and
-                        abs(state.mode_probs.sum() - 1.0) < 1e-4)
-        record("stage07", f"IMM stable p_miss={p_miss}", probs_ok,
-               f"probs={[f'{p:.3f}' for p in state.mode_probs]}")
+
+    # 07.4a — Numerical stability check (p_miss=0.3, 20 steps, uniform prior)
+    # This is explicitly a NUMERICAL STABILITY check only — it does NOT test
+    # inference quality. The only claim is that the filter does not NaN or diverge.
+    rng_74a = np.random.default_rng(7)
+    eval_model_74a = make_evaluation_model(cfg, rng_74a)
+    filt_74a = IMMFilter(eval_model_74a)
+    m_obs = cfg["obs_dim"]
+    for _ in range(20):
+        y_74a = rng_74a.normal(size=m_obs)
+        mask_74a = (rng_74a.uniform(size=m_obs) > 0.3).astype(int)
+        y_74a = np.where(mask_74a.astype(bool), y_74a, np.nan)
+        y_clean_74a = np.where(np.isnan(y_74a), 0.0, y_74a)
+        state_74a = filt_74a.step(y_clean_74a, mask_74a, np.zeros(cfg["control_dim"]))
+    probs_ok_74a = bool(np.all(np.isfinite(state_74a.mode_probs)) and
+                        abs(state_74a.mode_probs.sum() - 1.0) < 1e-4)
+    record("stage07",
+           "IMM numerical stability p_miss=0.3 (probs finite and sum to 1)",
+           probs_ok_74a,
+           f"probs={[f'{p:.3f}' for p in state_74a.mode_probs]}")
+
+    # 07.4b — Posterior entropy under non-maladaptive observations
+    # A passing result means meaningful uncertainty is retained or the filter
+    # has correctly identified a different basin after 50 non-maladaptive steps.
+    rng_74b = np.random.default_rng(74)
+    eval_model_74b = make_evaluation_model(cfg, rng_74b)
+    filt_74b = IMMFilter(eval_model_74b)
+    ep_74b = _generate_episode(cfg, rng_74b, basin_idx=2)
+    for t in range(50):
+        y_t = ep_74b["y"][t]
+        mask_t = (~np.isnan(y_t)).astype(int)
+        y_clean = np.where(np.isnan(y_t), 0.0, y_t)
+        state_74b = filt_74b.step(y_clean, mask_t, np.zeros(cfg["control_dim"]))
+    mode_probs_74b = state_74b.mode_probs
+    H_74b = float(-np.sum(mode_probs_74b * np.log(mode_probs_74b + 1e-12)))
+    record("stage07",
+           "IMM posterior entropy > 0.3 nats after 50 non-maladaptive steps",
+           H_74b > 0.3,
+           f"H={H_74b:.4f} probs={[f'{p:.3f}' for p in mode_probs_74b]}")
+
+    # 07.4c — Mode recovery from wrong-prior initialisation
+    # Filter biased toward basin 2 should identify basin-1 signal within 30 steps.
+    rng_74c = np.random.default_rng(74)
+    eval_model_74c = make_evaluation_model(cfg, rng_74c)
+    filt_74c = IMMFilter(eval_model_74c)
+    # Bias toward basin 2: strongly wrong prior
+    wrong_prior = np.array([0.05, 0.05, 0.90])
+    wrong_prior = wrong_prior / wrong_prior.sum()
+    filt_74c.state.mode_probs = wrong_prior
+    ep_74c = _generate_episode(cfg, rng_74c, basin_idx=1)
+    for t in range(30):
+        y_t = ep_74c["y"][t]
+        # p_miss=0.0: treat all observations as present regardless of missingness
+        mask_t = np.ones(cfg["obs_dim"], dtype=int)
+        y_clean = np.where(np.isnan(y_t), 0.0, y_t)
+        state_74c = filt_74c.step(y_clean, mask_t, np.zeros(cfg["control_dim"]))
+    record("stage07",
+           "IMM recovers basin-1 MAP mode within 30 steps from wrong prior",
+           state_74c.map_mode == 1,
+           f"map_mode={state_74c.map_mode} probs={[f'{p:.3f}' for p in state_74c.mode_probs]}")
+
+    # 07.5 w3 sweep: peak time-in-band across w3 values
+    from hdr_validation.model.coherence import coherence_penalty
+    kappa_hi_07 = cfg["kappa_hi"]
+    kappa_lo_07 = cfg["kappa_lo"]
+    w3_sweep_values = cfg["w3_sweep_values"]
+    tib_by_w3 = {}
+    rng_w3 = np.random.default_rng(707)
+    eval_model_w3 = make_evaluation_model(cfg, rng_w3)
+    basin_w3 = eval_model_w3.basins[0]
+    target_w3 = build_target_set(0, cfg)
+    T_w3 = min(cfg["steps_per_episode"], 32)  # Short run for sweep efficiency
+    x_init_w3 = rng_w3.normal(size=n) * 1.2
+
+    for w3 in w3_sweep_values:
+        cfg_w3 = {**cfg, "w3": w3}
+        in_band_cnt = 0
+        x_w3 = x_init_w3.copy()
+        P_w3 = np.eye(n) * 0.1
+        rng_w3s = np.random.default_rng(int(w3 * 1000))
+        for t in range(T_w3):
+            in_band_cnt += int(np.linalg.norm(x_w3) <= kappa_hi_07)
+            res_w3 = solve_mode_a(x_w3, P_w3, basin_w3, target_w3, kappa_hat=0.6, config=cfg_w3, step=t)
+            ww = rng_w3s.multivariate_normal(np.zeros(n), basin_w3.Q)
+            x_w3 = basin_w3.A @ x_w3 + basin_w3.B @ res_w3.u + ww + basin_w3.b
+        tib_by_w3[w3] = in_band_cnt / max(T_w3, 1)
+
+    best_w3_tib = max(tib_by_w3.values())
+    record("stage07",
+           "peak time-in-band across w3 sweep >= 0.60",
+           best_w3_tib >= 0.60,
+           f"peak_tib={best_w3_tib:.3f} at "
+           f"w3={max(tib_by_w3, key=tib_by_w3.get):.2f}")
+
+    # 07.8 — Model mismatch bound covers empirical p90 delta_A for basin 1
+    import json as _json_07
+    _mismatch_path = ROOT / "results" / "stage_04" / "highpower" / "mismatch_audit.json"
+    if not _mismatch_path.exists():
+        record("stage07",
+               "Mismatch bound audit file present",
+               False,
+               "mismatch_audit.json not found — run analyse_mismatch.py first")
+    else:
+        with open(_mismatch_path) as _f:
+            _mismatch_data = _json_07.load(_f)
+        _basin1_p90 = float(_mismatch_data["basin_1_p90_vs_bound"]["basin_1_p90"])
+        _bound = float(cfg["model_mismatch_bound"])
+        _bound_covers_p90 = _bound >= _basin1_p90
+        record("stage07",
+               "Mismatch audit: basin-1 p90 delta_A reported",
+               True,
+               f"basin_1_p90={_basin1_p90:.4f} bound={_bound:.4f}")
+        record("stage07",
+               "Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity)",
+               _bound_covers_p90,
+               f"{'OK' if _bound_covers_p90 else 'VIOLATED'}: {_bound:.3f} vs p90={_basin1_p90:.3f}",
+               note="FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -737,6 +1004,8 @@ if __name__ == "__main__":
     print("HDR Validation Suite — Smoke Profile")
     print(f"Python {sys.version}")
     print(f"NumPy {np.__version__}")
+    from hdr_validation.control.mpc import SCIPY_MINIMIZE_OPTIONS
+    print(f"SciPy minimize options: {SCIPY_MINIMIZE_OPTIONS}")
 
     episodes = None
     stage03_data = None

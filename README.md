@@ -37,3 +37,35 @@ def tau_sandwich(A: np.ndarray, Q: np.ndarray, x: np.ndarray, target: TargetSet,
         "lower_coeff": float(np.min(eigvals)),
         "upper_coeff": float(np.max(eigvals)),
     }
+
+## Reproducing Benchmark A (high-power run)
+
+The headline Benchmark A result (N_mal = 123, 20 seeds × 20 episodes)
+is produced by a standalone script that is NOT part of run_all.py:
+
+    export OPENBLAS_NUM_THREADS=1
+    export OMP_NUM_THREADS=1
+    export MKL_NUM_THREADS=1
+    python highpower_runner.py
+
+Outputs are written to results/stage_04/highpower/:
+  highpower_summary.json   — machine-readable metrics and per-seed gains
+  highpower_table.txt      — human-readable results table
+  manuscript_language.txt  — recommended manuscript wording
+
+Expected values (fixed seeds 101–2020):
+  N_maladaptive : 123
+  Mean gain     : +0.028  (95 % CI [+0.021, +0.036])
+  Win rate      : 0.772
+  Safety delta  : +0.0004
+
+## Environment setup (required on multi-core Linux)
+
+Before running any script or pytest, pin BLAS threads to prevent
+non-determinism and hangs on shared compute nodes:
+
+    export OPENBLAS_NUM_THREADS=1
+    export OMP_NUM_THREADS=1
+    export MKL_NUM_THREADS=1
+
+Add these lines to your shell profile or CI environment.

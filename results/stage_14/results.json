@@ -1,0 +1,22 @@
+{
+  "checks": [
+    {
+      "check": "pop_prior_accuracy_60pct",
+      "passed": true,
+      "value": "1.00",
+      "note": "threshold=0.60"
+    },
+    {
+      "check": "pop_prior_better_than_random",
+      "passed": true,
+      "value": "acc=1.00 vs random=0.33",
+      "note": "Population prior should beat random"
+    }
+  ],
+  "elapsed": 0.001963760000307957,
+  "provenance": {
+    "hdr_version": "7.3.0",
+    "generated_at": "2026-03-17T02:36:24.229940Z",
+    "git_commit": "45df68f"
+  }
+}

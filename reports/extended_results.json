@@ -1,8 +1,8 @@
 {
   "profile": "extended",
-  "generated_at": "2026-03-10T02:05:30.242442Z",
-  "elapsed_seconds": 16.31,
-  "exit_code": 0,
+  "generated_at": "2026-03-11T21:39:33.073320Z",
+  "elapsed_seconds": 113.97,
+  "exit_code": 1,
   "meta": {
     "seeds": [
       101,
@@ -14,14 +14,14 @@
     "mc": 150
   },
   "summary": {
-    "total": 93,
-    "passed": 93,
-    "failed": 0,
-    "all_passed": true
+    "total": 110,
+    "passed": 109,
+    "failed": 1,
+    "all_passed": false
   },
   "stages": {
     "stage01": {
-      "passed": 25,
+      "passed": 29,
       "failed": 0,
       "checks": [
         {
@@ -41,6 +41,12 @@
           "check": "tau sandwich lower \u2264 tau_tilde",
           "passed": true,
           "value": "tau_L=11.3630 tau_tilde=66.4452"
+        },
+        {
+          "stage": "stage01",
+          "check": "tau_tilde strictly > tau_L (Prop H.1 gap confirmed)",
+          "passed": true,
+          "value": "gap=55.0821"
         },
         {
           "stage": "stage01",
@@ -71,6 +77,24 @@
           "check": "DARE K finite",
           "passed": true,
           "value": ""
+        },
+        {
+          "stage": "stage01",
+          "check": "alpha_from_dare in (0,1)",
+          "passed": true,
+          "value": "0.4426"
+        },
+        {
+          "stage": "stage01",
+          "check": "beta contraction in [0,1)",
+          "passed": true,
+          "value": "beta=0.6667"
+        },
+        {
+          "stage": "stage01",
+          "check": "rho(Q_transient) <= beta",
+          "passed": true,
+          "value": "rho=0.6667 beta=0.6667"
         },
         {
           "stage": "stage01",
@@ -351,7 +375,7 @@
       ]
     },
     "stage04": {
-      "passed": 8,
+      "passed": 16,
       "failed": 0,
       "checks": [
         {
@@ -371,6 +395,12 @@
           "check": "Mode A produces non-zero control",
           "passed": true,
           "value": "25/96 calls"
+        },
+        {
+          "stage": "stage04",
+          "check": "Mode A active fraction >= 0.75 from far states (||x|| in [1.5, 3.0], basin 1)",
+          "passed": true,
+          "value": "active=0.75 mean_u=0.0664"
         },
         {
           "stage": "stage04",
@@ -401,6 +431,48 @@
           "check": "Mode A finite seed=303",
           "passed": true,
           "value": "\u2016u\u2016=0.0000"
+        },
+        {
+          "stage": "stage04",
+          "check": "HDR gain vs open-loop > 0",
+          "passed": true,
+          "value": "gain=0.0002"
+        },
+        {
+          "stage": "stage04",
+          "check": "HDR gain vs pooled > -0.10",
+          "passed": true,
+          "value": "gain=-0.0031"
+        },
+        {
+          "stage": "stage04",
+          "check": "Safety delta vs pooled <= 0.015",
+          "passed": true,
+          "value": "delta=0.0016"
+        },
+        {
+          "stage": "stage04",
+          "check": "HDR gain vs pooled_estimated on maladaptive basin > 0",
+          "passed": true,
+          "value": "gain=0.0346  (Basin 1 (rho=0.96) episodes only, both use IMM x_hat)"
+        },
+        {
+          "stage": "stage04",
+          "check": "HDR maladaptive win rate > 0.7",
+          "passed": true,
+          "value": "rate=0.8000  (Fraction of basin-1 episodes where HDR cost < pooled_estimated cost)"
+        },
+        {
+          "stage": "stage04",
+          "check": "Benchmark A 95% CI lower bound >= +0.01 (low-N profile criterion)",
+          "passed": true,
+          "value": "CI=[+0.0163, +0.0535]"
+        },
+        {
+          "stage": "stage04",
+          "check": "Adaptive-basin N documented (n_adaptive)",
+          "passed": true,
+          "value": "n_adaptive=40  (n_adaptive >= 20)"
         }
       ]
     },
@@ -471,7 +543,7 @@
       ]
     },
     "stage06": {
-      "passed": 6,
+      "passed": 9,
       "failed": 0,
       "checks": [
         {
@@ -509,12 +581,30 @@
           "check": "coherence_window < steps_per_episode",
           "passed": true,
           "value": "24 < 256"
+        },
+        {
+          "stage": "stage06",
+          "check": "TIB non-inferior to open-loop in normal basin (delta >= -0.05)",
+          "passed": true,
+          "value": "HDR=0.660 open=0.660 delta=+0.000"
+        },
+        {
+          "stage": "stage06",
+          "check": "TIB superior to open-loop in maladaptive basin (delta > 0)",
+          "passed": true,
+          "value": "HDR=0.036 open=0.032 delta=+0.004"
+        },
+        {
+          "stage": "stage06",
+          "check": "TIB non-inferior to budget-constrained LQR in maladaptive basin (delta >= -0.05)",
+          "passed": true,
+          "value": "HDR=0.036 budget_lqr=0.030 delta=+0.006"
         }
       ]
     },
     "stage07": {
-      "passed": 18,
-      "failed": 0,
+      "passed": 19,
+      "failed": 1,
       "checks": [
         {
           "stage": "stage07",
@@ -578,27 +668,21 @@
         },
         {
           "stage": "stage07",
-          "check": "IMM stable p_miss=0.0",
+          "check": "IMM numerical stability p_miss=0.3 (probs finite and sum to 1)",
           "passed": true,
           "value": "probs=['0.000', '1.000', '0.000']"
         },
         {
           "stage": "stage07",
-          "check": "IMM stable p_miss=0.3",
+          "check": "IMM posterior entropy > 0.3 nats after 50 non-maladaptive steps",
           "passed": true,
-          "value": "probs=['0.000', '1.000', '0.000']"
+          "value": "H=0.6809 probs=['0.773', '0.076', '0.151']"
         },
         {
           "stage": "stage07",
-          "check": "IMM stable p_miss=0.6",
+          "check": "IMM recovers basin-1 MAP mode within 30 steps from wrong prior",
           "passed": true,
-          "value": "probs=['0.000', '1.000', '0.000']"
-        },
-        {
-          "stage": "stage07",
-          "check": "IMM stable p_miss=0.9",
-          "passed": true,
-          "value": "probs=['0.000', '1.000', '0.000']"
+          "value": "map_mode=1 probs=['0.066', '0.820', '0.114']"
         },
         {
           "stage": "stage07",
@@ -623,6 +707,24 @@
           "check": "IMM stable over 48-step day (seed=303)",
           "passed": true,
           "value": "probs=['0.000', '0.919', '0.080']"
+        },
+        {
+          "stage": "stage07",
+          "check": "peak time-in-band across w3 sweep >= 0.60",
+          "passed": true,
+          "value": "peak_tib=0.625 at w3=0.05"
+        },
+        {
+          "stage": "stage07",
+          "check": "Mismatch audit: basin-1 p90 delta_A reported",
+          "passed": true,
+          "value": "basin_1_p90=0.3466 bound=0.2000"
+        },
+        {
+          "stage": "stage07",
+          "check": "Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity)",
+          "passed": false,
+          "value": "VIOLATED: 0.200 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds \u2014 disclose in manuscript)"
         }
       ]
     }

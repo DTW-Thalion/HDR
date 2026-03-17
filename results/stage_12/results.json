@@ -1,0 +1,41 @@
+{
+  "checks": [
+    {
+      "check": "error_decreases_with_T_p",
+      "passed": true,
+      "value": "1.00",
+      "note": "10/10 patients show decrease"
+    },
+    {
+      "check": "T_p_0_equals_group_mean",
+      "passed": true,
+      "value": "error=0.000000",
+      "note": "Graceful degradation check"
+    },
+    {
+      "check": "correlation_at_large_T_p",
+      "passed": true,
+      "value": "0.999",
+      "note": "T_p=200"
+    },
+    {
+      "check": "sample_complexity_scaling",
+      "passed": true,
+      "value": "N_coarse=19173, N_fine=76691",
+      "note": "Finer accuracy requires more samples"
+    },
+    {
+      "check": "boundary_convergence_with_N",
+      "passed": true,
+      "value": "N=20:MSE=0.0476, N=50:MSE=0.0475, N=200:MSE=0.0466",
+      "note": "Claim 30 \u2014 Prop 11.7: committor boundary error decreases with sample size"
+    }
+  ],
+  "n_patients": 10,
+  "elapsed": 0.011402829999951791,
+  "provenance": {
+    "hdr_version": "7.3.0",
+    "generated_at": "2026-03-17T02:36:23.890050Z",
+    "git_commit": "45df68f"
+  }
+}

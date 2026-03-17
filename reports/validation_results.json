@@ -1,8 +1,8 @@
 {
   "profile": "validation",
-  "generated_at": "2026-03-10T02:05:35.585779Z",
-  "elapsed_seconds": 5.34,
-  "exit_code": 0,
+  "generated_at": "2026-03-11T21:39:40.003166Z",
+  "elapsed_seconds": 6.93,
+  "exit_code": 1,
   "meta": {
     "seeds": [
       101,
@@ -14,14 +14,14 @@
     "mc": 150
   },
   "summary": {
-    "total": 88,
-    "passed": 88,
-    "failed": 0,
-    "all_passed": true
+    "total": 95,
+    "passed": 94,
+    "failed": 1,
+    "all_passed": false
   },
   "stages": {
     "stage01": {
-      "passed": 24,
+      "passed": 28,
       "failed": 0,
       "checks": [
         {
@@ -41,6 +41,12 @@
           "check": "tau sandwich lower \u2264 tau_tilde",
           "passed": true,
           "value": "tau_L=11.3630 tau_tilde=66.4452"
+        },
+        {
+          "stage": "stage01",
+          "check": "tau_tilde strictly > tau_L (Prop H.1 gap confirmed)",
+          "passed": true,
+          "value": "gap=55.0821"
         },
         {
           "stage": "stage01",
@@ -71,6 +77,24 @@
           "check": "DARE K finite",
           "passed": true,
           "value": ""
+        },
+        {
+          "stage": "stage01",
+          "check": "alpha_from_dare in (0,1)",
+          "passed": true,
+          "value": "0.4426"
+        },
+        {
+          "stage": "stage01",
+          "check": "beta contraction in [0,1)",
+          "passed": true,
+          "value": "beta=0.6667"
+        },
+        {
+          "stage": "stage01",
+          "check": "rho(Q_transient) <= beta",
+          "passed": true,
+          "value": "rho=0.6667 beta=0.6667"
         },
         {
           "stage": "stage01",
@@ -339,7 +363,7 @@
       ]
     },
     "stage04": {
-      "passed": 8,
+      "passed": 10,
       "failed": 0,
       "checks": [
         {
@@ -359,6 +383,12 @@
           "check": "Mode A produces non-zero control",
           "passed": true,
           "value": "23/72 calls"
+        },
+        {
+          "stage": "stage04",
+          "check": "Mode A active fraction >= 0.75 from far states (||x|| in [1.5, 3.0], basin 1)",
+          "passed": true,
+          "value": "active=0.90 mean_u=0.1328"
         },
         {
           "stage": "stage04",
@@ -389,6 +419,12 @@
           "check": "Mode A finite seed=303",
           "passed": true,
           "value": "\u2016u\u2016=0.0000"
+        },
+        {
+          "stage": "stage04",
+          "check": "Adaptive-basin N documented (n_adaptive)",
+          "passed": true,
+          "value": "n_adaptive=18  (UNDERPOWERED: n_adaptive < 20, no performance claims valid for adaptive basins)"
         }
       ]
     },
@@ -490,7 +526,7 @@
     },
     "stage07": {
       "passed": 17,
-      "failed": 0,
+      "failed": 1,
       "checks": [
         {
           "stage": "stage07",
@@ -554,27 +590,21 @@
         },
         {
           "stage": "stage07",
-          "check": "IMM stable p_miss=0.0",
+          "check": "IMM numerical stability p_miss=0.3 (probs finite and sum to 1)",
           "passed": true,
           "value": "probs=['0.000', '1.000', '0.000']"
         },
         {
           "stage": "stage07",
-          "check": "IMM stable p_miss=0.3",
+          "check": "IMM posterior entropy > 0.3 nats after 50 non-maladaptive steps",
           "passed": true,
-          "value": "probs=['0.000', '1.000', '0.000']"
+          "value": "H=0.3671 probs=['0.908', '0.035', '0.057']"
         },
         {
           "stage": "stage07",
-          "check": "IMM stable p_miss=0.6",
+          "check": "IMM recovers basin-1 MAP mode within 30 steps from wrong prior",
           "passed": true,
-          "value": "probs=['0.000', '1.000', '0.000']"
-        },
-        {
-          "stage": "stage07",
-          "check": "IMM stable p_miss=0.9",
-          "passed": true,
-          "value": "probs=['0.000', '1.000', '0.000']"
+          "value": "map_mode=1 probs=['0.070', '0.689', '0.241']"
         },
         {
           "stage": "stage07",
@@ -593,6 +623,18 @@
           "check": "Mode A finite seed=303",
           "passed": true,
           "value": "\u2016u\u2016=0.0000"
+        },
+        {
+          "stage": "stage07",
+          "check": "Mismatch audit: basin-1 p90 delta_A reported",
+          "passed": true,
+          "value": "basin_1_p90=0.3466 bound=0.2000"
+        },
+        {
+          "stage": "stage07",
+          "check": "Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity)",
+          "passed": false,
+          "value": "VIOLATED: 0.200 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds \u2014 disclose in manuscript)"
         }
       ]
     }

@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This repository is an **in-silico validation suite** for the **Homeodynamic Remediation Framework (HDR) v5.0** — a multi-mode adaptive control system for constrained stochastic linear dynamical systems (SLDS). The framework validates mathematical properties, implementation correctness, and empirical performance across synthetic physiological scenarios.
+This repository is an **in-silico validation suite** for the **Homeodynamic Remediation Framework (HDR) v7.3** — a multi-mode adaptive control system for constrained stochastic linear dynamical systems (SLDS). The framework validates mathematical properties, implementation correctness, and empirical performance across synthetic physiological scenarios.
 
 HDR models a latent physiological state (e.g., neuroendocrine system) with K discrete operating modes ("basins") and switches between three control strategies based on inference quality:
 
@@ -16,52 +16,75 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 
 ```
 /home/user/HDR/
-├── hdr_validation -> .          # Self-referential symlink (makes root importable as 'hdr_validation')
-├── control/                     # Control policy subpackage
-│   ├── lqr.py                   # DLQR, committor calculations, value iteration
-│   ├── mode_b.py                # Structured exploration control (Mode B)
-│   ├── mode_c.py                # Information-maximizing dither control (Mode C)
-│   └── mpc.py                   # Model Predictive Control (Mode A)
-├── inference/                   # Inference/estimation subpackage
-│   ├── ici.py                   # Inference-Control Interface (ICI) — core ICI conditions
-│   ├── imm.py                   # Interacting Multiple Model filter
-│   └── kalman.py                # Kalman filtering
-├── model/                       # System model subpackage
-│   ├── slds.py                  # SLDS model factory (BasinModel, EvaluationModel)
-│   ├── hsmm.py                  # Hidden Semi-Markov dwell models
-│   ├── coherence.py             # State coherence metrics
-│   ├── recovery.py              # Recovery trajectory analysis
-│   ├── safety.py                # Safety analysis tools
-│   └── target_set.py            # Target set geometry (box/ellipsoidal)
+├── hdr_validation/              # Python package (control, inference, model, identification)
+│   ├── control/                 # Control policy subpackage
+│   │   ├── lqr.py               # DLQR, committor calculations, value iteration, committor_with_jumps
+│   │   ├── mode_b.py            # Structured exploration control (Mode B)
+│   │   ├── mode_c.py            # Information-maximizing dither control (Mode C)
+│   │   ├── mode_c_fisher.py     # Fisher-information dither policy and proxy (Mode C)
+│   │   ├── mimpc.py             # Mixed-Integer MPC (v7.0)
+│   │   ├── supervisor.py        # Extended 8-branch supervisor (v7.0)
+│   │   ├── mpc.py               # Model Predictive Control (Mode A), solve_mode_a_unstable, solve_mode_a_irr
+│   │   └── tube_mpc.py          # mRPI terminal set and tube-MPC (v7.1)
+│   ├── inference/               # Inference/estimation subpackage
+│   │   ├── ici.py               # Inference-Control Interface (ICI) — core ICI conditions
+│   │   ├── imm.py               # IMM filter + RegionConditionedIMM, FactoredMultiSiteIMM, MultiRateIMM (v7.0)
+│   │   ├── kalman.py            # Kalman filtering
+│   │   ├── particle.py          # Particle filter / SMC (v7.0)
+│   │   ├── variational.py       # Variational SLDS inference (v7.0)
+│   │   └── population.py        # Population-prior basin assignment (v7.0)
+│   ├── model/                   # System model subpackage
+│   │   ├── slds.py              # SLDS model factory (BasinModel, EvaluationModel)
+│   │   ├── hsmm.py              # Hidden Semi-Markov dwell models
+│   │   ├── coherence.py         # State coherence metrics
+│   │   ├── recovery.py          # Recovery trajectory analysis
+│   │   ├── safety.py            # Safety analysis tools
+│   │   ├── target_set.py        # Target set geometry (box/ellipsoidal)
+│   │   ├── extensions.py        # v7.0 structural extensions (basin classifier, PWA, jump-diffusion, etc.)
+│   │   ├── adaptive.py          # Forgetting-factor RLS, drift detection, adaptive mismatch bound (v7.1)
+│   │   ├── saturation.py        # Michaelis-Menten saturating dose-response (v7.1)
+│   │   ├── stability_check.py   # Basin spectral radius validation
+│   │   └── multirate.py         # Multi-rate observer, delay augmentation (v7.0)
+│   ├── identification/          # v7.0 identification subpackage
+│   │   ├── hierarchical.py      # Hierarchical empirical-Bayes coupling estimation
+│   │   ├── boed.py              # Bayesian Optimal Experimental Design
+│   │   ├── committor_recovery.py # Committor recovery via kernel regression
+│   │   ├── transition_rates.py  # Transition rate estimation
+│   │   ├── population_planning.py # Population-prior treatment planning
+│   │   ├── tau_estimation.py    # Tau burden estimation
+│   │   └── risk_information.py  # Risk-information frontier
+│   └── stages/                  # Stage scripts for stages 08–16
+│       ├── stage_08_ablation.py
+│       ├── stage_08b_ablation.py # Multi-axis asymmetric ablation (coherence + calibration marginal gains)
+│       ├── stage_09_baselines.py
+│       ├── stage_10_mode_b_sweep.py
+│       ├── stage_11_invariant_set.py
+│       ├── stage_12_hierarchical.py  # v7.0
+│       ├── stage_13_inference_backbone.py  # v7.0
+│       ├── stage_14_population_planning.py  # v7.0
+│       ├── stage_15_proxy_composite.py  # v7.0
+│       └── stage_16_extensions.py  # v7.1 — model-failure extension integration
 ├── results/                     # Experiment outputs (auto-generated)
-│   ├── stage_00/ … stage_07/    # Per-stage result artifacts
-│   └── stage_03b/, stage_03c/   # Sub-stage artifacts
-├── stage01_math_checks.py       # Stage 01: Mathematical validation
-├── stage02_generator.py         # Stage 02: Synthetic dataset generation
-├── stage03b_ici_diagnostic.py   # Stage 03b: ICI diagnostic pipeline
-├── stage03c_mode_c.py           # Stage 03c: Mode C validation
-├── stage05_mode_b.py            # Stage 05: Mode B validation
-├── stage06_coherence.py         # Stage 06: State coherence
-├── stage07_robustness.py        # Stage 07: Robustness sweeps
-├── test_*.py                    # Pytest test modules (9 files)
-├── checkpointing.py             # Experiment state tracking + checkpoint recovery
-├── cli.py                       # Command-line argument parsing
-├── common.py                    # Shared utilities: chance-constraint tightening, risk scoring
-├── ground_truth.py              # Synthetic environment simulator
-├── run_all.py                   # Orchestration script
-├── runtime.py                   # Experiment execution framework
-├── specification.py             # Configuration composition + observation scheduling
-├── utils.py                     # Atomic file I/O, directory management
+│   └── stage_04/ … stage_16/    # Per-stage result artifacts (incl. stage_08b)
+├── smoke_runner.py              # Smoke profile runner (stage functions + SMOKE_CONFIG)
+├── standard_runner.py           # Standard profile runner
+├── extended_runner.py           # Extended profile runner
+├── extended_512_runner.py       # Extended profile with T=512
+├── validation_runner.py         # Validation profile runner
+├── highpower_runner.py          # High-power profile runner (20 seeds × 30 ep/seed)
+├── test_*.py                    # Pytest test modules (30 files, 295 tests)
+├── run_all.py                   # Orchestration script (stages 01–16, --full-validation)
+├── plotting.py                  # Visualization utilities
+├── analyse_highpower.py         # High-power run analysis
+├── analyse_mismatch.py          # Model mismatch analysis
+├── derive_criterion.py          # Criterion derivation utility
+├── generate_reports.py          # Report generation utility
 ├── config.json                  # Master configuration
-├── smoke.json                   # Smoke profile overrides
-├── standard.json                # Standard profile overrides
-├── extended.json                # Extended profile overrides
-├── validation.json              # Validation profile overrides
 ├── paper_defaults.json          # Reference parameter values from paper
-└── config (N).json              # Parameter sweep variants (N = 1–58)
+└── config (N).json              # Parameter sweep variants
 ```
 
-**Important**: `hdr_validation` is a symlink pointing to `.` (the repo root). This allows tests and scripts to import the package as `hdr_validation.control.mpc`, `hdr_validation.inference.ici`, etc. while the source lives at the root.
+**Important**: `hdr_validation/` is a proper Python package directory containing `control/`, `inference/`, `model/`, `identification/` (v7.0), `stages/`, `utils.py`, `specification.py`, and `packaging.py`. Tests and scripts import the package as `hdr_validation.control.mpc`, `hdr_validation.inference.ici`, `hdr_validation.identification.hierarchical`, etc.
 
 ---
 
@@ -71,29 +94,53 @@ All production code imports via the `hdr_validation` package namespace:
 
 ```python
 from hdr_validation.control.mpc import solve_mode_a
-from hdr_validation.control.lqr import dlqr, committor
+from hdr_validation.control.lqr import dlqr, committor, committor_with_jumps
+from hdr_validation.control.mimpc import solve_mixed_integer_mpc, CumulativeExposureConstraint
+from hdr_validation.control.supervisor import ExtendedSupervisor
 from hdr_validation.inference.ici import compute_ici_state, compute_T_k_eff
-from hdr_validation.inference.imm import IMM
+from hdr_validation.inference.imm import IMMFilter, RegionConditionedIMM
+from hdr_validation.inference.particle import ParticleFilter
+from hdr_validation.inference.variational import VariationalSLDS
+from hdr_validation.inference.population import PopulationPriorAssignment
 from hdr_validation.model.slds import make_evaluation_model, BasinModel
 from hdr_validation.model.target_set import build_target_set, TargetSet
 from hdr_validation.model.hsmm import DwellModel
-from hdr_validation.utils import atomic_write_json, ensure_dir, seed_everything
+from hdr_validation.model.extensions import BasinClassifier, JumpDiffusion, PWACoupling
+from hdr_validation.model.adaptive import FFRLSEstimator, DriftDetector
+from hdr_validation.model.saturation import michaelis_menten, apply_saturation
+from hdr_validation.control.tube_mpc import compute_mRPI_zonotope, solve_tube_mpc
+from hdr_validation.identification.hierarchical import HierarchicalCouplingEstimator
+from hdr_validation.identification.boed import BOEDEstimator
+from hdr_validation.utils import ensure_dir, atomic_write_text
 from hdr_validation.packaging import zip_paths
+from hdr_validation.specification import observation_schedule, generate_observation
 ```
 
-Root-level modules (e.g., `checkpointing.py`, `common.py`, `specification.py`) use relative imports within stage scripts:
-
-```python
-from ..inference.ici import apply_calibration, compute_ici_state
-from ..model.slds import make_evaluation_model
-from .common import save_experiment_bundle
-```
+Stage logic for stages 01–07 lives in the profile runner modules (`smoke_runner.py`, `standard_runner.py`, etc.). Stages 08–16 (including 08b) are in `hdr_validation/stages/`.
 
 ---
 
 ## Running the Validation Pipeline
 
-### Full pipeline
+### Recommended: full validation (all 32 claims)
+
+```bash
+python run_all.py --full-validation        # Complete validation of all 32 claims
+```
+
+This is the **recommended entry point** for reviewers. It runs four phases:
+
+| Phase | What runs | Claims covered |
+|-------|-----------|----------------|
+| 1 | Extended profile, stages 01–03c + 05–07 | 3–14 |
+| 2 | Highpower benchmark (20 seeds × 30 ep/seed) | 1–2 (authoritative) |
+| 3 | Stages 08–16 at production scale + pytest | 9, 13, 15–32 |
+| 4 | Full pytest suite (295 tests, 30 files) | 15–32 (unit test layer) |
+
+Output ends with a per-claim pass/fail summary table. Supports `--resume --skip-done`
+for resuming interrupted runs, and `--force` to re-run completed stages.
+
+### Per-profile runs
 
 ```bash
 python run_all.py                          # Run all stages, all profiles
@@ -105,24 +152,35 @@ python run_all.py --profiles smoke standard extended validation
 ### Selective stage execution
 
 ```bash
-python run_all.py --profiles smoke --stages 03,04 --force    # Force-rerun stages 3 & 4
+python run_all.py --profiles smoke --stages 03 04 --force    # Force-rerun stages 3 & 4
 python run_all.py --stages 01 03b 03c                        # Multiple stages
+python run_all.py --stages 12 13 14 15                       # v7.0 stages only
+python run_all.py --stages 08 08b --run-tests                # Run stages then pytest
 ```
 
 ### Stage IDs
 
 | ID   | Script                    | Description                              |
 |------|---------------------------|------------------------------------------|
-| 00   | (setup)                   | Environment setup and sanity checks      |
-| 01   | `stage01_math_checks.py`  | Mathematical validation (τ̃, committor)   |
-| 02   | `stage02_generator.py`    | Synthetic dataset generation             |
-| 03   | (IMM inference)           | Mode identification and calibration      |
-| 03b  | `stage03b_ici_diagnostic.py` | ICI calibration and regime boundaries |
-| 03c  | `stage03c_mode_c.py`      | Mode C validation                        |
-| 04   | (Mode A)                  | Mode A performance vs baselines          |
-| 05   | `stage05_mode_b.py`       | Mode B structured exploration            |
-| 06   | `stage06_coherence.py`    | State coherence checks                   |
-| 07   | `stage07_robustness.py`   | Robustness across parameter sweeps       |
+| 01   | (in profile runner)       | Mathematical validation (τ̃, committor)   |
+| 02   | (in profile runner)       | Synthetic dataset generation             |
+| 03   | (in profile runner)       | Mode identification and calibration      |
+| 03b  | (in profile runner)       | ICI calibration and regime boundaries    |
+| 03c  | (in profile runner)       | Mode C validation                        |
+| 04   | (in profile runner)       | Mode A performance vs baselines          |
+| 05   | (in profile runner)       | Mode B structured exploration            |
+| 06   | (in profile runner)       | State coherence checks                   |
+| 07   | (in profile runner)       | Robustness across parameter sweeps       |
+| 08   | `stage_08_ablation.py`    | Ablation study                           |
+| 08b  | `stage_08b_ablation.py`   | Multi-axis asymmetric ablation           |
+| 09   | `stage_09_baselines.py`   | Baseline comparison                      |
+| 10   | `stage_10_mode_b_sweep.py` | Mode B FP/FN sweep                      |
+| 11   | `stage_11_invariant_set.py` | Riccati invariant set verification     |
+| 12   | `stage_12_hierarchical.py` | Hierarchical coupling estimation (v7.0) |
+| 13   | `stage_13_inference_backbone.py` | Inference backbone benchmark (v7.0) |
+| 14   | `stage_14_population_planning.py` | Population planning (v7.0)         |
+| 15   | `stage_15_proxy_composite.py` | Proxy composite estimation (v7.0)    |
+| 16   | `stage_16_extensions.py` | Model-failure extension integration (v7.1) |
 
 ---
 
@@ -130,12 +188,7 @@ python run_all.py --stages 01 03b 03c                        # Multiple stages
 
 ### Profile hierarchy
 
-Configs are composed from `config.json` (master defaults) + profile override (e.g., `smoke.json`). A config hash is computed for cache-key / checkpoint purposes.
-
-```python
-from hdr_validation.specification import compose_profile_config, config_hash
-cfg = compose_profile_config(project_root, profile_name="smoke")
-```
+Each profile runner (e.g., `smoke_runner.py`) defines its own config dict inline (e.g., `SMOKE_CONFIG`). Additional runners include `extended_512_runner.py` (T=512 variant) and `highpower_runner.py` (20-seed Benchmark A). The master defaults come from `config.json`.
 
 ### Key configuration parameters
 
@@ -165,12 +218,14 @@ cfg = compose_profile_config(project_root, profile_name="smoke")
 
 ### Profile sizes
 
-| Profile    | Seeds     | Episodes | Steps/ep | MC Rollouts |
-|------------|-----------|----------|----------|-------------|
-| smoke      | [101]     | 8        | 128      | 50          |
-| standard   | [101,202] | 12       | 128      | 100         |
-| extended   | [101,202,303] | 20   | 256      | 150         |
-| validation | [101,202,303] | 12   | 128      | 150         |
+| Profile      | Seeds           | Episodes | Steps/ep | MC Rollouts |
+|--------------|-----------------|----------|----------|-------------|
+| smoke        | [101]           | 8        | 128      | 50          |
+| standard     | [101,202]       | 12       | 128      | 100         |
+| extended     | [101,202,303]   | 20       | 256      | 150         |
+| extended_512 | [101,202,303]   | 10       | 512      | 150         |
+| validation   | [101,202,303]   | 12       | 128      | 150         |
+| highpower    | 20 seeds        | 30/seed  | 256      | —           |
 
 ---
 
@@ -211,17 +266,9 @@ def test_mpc_returns_bounded_control():
 
 ### Test files
 
-| File                  | Tests                                  |
-|-----------------------|----------------------------------------|
-| `test_packaging.py`   | Zip archive creation                   |
-| `test_ici.py`         | ICI state computation and bounds       |
-| `test_imm.py`         | IMM inference filter                   |
-| `test_mpc.py`         | MPC/Mode A control bounds              |
-| `test_mode_c.py`      | Mode C dither injection                |
-| `test_hsmm.py`        | HSMM dwell distribution models         |
-| `test_target_set.py`  | Target set geometry                    |
-| `test_committor.py`   | Committor BVP solution                 |
-| `test_recovery.py`    | Recovery trajectory analysis           |
+30 test files at the repo root (`test_*.py`) cover all 32 claims. See `CLAIM_MATRIX.md`
+for the per-claim test file mapping. Run `python check_claims.py --verbose` for automated
+validation of claim criteria against test results and stage artifacts.
 
 ---
 
@@ -242,14 +289,14 @@ K=3 basins with spectral radii `rho_reference = [0.72, 0.96, 0.55]`. Basin 1 (rh
 
 The ICI (`inference/ici.py`) defines three conditions for activating Mode C:
 
-1. **Condition (i)**: `μ̂_k > μ̄_required` — mode error exceeds tolerable bound
-2. **Condition (ii)**: `p_A^robust < ω_min` — robust Mode A probability too low
-3. **Condition (iii)**: `T_k^eff < T_C_max` — effective sample count insufficient
+1. **Condition (i)**: `μ̂ ≥ μ̄_required` — mode error exceeds tolerable bound
+2. **Condition (ii)**: `R_Brier ≥ R_Brier_max` — calibration error exceeds maximum
+3. **Condition (iii)**: `any T_k^eff < ω_min` — effective sample count below threshold
 
 Key ICI quantities:
 - `T_k^eff = T * π_k * (1 - p_miss) * (1 - ρ_k)` — effective sample count (Prop 9.2)
-- `p_A^robust = p_A_nominal - k_calib * R_Brier` — calibration-adjusted Mode A probability
-- `ω_min = omega_min_factor * T_k^eff` — minimum viable probability threshold
+- `p_A^robust = p_A_nominal + k_calib * R_Brier` — calibration-adjusted Mode A probability
+- `ω_min` — regime boundary threshold for minimum effective sample count
 
 ### Control hierarchy
 
@@ -297,25 +344,21 @@ ICI state → Mode selection → Control law
 
 ## Checkpointing and Resumability
 
-The `checkpointing.py` module provides a `RunManifest` class that tracks experiment state:
+`run_all.py` manages a JSON manifest (`run_all_manifest.json`) to track stage completion:
 
 ```python
-manifest = RunManifest(project_root)
-if manifest.should_skip(stage_id, profile_name, config_hash):
-    return  # Already completed with same config
-
-manifest.mark_running(stage_id, profile_name)
-try:
-    result = run_stage(...)
-    manifest.mark_completed(stage_id, profile_name, result)
-except Exception as e:
-    manifest.mark_failed(stage_id, profile_name, str(e))
+# In run_all.py:
+manifest = load_manifest()            # Load existing state
+is_done(manifest, profile, stage_id)  # Check if stage completed
+mark_done(manifest, profile, stage_id)  # Mark stage as done
+mark_failed(manifest, profile, stage_id)  # Mark stage as failed
+save_manifest(manifest)               # Persist to disk
 ```
 
-- Manifest stored as `run_manifest.json` in project root
-- Config hash ensures cache invalidation on parameter changes
-- Partial results flushed atomically after every seed/chunk
+- Manifest stored as `run_all_manifest.json` in project root
 - Use `--skip-done` flag to skip already-completed stages
+- Use `--resume` to load existing manifest state
+- Use `--force` to re-run regardless of manifest
 
 ---
 
@@ -325,11 +368,8 @@ All file writes use atomic operations (write to temp, then rename):
 
 ```python
 from hdr_validation.utils import (
-    atomic_write_json,   # JSON serialization
-    atomic_write_text,   # Plain text
-    atomic_save_npz,     # NumPy compressed arrays
+    atomic_write_text,   # Plain text (write-to-temp + rename)
     ensure_dir,          # mkdir -p
-    seed_everything,     # Set numpy + Python random seeds
 )
 ```
 
@@ -349,7 +389,7 @@ np.savez_compressed(path,
 
 ## Result Artifacts
 
-Each stage outputs to `results/stage_{id}/{profile_name}/{component}/`:
+Stages 01–07 (profile-runner stages) output to `results/stage_{id}/{profile_name}/{component}/`:
 
 ```
 results/stage_03b/smoke/ici_diagnostic/
@@ -361,21 +401,38 @@ results/stage_03b/smoke/ici_diagnostic/
 └── plots/            # Optional visualizations
 ```
 
+Stages 08–16 (profile-independent stages) output flat JSON files directly:
+
+```
+results/stage_08/
+├── ablation_results.json      # Production-scale ablation output
+└── ablation_diagnosis.json    # Diagnostic/fix history
+```
+
 ---
 
 ## Claim Validation
 
-The suite validates 14 claims (Claims 1–10 inherited from v4.3, Claims 11–14 new in v5.0):
+The suite validates 32 claims across v5.0, v7.0, and v7.1:
 
 - **Claims 1–4**: ICI correctness, Mode A improvement, τ̃ correlation, chance-constraint calibration
 - **Claims 5–6**: ISS scaling, stability under drift
 - **Claims 7–8**: Mode B improvement and DP approximation quality
 - **Claims 9–10**: Coherence penalty, identifiability improvement
 - **Claims 11–14**: ICI regime identification, Mode C Fisher improvement, p_A^robust FP reduction, compound bound correctness
+- **Claims 15–18** (v7.0): Basin classification, reversible/irreversible partition, PWA coupling, multi-site Gershgorin bounds
+- **Claims 19–22** (v7.0): Jump-diffusion, cumulative exposure, state-conditioned coupling, modular expansion
+- **Claims 23–26** (v7.0): FF-RLS drift tracking, multi-rate observation, MI-MPC binary constraints, extended supervisor
+- **Claims 27–28** (v7.0): Particle filter consistency, hierarchical coupling convergence
+- **Claims 29–32** (v7.0): B_k sample complexity, basin boundary convergence, population planning, proxy-composite estimation
 
-A claim is marked `Supported` only when it passes its criterion in both smoke and standard profiles.
+Claims 1–14 are evaluated by stages 01–11; Claims 15–32 by stages 12–16.
+A claim is marked `Supported` only when it passes its criterion in the appropriate profile.
+Claims 1–2 require the highpower runner (20 seeds × 30 ep/seed) for authoritative validation.
 
-See `EXTENDED_PROFILE_REPORT.md` for full criterion definitions and `CLAIM_MATRIX.md` for current status.
+**To validate all 32 claims in a single run:** `python run_all.py --full-validation`
+
+See `CLAIM_CRITERIA.md` for full criterion definitions and `CLAIM_MATRIX.md` for current status.
 
 ---
 
@@ -385,7 +442,7 @@ See `EXTENDED_PROFILE_REPORT.md` for full criterion definitions and `CLAIM_MATRI
 2. **No internet access**: All data is synthetic and generated locally.
 3. **Python ≥ 3.10** required (`from __future__ import annotations` used throughout).
 4. **Deterministic seeds**: All randomness uses `np.random.default_rng(seed)`.
-5. **Mode A is approximate**: Uses Riccati recursion + box projection, not full robust tube MPC.
+5. **Mode A**: Uses Riccati recursion + box projection by default; tube-MPC with mRPI terminal set available via `tube_mpc.py` (v7.1).
 6. **EM updates are restricted**: Only `C_k`, `R_k`, and selected `A_k`, `B_k` via weighted regression.
 7. **Coherence**: Evaluated from PLV-like summary of oscillatory axes, not full predictive coherence model.
 8. **Control grid**: 30-minute steps (`dt_minutes=30`, `steps_per_day=48`).
@@ -412,22 +469,4 @@ matplotlib    # visualization in plotting.py
 
 ## File Naming Note
 
-A filename/content audit was performed (2026-03-10) and most mismatches were resolved by renaming files to their correct names. The following files were successfully renamed:
-
-- `CLAIM_MATRIX.md` → `config.json` (master configuration)
-- `VALIDATION_REPORT.md` → `smoke.json` (smoke profile overrides)
-- `ZIP_LAYOUT_NOTE.md` → `standard.json` (standard profile overrides)
-- `RESULTS_INDEX.md` → `validation.json` (validation profile overrides)
-- `REPRODUCIBILITY.md` → `extended_512.json` (extended-512 profile config)
-- `CORRECTIONS.md` → `CLAIM_MATRIX.md` (HDR claim matrix v5.0)
-- `FAILURES.md` → `REPRODUCIBILITY.md` (reproducibility and determinism documentation)
-
-The following files still have name/content mismatches that could not be resolved without conflicting with existing files. Manual resolution is required:
-
-- `README.md`: Contains Python source code (tau_tilde, tau_sandwich functions). The correct content for this name would be a project README. The code belongs to `model/recovery.py`, which already exists.
-- `CLAIM_CRITERIA.md`: Contains a JSON run manifest (stage entries with config_hash, status). The correct content for this name would be claim criteria. The JSON belongs to a manifest file, but `run_all_manifest.json` already exists.
-- `EXTENDED_PROFILE_REPORT.md`: Contains claim support criteria (the criteria file). The natural filename would be `CLAIM_CRITERIA.md`, but that name is occupied by the mismatched run manifest above.
-- `REPUBLISH_NOTE.md`: Contains the standard profile completion report. The natural filename would be `STANDARD_PROFILE_REPORT.md`, which exists but contains a runtime operational settings JSON of unclear provenance.
-- `STANDARD_PROFILE_REPORT.md`: Contains a runtime/operational settings JSON (controller_projection_method, target_exact_projection_method, etc.). The correct filename is ambiguous — it does not match any expected file in the repository structure.
-
-The canonical organized package remains in `control/`, `inference/`, and `model/` subdirectories.
+Some production source files in `hdr_validation/` may have names that do not perfectly match their content due to upload history (multiple "Add files via upload" commits). The canonical organized package is in `control/`, `inference/`, `model/`, and `identification/` subdirectories. Test files at the repo root have been renamed to match their actual content.

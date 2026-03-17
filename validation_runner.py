@@ -21,56 +21,17 @@ from typing import Any
 
 import numpy as np
 
-# ── Validation profile config ──────────────────────────────────────────────────
-VALIDATION_CONFIG: dict[str, Any] = {
-    # Dimensions
-    "state_dim": 8,
-    "obs_dim": 16,
-    "control_dim": 8,
-    "disturbance_dim": 8,
-    "K": 3,
-    # Control
-    "H": 6,
-    "w1": 1.0,
-    "w2": 0.5,
-    "w3": 0.3,
-    "lambda_u": 0.1,
-    "alpha_i": 0.05,
-    "eps_safe": 0.01,
-    # Dynamics
-    "rho_reference": [0.72, 0.96, 0.55],
-    "max_dwell_len": 128,
-    "model_mismatch_bound": 0.20,
-    # Target set
-    "kappa_lo": 0.55,
-    "kappa_hi": 0.75,
-    "pA": 0.70,
-    "qmin": 0.15,
-    # Safety / time
-    "steps_per_day": 48,
-    "dt_minutes": 30,
-    "coherence_window": 24,
-    "default_burden_budget": 28.0,
-    "circadian_locked_controls": [5, 6],
-    # ICI
-    "R_brier_max": 0.05,
-    "omega_min_factor": 0.005,
-    "T_C_max": 50,
-    "k_calib": 1.0,
-    "sigma_dither": 0.08,
-    "epsilon_control": 0.50,
-    "missing_fraction_target": 0.516,
-    "mode1_base_rate": 0.16,
-    "observer_mode_accuracy_approx": 0.55,
-    "w3_sweep_values": [0.05, 0.10, 0.20, 0.30, 0.50],
-    # Validation profile
-    "profile_name": "validation",
-    "seeds": [101, 202, 303],
-    "episodes_per_experiment": 12,
-    "steps_per_episode": 128,
-    "mc_rollouts": 150,
-    "selected_trace_cap": 5,
-}
+from hdr_validation.defaults import make_config
+
+# ── Validation profile config (overrides only) ────────────────────────────────
+VALIDATION_CONFIG: dict[str, Any] = make_config(
+    profile_name="validation",
+    seeds=[101, 202, 303],
+    episodes_per_experiment=12,
+    steps_per_episode=128,
+    mc_rollouts=150,
+    selected_trace_cap=5,
+)
 
 # ── Setup sys.path ─────────────────────────────────────────────────────────────
 ROOT = Path(__file__).parent
@@ -136,6 +97,15 @@ def stage01_math():
     lower_ok = result["tau_L"] <= result["tau_tilde"] + 1e-6
     record("stage01", "tau sandwich lower ≤ tau_tilde", lower_ok,
            f"tau_L={result['tau_L']:.4f} tau_tilde={result['tau_tilde']:.4f}")
+    # Counterexample to equality: at reference params with
+    # heterogeneous spectral radii, tau_tilde > tau_L strictly.
+    # This is the numerical demonstration of the corrected
+    # Proposition H.1 (sandwich inequality, not equality).
+    gap_ok = result["tau_tilde"] > result["tau_L"] + 1e-3
+    record("stage01",
+           "tau_tilde strictly > tau_L (Prop H.1 gap confirmed)",
+           gap_ok,
+           f"gap={result['tau_tilde'] - result['tau_L']:.4f}")
 
     # 01.3 committor: boundary conditions q[A]=0, q[B]=1
     K = cfg["K"]
@@ -154,6 +124,31 @@ def stage01_math():
     P_pd = bool(np.all(np.linalg.eigvalsh(P_dare) > 0))
     record("stage01", "DARE P positive-definite", P_pd)
     record("stage01", "DARE K finite", bool(np.all(np.isfinite(K_gain))))
+
+    # 01.x — alpha from DARE and beta contraction coefficient
+    from hdr_validation.control.lqr import (
+        compute_alpha_from_dare, transient_contraction_beta
+    )
+    Q_lqr_loc = np.eye(n)
+    R_lqr_loc = np.eye(m_u) * 0.1
+    alpha_k = compute_alpha_from_dare(
+        basin.A, basin.B, Q_lqr_loc, R_lqr_loc
+    )
+    record("stage01", "alpha_from_dare in (0,1)",
+           0.0 < alpha_k < 1.0, f"{alpha_k:.4f}")
+
+    # Build a minimal 2-state transient sub-matrix for beta check
+    K_local = cfg["K"]
+    P_trans = np.ones((K_local, K_local)) / K_local
+    # Remove absorbing (target) basin column to get sub-stochastic
+    P_sub = np.delete(np.delete(P_trans, 0, axis=0), 0, axis=1)
+    beta_val = transient_contraction_beta(P_sub)
+    rho_sub  = float(np.max(np.abs(np.linalg.eigvals(P_sub))))
+    record("stage01", "beta contraction in [0,1)",
+           0.0 <= beta_val < 1.0, f"beta={beta_val:.4f}")
+    record("stage01", "rho(Q_transient) <= beta",
+           rho_sub <= beta_val + 1e-9,
+           f"rho={rho_sub:.4f} beta={beta_val:.4f}")
 
     # 01.5 finite_horizon_tracking returns H gains
     gains = finite_horizon_tracking(basin.A, basin.B, Q_lqr, R_lqr, H=6, P_terminal=P_dare)
@@ -195,11 +190,13 @@ def stage01_math():
 # ═══════════════════════════════════════════════════════════════════════════════
 # Episode generator
 # ═══════════════════════════════════════════════════════════════════════════════
-def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -> dict:
+def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0,
+                      eval_model=None) -> dict:
     from hdr_validation.model.slds import make_evaluation_model
     from hdr_validation.specification import observation_schedule, generate_observation, heteroskedastic_R
 
-    eval_model = make_evaluation_model(cfg, rng)
+    if eval_model is None:
+        eval_model = make_evaluation_model(cfg, rng)
     basin = eval_model.basins[basin_idx]
     T = cfg["steps_per_episode"]
     n, m = cfg["state_dim"], cfg["obs_dim"]
@@ -214,7 +211,7 @@ def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -
     for t in range(T):
         u = np.zeros(u_dim)
         w = rng.multivariate_normal(np.zeros(n), basin.Q)
-        x_next = basin.A @ x + basin.B @ u + basin.E[:, :basin.Q.shape[0]] @ w + basin.b
+        x_next = basin.A @ x + basin.B @ u + w + basin.b
         R_t = heteroskedastic_R(basin.R, x, mask_sched[t], t)
         y = generate_observation(x, basin.C, basin.c, R_t, mask_sched[t], rng)
 
@@ -574,6 +571,29 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     record("stage04", "Mode A produces non-zero control",
            nonzero > 0, f"{nonzero}/{total_calls} calls")
 
+    # 04.3b — Mode A active fraction from far states
+    rng_far = np.random.default_rng(888)
+    directions = rng_far.normal(size=(20, n))
+    directions /= np.linalg.norm(directions, axis=1, keepdims=True)
+    radii = rng_far.uniform(1.5, 3.0, size=20)
+    far_states = directions * radii[:, None]
+
+    basin_far = eval_model.basins[1]   # maladaptive basin (rho=0.96)
+    target_far = build_target_set(1, cfg)
+    P_hat_far = np.eye(n) * 0.2
+    far_u_norms = []
+    for x_far_i in far_states:
+        res_far = solve_mode_a(x_far_i, P_hat_far, basin_far, target_far,
+                               kappa_hat=0.65, config=cfg, step=0)
+        far_u_norms.append(float(np.linalg.norm(res_far.u)))
+
+    active_fraction = sum(1 for v in far_u_norms if v > 0.05) / 20
+    mean_u_norm_far = float(np.mean(far_u_norms))
+    record("stage04",
+           "Mode A active fraction >= 0.75 from far states (||x|| in [1.5, 3.0], basin 1)",
+           active_fraction >= 0.75,
+           f"active={active_fraction:.2f} mean_u={mean_u_norm_far:.4f}")
+
     # 04.4 Maladaptive basin (rho≈0.96)
     basin_mal = eval_model.basins[1]
     target_mal = build_target_set(1, cfg)
@@ -595,6 +615,17 @@ def stage04_mode_a(episodes: list[dict]) -> None:
                              config=cfg, step=0)
         record("stage04", f"Mode A finite seed={seed}", bool(np.all(np.isfinite(res_s.u))),
                f"‖u‖={np.linalg.norm(res_s.u):.4f}")
+
+    # 04.13 — Adaptive-basin episode count documented
+    ep_basins_val = [int(ep["z_true"][0]) for ep in episodes]
+    n_adaptive = sum(1 for b in ep_basins_val if b != 1)
+    record("stage04",
+           "Adaptive-basin N documented (n_adaptive)",
+           True,
+           f"n_adaptive={n_adaptive}",
+           note=("UNDERPOWERED: n_adaptive < 20, no performance claims valid for adaptive basins"
+                 if n_adaptive < 20 else
+                 "n_adaptive >= 20"))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -756,22 +787,66 @@ def stage07_robustness() -> None:
         record("stage07", f"Mismatch δ={mismatch} Mode A finite",
                bool(np.all(np.isfinite(res.u))), f"‖u‖={np.linalg.norm(res.u):.4f}")
 
-    # 07.4 Missing data sweep
-    for p_miss in [0.0, 0.3, 0.6, 0.9]:
-        rng = np.random.default_rng(7)
-        eval_model = make_evaluation_model(cfg, rng)
-        filt = IMMFilter(eval_model)
-        m_obs = cfg["obs_dim"]
-        for _ in range(20):
-            y = rng.normal(size=m_obs)
-            mask = (rng.uniform(size=m_obs) > p_miss).astype(int)
-            y = np.where(mask.astype(bool), y, np.nan)
-            y_clean = np.where(np.isnan(y), 0.0, y)
-            state = filt.step(y_clean, mask, np.zeros(cfg["control_dim"]))
-        probs_ok = bool(np.all(np.isfinite(state.mode_probs)) and
-                        abs(state.mode_probs.sum() - 1.0) < 1e-4)
-        record("stage07", f"IMM stable p_miss={p_miss}", probs_ok,
-               f"probs={[f'{p:.3f}' for p in state.mode_probs]}")
+    # 07.4 Missing data / inference quality checks (replaced trivial sweep)
+    # 07.4a — Numerical stability check (p_miss=0.3, 20 steps, uniform prior)
+    # This is explicitly a NUMERICAL STABILITY check only — it does NOT test
+    # inference quality. The only claim is that the filter does not NaN or diverge.
+    rng_74a = np.random.default_rng(7)
+    eval_model_74a = make_evaluation_model(cfg, rng_74a)
+    filt_74a = IMMFilter(eval_model_74a)
+    m_obs = cfg["obs_dim"]
+    for _ in range(20):
+        y_74a = rng_74a.normal(size=m_obs)
+        mask_74a = (rng_74a.uniform(size=m_obs) > 0.3).astype(int)
+        y_74a = np.where(mask_74a.astype(bool), y_74a, np.nan)
+        y_clean_74a = np.where(np.isnan(y_74a), 0.0, y_74a)
+        state_74a = filt_74a.step(y_clean_74a, mask_74a, np.zeros(cfg["control_dim"]))
+    probs_ok_74a = bool(np.all(np.isfinite(state_74a.mode_probs)) and
+                        abs(state_74a.mode_probs.sum() - 1.0) < 1e-4)
+    record("stage07",
+           "IMM numerical stability p_miss=0.3 (probs finite and sum to 1)",
+           probs_ok_74a,
+           f"probs={[f'{p:.3f}' for p in state_74a.mode_probs]}")
+
+    # 07.4b — Posterior entropy under non-maladaptive observations
+    # A passing result means meaningful uncertainty is retained or the filter
+    # has correctly identified a different basin after 50 non-maladaptive steps.
+    rng_74b = np.random.default_rng(74)
+    eval_model_74b = make_evaluation_model(cfg, rng_74b)
+    filt_74b = IMMFilter(eval_model_74b)
+    ep_74b = _generate_episode(cfg, rng_74b, basin_idx=2)
+    for t in range(50):
+        y_t = ep_74b["y"][t]
+        mask_t = (~np.isnan(y_t)).astype(int)
+        y_clean = np.where(np.isnan(y_t), 0.0, y_t)
+        state_74b = filt_74b.step(y_clean, mask_t, np.zeros(cfg["control_dim"]))
+    mode_probs_74b = state_74b.mode_probs
+    H_74b = float(-np.sum(mode_probs_74b * np.log(mode_probs_74b + 1e-12)))
+    record("stage07",
+           "IMM posterior entropy > 0.3 nats after 50 non-maladaptive steps",
+           H_74b > 0.3,
+           f"H={H_74b:.4f} probs={[f'{p:.3f}' for p in mode_probs_74b]}")
+
+    # 07.4c — Mode recovery from wrong-prior initialisation
+    # Filter biased toward basin 2 should identify basin-1 signal within 30 steps.
+    rng_74c = np.random.default_rng(74)
+    eval_model_74c = make_evaluation_model(cfg, rng_74c)
+    filt_74c = IMMFilter(eval_model_74c)
+    # Bias toward basin 2: strongly wrong prior
+    wrong_prior = np.array([0.05, 0.05, 0.90])
+    wrong_prior = wrong_prior / wrong_prior.sum()
+    filt_74c.state.mode_probs = wrong_prior
+    ep_74c = _generate_episode(cfg, rng_74c, basin_idx=1)
+    for t in range(30):
+        y_t = ep_74c["y"][t]
+        # p_miss=0.0: treat all observations as present regardless of missingness
+        mask_t = np.ones(cfg["obs_dim"], dtype=int)
+        y_clean = np.where(np.isnan(y_t), 0.0, y_t)
+        state_74c = filt_74c.step(y_clean, mask_t, np.zeros(cfg["control_dim"]))
+    record("stage07",
+           "IMM recovers basin-1 MAP mode within 30 steps from wrong prior",
+           state_74c.map_mode == 1,
+           f"map_mode={state_74c.map_mode} probs={[f'{p:.3f}' for p in state_74c.mode_probs]}")
 
     # 07.5 All three seeds produce consistent Mode A output
     for seed in cfg["seeds"]:
@@ -785,6 +860,30 @@ def stage07_robustness() -> None:
         record("stage07", f"Mode A finite seed={seed}", bool(np.all(np.isfinite(res.u))),
                f"‖u‖={np.linalg.norm(res.u):.4f}")
 
+    # 07.8 — Model mismatch bound covers empirical p90 delta_A for basin 1
+    import json as _json_07
+    _mismatch_path = ROOT / "results" / "stage_04" / "highpower" / "mismatch_audit.json"
+    if not _mismatch_path.exists():
+        record("stage07",
+               "Mismatch bound audit file present",
+               False,
+               "mismatch_audit.json not found — run analyse_mismatch.py first")
+    else:
+        with open(_mismatch_path) as _f:
+            _mismatch_data = _json_07.load(_f)
+        _basin1_p90 = float(_mismatch_data["basin_1_p90_vs_bound"]["basin_1_p90"])
+        _bound = float(cfg["model_mismatch_bound"])
+        _bound_covers_p90 = _bound >= _basin1_p90
+        record("stage07",
+               "Mismatch audit: basin-1 p90 delta_A reported",
+               True,
+               f"basin_1_p90={_basin1_p90:.4f} bound={_bound:.4f}")
+        record("stage07",
+               "Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity)",
+               _bound_covers_p90,
+               f"{'OK' if _bound_covers_p90 else 'VIOLATED'}: {_bound:.3f} vs p90={_basin1_p90:.3f}",
+               note="FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript")
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Main orchestration
@@ -797,6 +896,8 @@ if __name__ == "__main__":
     print(f"MC rollouts: {VALIDATION_CONFIG['mc_rollouts']}")
     print(f"Python {sys.version}")
     print(f"NumPy {np.__version__}")
+    from hdr_validation.control.mpc import SCIPY_MINIMIZE_OPTIONS
+    print(f"SciPy minimize options: {SCIPY_MINIMIZE_OPTIONS}")
 
     episodes = None
     stage03_data = None

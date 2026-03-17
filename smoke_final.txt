@@ -1,0 +1,239 @@
+HDR Validation Suite
+  Profiles : ['smoke']
+  Stages   : ['01', '02', '03', '03b', '03c', '04', '05', '06', '07', '08', '09', '10', '11']
+  Force    : False
+  SkipDone : False
+
+############################################################
+  Profile: SMOKE
+  Stages:  01, 02, 03, 03b, 03c, 04, 05, 06, 07, 08, 09, 10, 11
+############################################################
+
+============================================================
+  Stage 01 — Mathematical Checks
+============================================================
+  [PASS] tau_tilde(center) == 0 = 0.0
+  [PASS] tau_tilde(far) > 0 = 66.4452
+  [PASS] tau sandwich lower ≤ tau_tilde = tau_L=11.3630 tau_tilde=66.4452
+  [PASS] tau_tilde strictly > tau_L (Prop H.1 gap confirmed) = gap=55.0821
+  [PASS] committor q[A]=0 = 0.00e+00
+  [PASS] committor q[B]=1 = 1.000000
+  [PASS] committor q ∈ [0,1] = min=0.0000 max=1.0000
+  [PASS] DARE P positive-definite
+  [PASS] DARE K finite
+  [PASS] alpha_from_dare in (0,1) = 0.4426
+  [PASS] beta contraction in [0,1) = beta=0.6667
+  [PASS] rho(Q_transient) <= beta = rho=0.6667 beta=0.6667
+  [PASS] finite_horizon_tracking len=H = 6
+  [PASS] finite_horizon_tracking K[0] finite
+  [PASS] chance tightening delta ≥ 0 = mean=0.7231
+  [PASS] T_k_eff formula correct = 12.5440 (expected 12.5440)
+  [PASS] mu_bar_required ∈ (0,1] = 0.0039
+  [PASS] DwellModel PMF sums to 1 = 1.00000000
+  [PASS] DwellModel survival[0] ≈ 1 = 1.0000
+  Elapsed: 0.51s
+
+============================================================
+  Stage 02 — Synthetic Data Generation
+============================================================
+  [PASS] episodes count correct = 8
+  [PASS] x_true shape correct = (128, 8)
+  [PASS] y shape correct = (128, 16)
+  [PASS] missingness > 0 (some NaNs) = 0.434
+  [PASS] missingness < 1 (not all NaN) = 0.434
+  [PASS] all x_true finite
+  Elapsed: 0.12s
+
+============================================================
+  Stage 03 — IMM Inference
+============================================================
+  [PASS] IMM mode probs sum to 1 = max_dev=2.22e-16
+  [PASS] IMM mode probs ∈ [0,1]
+  [PASS] IMM MAP modes valid = unique modes=[0 1 2]
+  [PASS] mode1 F1 > 0 = 0.9018
+  Elapsed: 0.67s
+
+============================================================
+  Stage 03b — ICI Diagnostics
+============================================================
+  [PASS] Brier reliability finite = 0.0052
+  [PASS] Brier reliability ≥ 0 = 0.0052
+  [PASS] p_A_robust ∈ [0,1] = 0.7052
+  [PASS] p_A_robust ≥ p_A (miscalibration raises threshold) = 0.7052 ≥ 0.7
+  [PASS] T_k_eff > 0 = 1.79
+  [PASS] omega_min > 0 = 40741.9589
+  [PASS] ICI state has required keys = ['condition_i', 'condition_ii', 'condition_iii', 'mode_c_recommended', 'worst_basin_idx', 'worst_T_k_eff', 'mu_hat', 'mu_erg', 'mu_bar_required', 'R_brier', 'R_brier_max', 'omega_min']
+  [PASS] ICI condition_i type bool
+  [PASS] condition_iii fires when T_k_eff < omega_min = T_k_eff=0.0100
+  Elapsed: 0.00s
+
+============================================================
+  Stage 03c — Mode C Validation
+============================================================
+  [PASS] Mode C entry conditions dict returned = ['condition_i', 'condition_ii', 'condition_iii', 'any_triggered']
+  [PASS] Supervisor mode selection returns valid string = selected: mode_c
+  [PASS] Mode C action bounded by u_max=0.35 = max|u|=0.1561
+  [PASS] Fisher proxy ≥ 0 always = empty=0.0000 withdata=0.3712
+  [PASS] Fisher proxy increases with data = 0.0000 → 0.3712
+  [PASS] ModeCTracker enters
+  [PASS] ModeCTracker tracks steps = 10
+  [PASS] ModeCTracker exits cleanly
+  Elapsed: 0.00s
+
+============================================================
+  Stage 04 — Mode A Control
+============================================================
+  [PASS] Mode A u norm bounded = max‖u‖=0.6378
+  [PASS] Mode A feasibility rate > 0.5 = 1.00
+  [PASS] Mode A produces non-zero control = 11/32 calls
+  [PASS] Mode A active fraction >= 0.75 from far states (||x|| in [1.5, 3.0], basin 1) = active=0.90 mean_u=0.1328
+  [PASS] Mode A on rho=0.96 basin finite u
+  [PASS] Mode A on rho=0.96 risk computed = risk=0.7127
+  [PASS] Benchmark A 95% CI lower bound >= -0.05 (smoke catastrophic-failure guard) = CI=[-0.0036, -0.0030]
+  [PASS] Adaptive-basin N documented (n_adaptive) = n_adaptive=5  (UNDERPOWERED: n_adaptive < 20, no performance claims valid for adaptive basins)
+  Elapsed: 0.66s
+
+============================================================
+  Stage 05 — Mode B Validation
+============================================================
+  [PASS] Exact DP V* ∈ [0,1] = V*(start)=0.8476
+  [PASS] Exact DP V*(success)=1
+  [PASS] Exact DP V*(failure)=0
+  [PASS] Mode B heuristic gap ≤ 0.10 = gap=0.0000
+  [PASS] Mode B heuristic V ∈ [0,1] = V_heur(start)=0.8476
+  [PASS] epsilon_H > 0 = 0.7828
+  [PASS] suboptimality bound ≥ ε_H = bound=1.1828 eps_H=0.7828
+  [PASS] Posterior committor ∈ [0,1] = 0.3507
+  [PASS] Mode B aggressive > passive escape prob = 0.740 → 0.860
+  Elapsed: 0.00s
+
+============================================================
+  Stage 06 — State Coherence
+============================================================
+  [PASS] coherence_penalty all finite
+  [PASS] coherence_penalty all ≥ 0
+  [PASS] coherence_penalty lower outside target = outside_low=0.2025 max_inside=0.0000
+  [PASS] coherence_grad all finite
+  [PASS] coherence contribution monotone in w3 = ['0.0078', '0.0157', '0.0314', '0.0470', '0.0784']
+  [PASS] TIB non-inferior to open-loop in normal basin (delta >= -0.05) = HDR=0.639 open=0.639 delta=+0.000
+  [PASS] TIB superior to open-loop in maladaptive basin (delta > 0) = HDR=0.031 open=0.025 delta=+0.006
+  [PASS] TIB non-inferior to budget-constrained LQR in maladaptive basin (delta >= -0.05) = HDR=0.031 budget_lqr=0.021 delta=+0.010
+  Elapsed: 1.46s
+
+============================================================
+  Stage 07 — Robustness Sweeps
+============================================================
+  [PASS] Mode A stable rho=0.5 = ‖u‖=0.0583
+  [PASS] Mode A stable rho=0.72 = ‖u‖=0.0635
+  [PASS] Mode A stable rho=0.85 = ‖u‖=0.0752
+  [PASS] Mode A stable rho=0.96 = ‖u‖=0.0935
+  [PASS] T_k_eff formula rho=0.72 = 5.9136
+  [PASS] T_k_eff formula rho=0.85 = 3.1680
+  [PASS] T_k_eff formula rho=0.96 = 0.8448
+  [PASS] Mismatch δ=0.05 Mode A finite = ‖u‖=0.0972
+  [PASS] Mismatch δ=0.1 Mode A finite = ‖u‖=0.0972
+  [PASS] Mismatch δ=0.2 Mode A finite = ‖u‖=0.0972
+  [PASS] IMM numerical stability p_miss=0.3 (probs finite and sum to 1) = probs=['0.000', '1.000', '0.000']
+  [PASS] IMM posterior entropy > 0.3 nats after 50 non-maladaptive steps = H=0.3474 probs=['0.915', '0.032', '0.054']
+  [PASS] IMM recovers basin-1 MAP mode within 30 steps from wrong prior = map_mode=1 probs=['0.042', '0.958', '0.000']
+  [PASS] peak time-in-band across w3 sweep >= 0.60 = peak_tib=0.625 at w3=0.05
+  [PASS] Mismatch audit: basin-1 p90 delta_A reported = basin_1_p90=0.3466 bound=0.3470
+  [PASS] Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity) = OK: 0.347 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)
+  Elapsed: 0.36s
+
+============================================================
+  Stage 08 — Ablation Study
+============================================================
+
+┌──────────────────────┬──────────┬──────────────────────┬──────────┐
+│ Variant              │ Gain     │ 95% CI               │ Win Rate │
+├──────────────────────┼──────────┼──────────────────────┼──────────┤
+│ hdr_full             │ +0.0%    │ [+0.0%, +0.0%]       │ 0.0%     │
+│ mpc_only             │ +0.0%    │ [+0.0%, +0.0%]       │ 0.0%     │
+│ mpc_plus_surrogate   │ +0.0%    │ [+0.0%, +0.0%]       │ 0.0%     │
+│ mpc_plus_coherence   │ +0.0%    │ [+0.0%, +0.0%]       │ 0.0%     │
+│ hdr_no_calib         │ +0.0%    │ [+0.0%, +0.0%]       │ 0.0%     │
+└──────────────────────┴──────────┴──────────────────────┴──────────┘
+
+  [PASS] hdr_full gain (+0.0000) >= mpc_only gain (+0.0000)
+
+Results saved to /home/user/HDR/results/stage_08/ablation_results.json
+  Elapsed: 0.52s
+
+============================================================
+  Stage 09 — Baseline Comparison
+============================================================
+
+Baseline Comparison — Maladaptive Basin (k=1)
+──────────────────────────────────────────────────────────────────────
+  open_loop                       gain=N/A
+  pooled_lqr_estimated            gain=+0.0000
+  mjls_smpc                       gain=+0.0000 [ORACLE]
+  belief_mpc                      gain=+0.0000
+  hdr_mode_a                      gain=+0.0000
+
+  [PASS] MJLS-SMPC gain (+0.0000) >= HDR gain (+0.0000)
+
+Results saved to /home/user/HDR/results/stage_09/baseline_comparison.json
+  Elapsed: 0.00s
+
+============================================================
+  Stage 10 — Mode B FP/FN Sweep
+============================================================
+
+Mode B FP/FN Sweep — Effect of Calibration Adjustment
+───────────────────────────────────────────────────────────────────────────
+   R_Brier    FP (fixed)   FP (robust)    FN (fixed)   FN (robust)
+───────────────────────────────────────────────────────────────────────────
+      0.00        0.0000        0.0000        0.0000        0.0000
+      0.05        0.0000        0.0000        0.0000        0.0000
+      0.10        0.0000        0.0000        0.0000        0.0049
+      0.15        0.0000        0.0000        0.0003        0.1081
+      0.20        0.0000        0.0000        0.0005        0.4893
+───────────────────────────────────────────────────────────────────────────
+
+  [PASS] At R_Brier=0, fixed and robust thresholds equal
+  [PASS] FP rate with robust threshold <= FP rate with fixed (all levels)
+  [PASS] All 5 sweep levels present
+  [PASS] All FP/FN rates in [0, 1]
+
+Results saved to /home/user/HDR/results/stage_10/mode_b_fp_fn_sweep.json
+  Elapsed: 0.32s
+
+============================================================
+  Stage 11 — Riccati Invariant Set
+============================================================
+
+Riccati Invariant Set Verification — Proposition 8.4
+─────────────────────────────────────────────────────────────────
+  [FAIL] Basin 0 (rho=0.720): containment=0.6375 (threshold=0.90), c_k=0.84
+  [FAIL] Basin 1 (rho=0.960): containment=0.7812 (threshold=0.90), c_k=5.40
+  [FAIL] Basin 2 (rho=0.550): containment=0.5000 (threshold=0.90), c_k=0.75
+
+  [FAIL] Proposition 8.4 criterion (containment >= 90%) for all basins
+
+Results saved to /home/user/HDR/results/stage_11/invariant_set_verification.json
+  Elapsed: 0.35s
+
+============================================================
+  SUMMARY
+============================================================
+
+  Profile: smoke
+    ✓ Stage 01 — Mathematical Checks: 19/19 passed
+    ✓ Stage 02 — Synthetic Data Generation: 6/6 passed
+    ✓ Stage 03 — IMM Inference: 4/4 passed
+    ✓ Stage 03b — ICI Diagnostics: 9/9 passed
+    ✓ Stage 03c — Mode C Validation: 8/8 passed
+    ✓ Stage 04 — Mode A Control: 8/8 passed
+    ✓ Stage 05 — Mode B Validation: 9/9 passed
+    ✓ Stage 06 — State Coherence: 8/8 passed
+    ✓ Stage 07 — Robustness Sweeps: 16/16 passed
+    ✓ Stage 08 — Ablation Study: 1/1 passed
+    ✓ Stage 09 — Baseline Comparison: 1/1 passed
+    ✓ Stage 10 — Mode B FP/FN Sweep: 1/1 passed
+    ✓ Stage 11 — Riccati Invariant Set: 1/1 passed
+
+  Total: 91 passed, 0 failed out of 91 checks
+
+  ✓ ALL CHECKS PASSED

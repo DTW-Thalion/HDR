@@ -7,7 +7,40 @@ These are the smallest defensible assumptions added where the paper leaves opera
 1. `cvxpy` and `osqp` are not available in the execution environment.
 2. Stage 01 diagnostics may use SciPy SLSQP for projection checks.
 3. The online controller uses a conservative axis-aligned box surrogate of the full target-set intersection for speed and resumability.
-4. Mode A is implemented as an approximate constrained finite-horizon tracking controller using Riccati recursion, clipping, burden scaling, deterministic tightening, and safety fallback. It is **not** a full robust tube MPC solve.
+### Mode A controller — implementation vs. manuscript description
+
+**What the manuscript calls it:** robust tube MPC with chance-constraint
+tightening (Appendix B, Proposition E.2).
+
+**What is actually implemented** (`hdr_validation/control/mpc.py`,
+function `solve_mode_a`):
+
+1. Chance-constraint tightening: observation-space margins propagated
+   to state-space via C-pseudoinverse to form a tightened box S*_δ
+   (approximates the tube-MPC inner set).
+2. Reference projection: x_ref = clip(Π(x̂, S*), tight_low, tight_high).
+   This is a box-clip, not a full SLSQP projection (SLSQP is used only
+   in Stage 01 math checks, not in the online controller).
+3. Effective cost matrix: Q_eff = (w1 + w2/(1-ρ²))·I plus coherence
+   and constraint-tightness boosts.  Correctly implements τ̃ weighting
+   from Equation (13).
+4. Finite-horizon gains: initialised from DARE terminal cost with
+   inflated R (mismatch-robust gain), rolled out for H steps.
+5. Safety fallback: clamp-and-scale when risk score > 3·eps_safe.
+
+**Why this is acceptable:** The approximation is consistent with the
+manuscript's architectural description at the level of concepts
+(tightened set, projected reference, Riccati terminal cost).  The gap
+is in degree of optimality, not architectural correctness.
+
+**v7.1 update:** A tube-MPC implementation is now available in
+`hdr_validation/control/tube_mpc.py`. It computes a maximal Robust
+Positively Invariant (mRPI) set via the Raković et al. (2005) algorithm
+using zonotope representation, and wraps `solve_mode_a` with nominal +
+ancillary feedback decomposition: u = u_bar + K_fb @ (x_hat - x_bar).
+This can be activated via `use_tube_mpc=True` in Stage 11. The default
+Mode A controller (`solve_mode_a`) remains the approximate version
+described above.
 
 ## Time-grid assumption
 

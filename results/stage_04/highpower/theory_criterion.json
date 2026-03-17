@@ -1,0 +1,21 @@
+{
+  "author_action_required": true,
+  "note": "If the theory-grounded criterion is below +0.030, the author should consider whether the pre-registered +0.030 criterion was appropriately calibrated. This is an author decision, not an automated update.",
+  "methodology": "ISS_bound = (delta_A + delta_B * ||K_pooled||_2) / alpha_k where delta_A = ||A_1 - A_pooled||_2, delta_B = ||B_1 - B_pooled||_2, alpha_k = Lyapunov decrease rate from DARE (Prop 9.1), K_pooled = LQR gain for pooled A, B. Reference model: seed 101 + 400.",
+  "basin_index": 1,
+  "rho_reference": 0.96,
+  "delta_A": 0.32656511485871054,
+  "delta_B": 0.033333333333333326,
+  "alpha_k": 0.7272748551510364,
+  "norm_K_pooled": 1.1962553829230242,
+  "norm_K_optimal": 2.351310190365583,
+  "ISS_bound_absolute": 0.5038539304557391,
+  "mean_pooled_cost_basin1": 698.8501530749955,
+  "n_basin1_episodes_in_average": 179,
+  "ISS_bound_fractional": 0.0007209756315266474,
+  "ISS_bound_pct": 0.07209756315266475,
+  "theory_criterion": 0.0,
+  "theory_criterion_formula": "floor(ISS_bound_fractional * 0.5 * 100) / 100",
+  "preregistered_criterion": 0.03,
+  "theory_criterion_below_preregistered": true
+}

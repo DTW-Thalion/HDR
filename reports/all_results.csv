@@ -2,11 +2,15 @@ profile,stage,check,passed,value
 smoke,stage01,tau_tilde(center) == 0,True,0.0
 smoke,stage01,tau_tilde(far) > 0,True,66.4452
 smoke,stage01,tau sandwich lower ≤ tau_tilde,True,tau_L=11.3630 tau_tilde=66.4452
+smoke,stage01,tau_tilde strictly > tau_L (Prop H.1 gap confirmed),True,gap=55.0821
 smoke,stage01,committor q[A]=0,True,0.00e+00
 smoke,stage01,committor q[B]=1,True,1.000000
 smoke,stage01,"committor q ∈ [0,1]",True,min=0.0000 max=1.0000
 smoke,stage01,DARE P positive-definite,True,
 smoke,stage01,DARE K finite,True,
+smoke,stage01,"alpha_from_dare in (0,1)",True,0.4426
+smoke,stage01,"beta contraction in [0,1)",True,beta=0.6667
+smoke,stage01,rho(Q_transient) <= beta,True,rho=0.6667 beta=0.6667
 smoke,stage01,finite_horizon_tracking len=H,True,6
 smoke,stage01,finite_horizon_tracking K[0] finite,True,
 smoke,stage01,chance tightening delta ≥ 0,True,mean=0.7231
@@ -54,8 +58,11 @@ smoke,stage03c,ModeCTracker exits cleanly,True,
 smoke,stage04,Mode A u norm bounded,True,max‖u‖=0.6378
 smoke,stage04,Mode A feasibility rate > 0.5,True,1.00
 smoke,stage04,Mode A produces non-zero control,True,11/32 calls
+smoke,stage04,"Mode A active fraction >= 0.75 from far states (||x|| in [1.5, 3.0], basin 1)",True,active=0.90 mean_u=0.1328
 smoke,stage04,Mode A on rho=0.96 basin finite u,True,
 smoke,stage04,Mode A on rho=0.96 risk computed,True,risk=0.7127
+smoke,stage04,Benchmark A 95% CI lower bound >= -0.05 (smoke catastrophic-failure guard),True,"CI=[-0.0036, -0.0030]"
+smoke,stage04,Adaptive-basin N documented (n_adaptive),True,"n_adaptive=5  (UNDERPOWERED: n_adaptive < 20, no performance claims valid for adaptive basins)"
 smoke,stage05,"Exact DP V* ∈ [0,1]",True,V*(start)=0.8476
 smoke,stage05,Exact DP V*(success)=1,True,
 smoke,stage05,Exact DP V*(failure)=0,True,
@@ -70,6 +77,9 @@ smoke,stage06,coherence_penalty all ≥ 0,True,
 smoke,stage06,coherence_penalty lower outside target,True,outside_low=0.2025 max_inside=0.0000
 smoke,stage06,coherence_grad all finite,True,
 smoke,stage06,coherence contribution monotone in w3,True,"['0.0078', '0.0157', '0.0314', '0.0470', '0.0784']"
+smoke,stage06,TIB non-inferior to open-loop in normal basin (delta >= -0.05),True,HDR=0.639 open=0.639 delta=+0.000
+smoke,stage06,TIB superior to open-loop in maladaptive basin (delta > 0),True,HDR=0.031 open=0.025 delta=+0.006
+smoke,stage06,TIB non-inferior to budget-constrained LQR in maladaptive basin (delta >= -0.05),True,HDR=0.031 budget_lqr=0.021 delta=+0.010
 smoke,stage07,Mode A stable rho=0.5,True,‖u‖=0.0583
 smoke,stage07,Mode A stable rho=0.72,True,‖u‖=0.0635
 smoke,stage07,Mode A stable rho=0.85,True,‖u‖=0.0752
@@ -80,18 +90,24 @@ smoke,stage07,T_k_eff formula rho=0.96,True,0.8448
 smoke,stage07,Mismatch δ=0.05 Mode A finite,True,‖u‖=0.0972
 smoke,stage07,Mismatch δ=0.1 Mode A finite,True,‖u‖=0.0972
 smoke,stage07,Mismatch δ=0.2 Mode A finite,True,‖u‖=0.0972
-smoke,stage07,IMM stable p_miss=0.0,True,"probs=['0.000', '1.000', '0.000']"
-smoke,stage07,IMM stable p_miss=0.3,True,"probs=['0.000', '1.000', '0.000']"
-smoke,stage07,IMM stable p_miss=0.6,True,"probs=['0.000', '1.000', '0.000']"
-smoke,stage07,IMM stable p_miss=0.9,True,"probs=['0.000', '1.000', '0.000']"
+smoke,stage07,IMM numerical stability p_miss=0.3 (probs finite and sum to 1),True,"probs=['0.000', '1.000', '0.000']"
+smoke,stage07,IMM posterior entropy > 0.3 nats after 50 non-maladaptive steps,True,"H=0.3474 probs=['0.915', '0.032', '0.054']"
+smoke,stage07,IMM recovers basin-1 MAP mode within 30 steps from wrong prior,True,"map_mode=1 probs=['0.042', '0.958', '0.000']"
+smoke,stage07,peak time-in-band across w3 sweep >= 0.60,True,peak_tib=0.625 at w3=0.05
+smoke,stage07,Mismatch audit: basin-1 p90 delta_A reported,True,basin_1_p90=0.3466 bound=0.2000
+smoke,stage07,Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity),False,VIOLATED: 0.200 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)
 standard,stage01,tau_tilde(center) == 0,True,0.0
 standard,stage01,tau_tilde(far) > 0,True,66.4452
 standard,stage01,tau sandwich lower ≤ tau_tilde,True,tau_L=11.3630 tau_tilde=66.4452
+standard,stage01,tau_tilde strictly > tau_L (Prop H.1 gap confirmed),True,gap=55.0821
 standard,stage01,committor q[A]=0,True,0.00e+00
 standard,stage01,committor q[B]=1,True,1.000000
 standard,stage01,"committor q ∈ [0,1]",True,min=0.0000 max=1.0000
 standard,stage01,DARE P positive-definite,True,
 standard,stage01,DARE K finite,True,
+standard,stage01,"alpha_from_dare in (0,1)",True,0.4426
+standard,stage01,"beta contraction in [0,1)",True,beta=0.6667
+standard,stage01,rho(Q_transient) <= beta,True,rho=0.6667 beta=0.6667
 standard,stage01,finite_horizon_tracking len=H,True,6
 standard,stage01,finite_horizon_tracking K[0] finite,True,
 standard,stage01,chance tightening delta ≥ 0,True,mean=0.7231
@@ -132,9 +148,17 @@ standard,stage03c,ModeCTracker exits cleanly,True,
 standard,stage04,Mode A u norm bounded,True,max‖u‖=0.6620
 standard,stage04,Mode A feasibility rate > 0.5,True,1.00
 standard,stage04,Mode A produces non-zero control,True,18/64 calls
+standard,stage04,"Mode A active fraction >= 0.75 from far states (||x|| in [1.5, 3.0], basin 1)",True,active=0.90 mean_u=0.1328
 standard,stage04,Mode A on rho=0.96 basin finite u,True,
 standard,stage04,Mode A on rho=0.96 risk computed,True,risk=0.7127
 standard,stage04,Mode A seed=202 finite u,True,
+standard,stage04,HDR gain vs open-loop > 0,True,gain=0.0006
+standard,stage04,HDR gain vs pooled > -0.10,True,gain=-0.0097
+standard,stage04,Safety delta vs pooled <= 0.015,True,delta=-0.0013
+standard,stage04,HDR gain vs pooled_estimated on maladaptive basin > 0,True,"gain=0.0617  (Basin 1 (rho=0.96) episodes only, both use IMM x_hat)"
+standard,stage04,HDR maladaptive win rate > 0.7,True,rate=0.8182  (Fraction of basin-1 episodes where HDR cost < pooled_estimated cost)
+standard,stage04,Benchmark A 95% CI lower bound >= +0.01 (low-N profile criterion),True,"CI=[+0.0229, +0.1058]"
+standard,stage04,Adaptive-basin N documented (n_adaptive),True,"n_adaptive=13  (UNDERPOWERED: n_adaptive < 20, no performance claims valid for adaptive basins)"
 standard,stage05,"Exact DP V* ∈ [0,1]",True,V*(start)=0.8476
 standard,stage05,Exact DP V*(success)=1,True,
 standard,stage05,Exact DP V*(failure)=0,True,
@@ -149,6 +173,9 @@ standard,stage06,coherence_penalty all ≥ 0,True,
 standard,stage06,coherence_penalty lower outside target,True,outside_low=0.2025 max_inside=0.0000
 standard,stage06,coherence_grad all finite,True,
 standard,stage06,coherence contribution monotone in w3,True,"['0.0078', '0.0157', '0.0314', '0.0470', '0.0784']"
+standard,stage06,TIB non-inferior to open-loop in normal basin (delta >= -0.05),True,HDR=0.639 open=0.639 delta=+0.000
+standard,stage06,TIB superior to open-loop in maladaptive basin (delta > 0),True,HDR=0.031 open=0.025 delta=+0.006
+standard,stage06,TIB non-inferior to budget-constrained LQR in maladaptive basin (delta >= -0.05),True,HDR=0.031 budget_lqr=0.021 delta=+0.010
 standard,stage07,Mode A stable rho=0.5,True,‖u‖=0.0583
 standard,stage07,Mode A stable rho=0.72,True,‖u‖=0.0635
 standard,stage07,Mode A stable rho=0.85,True,‖u‖=0.0752
@@ -159,20 +186,26 @@ standard,stage07,T_k_eff formula rho=0.96,True,0.8448
 standard,stage07,Mismatch δ=0.05 Mode A finite,True,‖u‖=0.0972
 standard,stage07,Mismatch δ=0.1 Mode A finite,True,‖u‖=0.0972
 standard,stage07,Mismatch δ=0.2 Mode A finite,True,‖u‖=0.0972
-standard,stage07,IMM stable p_miss=0.0,True,"probs=['0.000', '1.000', '0.000']"
-standard,stage07,IMM stable p_miss=0.3,True,"probs=['0.000', '1.000', '0.000']"
-standard,stage07,IMM stable p_miss=0.6,True,"probs=['0.000', '1.000', '0.000']"
-standard,stage07,IMM stable p_miss=0.9,True,"probs=['0.000', '1.000', '0.000']"
+standard,stage07,IMM numerical stability p_miss=0.3 (probs finite and sum to 1),True,"probs=['0.000', '1.000', '0.000']"
+standard,stage07,IMM posterior entropy > 0.3 nats after 50 non-maladaptive steps,True,"H=0.3671 probs=['0.908', '0.035', '0.057']"
+standard,stage07,IMM recovers basin-1 MAP mode within 30 steps from wrong prior,True,"map_mode=1 probs=['0.070', '0.689', '0.241']"
 standard,stage07,Mode A finite seed=101,True,‖u‖=0.0000
 standard,stage07,Mode A finite seed=202,True,‖u‖=0.0000
+standard,stage07,peak time-in-band across w3 sweep >= 0.60,True,peak_tib=0.625 at w3=0.05
+standard,stage07,Mismatch audit: basin-1 p90 delta_A reported,True,basin_1_p90=0.3466 bound=0.2000
+standard,stage07,Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity),False,VIOLATED: 0.200 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)
 extended,stage01,tau_tilde(center) == 0,True,0.0
 extended,stage01,tau_tilde(far) > 0,True,66.4452
 extended,stage01,tau sandwich lower ≤ tau_tilde,True,tau_L=11.3630 tau_tilde=66.4452
+extended,stage01,tau_tilde strictly > tau_L (Prop H.1 gap confirmed),True,gap=55.0821
 extended,stage01,committor q[A]=0,True,0.00e+00
 extended,stage01,committor q[B]=1,True,1.000000
 extended,stage01,"committor q ∈ [0,1]",True,min=0.0000 max=1.0000
 extended,stage01,DARE P positive-definite,True,
 extended,stage01,DARE K finite,True,
+extended,stage01,"alpha_from_dare in (0,1)",True,0.4426
+extended,stage01,"beta contraction in [0,1)",True,beta=0.6667
+extended,stage01,rho(Q_transient) <= beta,True,rho=0.6667 beta=0.6667
 extended,stage01,finite_horizon_tracking len=H,True,6
 extended,stage01,finite_horizon_tracking K[0] finite,True,
 extended,stage01,chance tightening delta ≥ 0,True,mean=0.7231
@@ -219,11 +252,19 @@ extended,stage03c,ModeCTracker exits cleanly,True,
 extended,stage04,Mode A u norm bounded,True,max‖u‖=0.6284
 extended,stage04,Mode A feasibility rate > 0.5,True,1.00
 extended,stage04,Mode A produces non-zero control,True,25/96 calls
+extended,stage04,"Mode A active fraction >= 0.75 from far states (||x|| in [1.5, 3.0], basin 1)",True,active=0.75 mean_u=0.0664
 extended,stage04,Mode A on rho=0.96 basin finite u,True,
 extended,stage04,Mode A on rho=0.96 risk computed,True,risk=0.7127
 extended,stage04,Mode A finite seed=101,True,‖u‖=0.0000
 extended,stage04,Mode A finite seed=202,True,‖u‖=0.0000
 extended,stage04,Mode A finite seed=303,True,‖u‖=0.0000
+extended,stage04,HDR gain vs open-loop > 0,True,gain=0.0002
+extended,stage04,HDR gain vs pooled > -0.10,True,gain=-0.0031
+extended,stage04,Safety delta vs pooled <= 0.015,True,delta=0.0016
+extended,stage04,HDR gain vs pooled_estimated on maladaptive basin > 0,True,"gain=0.0346  (Basin 1 (rho=0.96) episodes only, both use IMM x_hat)"
+extended,stage04,HDR maladaptive win rate > 0.7,True,rate=0.8000  (Fraction of basin-1 episodes where HDR cost < pooled_estimated cost)
+extended,stage04,Benchmark A 95% CI lower bound >= +0.01 (low-N profile criterion),True,"CI=[+0.0163, +0.0535]"
+extended,stage04,Adaptive-basin N documented (n_adaptive),True,n_adaptive=40  (n_adaptive >= 20)
 extended,stage05,"Exact DP V* ∈ [0,1]",True,V*(start)=0.8476
 extended,stage05,Exact DP V*(success)=1,True,
 extended,stage05,Exact DP V*(failure)=0,True,
@@ -240,6 +281,9 @@ extended,stage06,coherence_penalty lower outside target,True,outside_low=0.2025 
 extended,stage06,coherence_grad all finite,True,
 extended,stage06,coherence contribution monotone in w3,True,"['0.0078', '0.0157', '0.0314', '0.0470', '0.0784']"
 extended,stage06,coherence_window < steps_per_episode,True,24 < 256
+extended,stage06,TIB non-inferior to open-loop in normal basin (delta >= -0.05),True,HDR=0.660 open=0.660 delta=+0.000
+extended,stage06,TIB superior to open-loop in maladaptive basin (delta > 0),True,HDR=0.036 open=0.032 delta=+0.004
+extended,stage06,TIB non-inferior to budget-constrained LQR in maladaptive basin (delta >= -0.05),True,HDR=0.036 budget_lqr=0.030 delta=+0.006
 extended,stage07,Mode A stable rho=0.5,True,‖u‖=0.0292
 extended,stage07,Mode A stable rho=0.72,True,‖u‖=0.0318
 extended,stage07,Mode A stable rho=0.85,True,‖u‖=0.0376
@@ -250,22 +294,28 @@ extended,stage07,T_k_eff formula rho=0.96 (T=256),True,1.6896
 extended,stage07,Mismatch δ=0.05 Mode A finite,True,‖u‖=0.0486
 extended,stage07,Mismatch δ=0.1 Mode A finite,True,‖u‖=0.0486
 extended,stage07,Mismatch δ=0.2 Mode A finite,True,‖u‖=0.0486
-extended,stage07,IMM stable p_miss=0.0,True,"probs=['0.000', '1.000', '0.000']"
-extended,stage07,IMM stable p_miss=0.3,True,"probs=['0.000', '1.000', '0.000']"
-extended,stage07,IMM stable p_miss=0.6,True,"probs=['0.000', '1.000', '0.000']"
-extended,stage07,IMM stable p_miss=0.9,True,"probs=['0.000', '1.000', '0.000']"
+extended,stage07,IMM numerical stability p_miss=0.3 (probs finite and sum to 1),True,"probs=['0.000', '1.000', '0.000']"
+extended,stage07,IMM posterior entropy > 0.3 nats after 50 non-maladaptive steps,True,"H=0.6809 probs=['0.773', '0.076', '0.151']"
+extended,stage07,IMM recovers basin-1 MAP mode within 30 steps from wrong prior,True,"map_mode=1 probs=['0.066', '0.820', '0.114']"
 extended,stage07,Mode A finite seed=101,True,‖u‖=0.0000
 extended,stage07,Mode A finite seed=202,True,‖u‖=0.0000
 extended,stage07,Mode A finite seed=303,True,‖u‖=0.0000
 extended,stage07,IMM stable over 48-step day (seed=303),True,"probs=['0.000', '0.919', '0.080']"
+extended,stage07,peak time-in-band across w3 sweep >= 0.60,True,peak_tib=0.625 at w3=0.05
+extended,stage07,Mismatch audit: basin-1 p90 delta_A reported,True,basin_1_p90=0.3466 bound=0.2000
+extended,stage07,Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity),False,VIOLATED: 0.200 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)
 validation,stage01,tau_tilde(center) == 0,True,0.0
 validation,stage01,tau_tilde(far) > 0,True,66.4452
 validation,stage01,tau sandwich lower ≤ tau_tilde,True,tau_L=11.3630 tau_tilde=66.4452
+validation,stage01,tau_tilde strictly > tau_L (Prop H.1 gap confirmed),True,gap=55.0821
 validation,stage01,committor q[A]=0,True,0.00e+00
 validation,stage01,committor q[B]=1,True,1.000000
 validation,stage01,"committor q ∈ [0,1]",True,min=0.0000 max=1.0000
 validation,stage01,DARE P positive-definite,True,
 validation,stage01,DARE K finite,True,
+validation,stage01,"alpha_from_dare in (0,1)",True,0.4426
+validation,stage01,"beta contraction in [0,1)",True,beta=0.6667
+validation,stage01,rho(Q_transient) <= beta,True,rho=0.6667 beta=0.6667
 validation,stage01,finite_horizon_tracking len=H,True,6
 validation,stage01,finite_horizon_tracking K[0] finite,True,
 validation,stage01,chance tightening delta ≥ 0,True,mean=0.7231
@@ -310,11 +360,13 @@ validation,stage03c,ModeCTracker exits cleanly,True,
 validation,stage04,Mode A u norm bounded,True,max‖u‖=0.8663
 validation,stage04,Mode A feasibility rate > 0.5,True,1.00
 validation,stage04,Mode A produces non-zero control,True,23/72 calls
+validation,stage04,"Mode A active fraction >= 0.75 from far states (||x|| in [1.5, 3.0], basin 1)",True,active=0.90 mean_u=0.1328
 validation,stage04,Mode A on rho=0.96 basin finite u,True,
 validation,stage04,Mode A on rho=0.96 risk computed,True,risk=0.7127
 validation,stage04,Mode A finite seed=101,True,‖u‖=0.0000
 validation,stage04,Mode A finite seed=202,True,‖u‖=0.0000
 validation,stage04,Mode A finite seed=303,True,‖u‖=0.0000
+validation,stage04,Adaptive-basin N documented (n_adaptive),True,"n_adaptive=18  (UNDERPOWERED: n_adaptive < 20, no performance claims valid for adaptive basins)"
 validation,stage05,"Exact DP V* ∈ [0,1]",True,V*(start)=0.8476
 validation,stage05,Exact DP V*(success)=1,True,
 validation,stage05,Exact DP V*(failure)=0,True,
@@ -339,10 +391,11 @@ validation,stage07,T_k_eff formula rho=0.96,True,0.8448
 validation,stage07,Mismatch δ=0.05 Mode A finite,True,‖u‖=0.0972
 validation,stage07,Mismatch δ=0.1 Mode A finite,True,‖u‖=0.0972
 validation,stage07,Mismatch δ=0.2 Mode A finite,True,‖u‖=0.0972
-validation,stage07,IMM stable p_miss=0.0,True,"probs=['0.000', '1.000', '0.000']"
-validation,stage07,IMM stable p_miss=0.3,True,"probs=['0.000', '1.000', '0.000']"
-validation,stage07,IMM stable p_miss=0.6,True,"probs=['0.000', '1.000', '0.000']"
-validation,stage07,IMM stable p_miss=0.9,True,"probs=['0.000', '1.000', '0.000']"
+validation,stage07,IMM numerical stability p_miss=0.3 (probs finite and sum to 1),True,"probs=['0.000', '1.000', '0.000']"
+validation,stage07,IMM posterior entropy > 0.3 nats after 50 non-maladaptive steps,True,"H=0.3671 probs=['0.908', '0.035', '0.057']"
+validation,stage07,IMM recovers basin-1 MAP mode within 30 steps from wrong prior,True,"map_mode=1 probs=['0.070', '0.689', '0.241']"
 validation,stage07,Mode A finite seed=101,True,‖u‖=0.0000
 validation,stage07,Mode A finite seed=202,True,‖u‖=0.0000
 validation,stage07,Mode A finite seed=303,True,‖u‖=0.0000
+validation,stage07,Mismatch audit: basin-1 p90 delta_A reported,True,basin_1_p90=0.3466 bound=0.2000
+validation,stage07,Mismatch bound covers p90 basin-1 delta_A (theory guarantee validity),False,VIOLATED: 0.200 vs p90=0.347  (FAIL here means ISS Proposition 10.4 guarantee invalid in ~10% of seeds — disclose in manuscript)

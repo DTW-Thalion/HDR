@@ -1,0 +1,11 @@
+........................................................................ [ 25%]
+........................................................................ [ 51%]
+..............................................s......................... [ 76%]
+.................................................................        [100%]
+=============================== warnings summary ===============================
+test_tube_mpc.py:122
+  /home/user/HDR/test_tube_mpc.py:122: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.slow
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+280 passed, 1 skipped, 1 warning in 26.08s
