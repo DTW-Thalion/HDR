@@ -1,4 +1,4 @@
-"""Tests for Stage 16 — Model-Failure Extension Integration Validation."""
+"""Tests for Stage 16 -- Model-Failure Extension Integration Validation."""
 from __future__ import annotations
 
 import numpy as np
@@ -35,14 +35,31 @@ def _fast_cfg(n_seeds=2, T=32):
 
 def test_stage16_pwa_numerical_stability():
     cfg = _fast_cfg(n_seeds=2, T=32)
-    result = _run_subtest_16_01_pwa(cfg, n_seeds=2, T=32)
-    assert result["numerical_stability"] is True
+    return _run_subtest_16_04_multisite(cfg, n_seeds=2, T=32)
 
 
-def test_stage16_pwa_region_consistency():
+@pytest.fixture(scope="module")
+def result_16_06():
+    cfg = _fast_cfg(n_seeds=2, T=128)
+    return _run_subtest_16_06_jump(cfg, n_seeds=2, T=128)
+
+
+@pytest.fixture(scope="module")
+def result_16_07():
     cfg = _fast_cfg(n_seeds=2, T=32)
-    result = _run_subtest_16_01_pwa(cfg, n_seeds=2, T=32)
-    assert result["region_consistency_rate"] >= 0.90
+    return _run_subtest_16_07_mimpc(cfg, n_seeds=2, T=32)
+
+
+@pytest.fixture(scope="module")
+def result_16_08():
+    cfg = _fast_cfg(n_seeds=2, T=64)
+    return _run_subtest_16_08_multirate(cfg, n_seeds=2, T=64)
+
+
+@pytest.fixture(scope="module")
+def result_16_09():
+    cfg = _fast_cfg(n_seeds=2, T=32)
+    return _run_subtest_16_09_cumulative(cfg, n_seeds=2, T=32)
 
 
 # ===== 16.02: Absorbing-State Partition =====

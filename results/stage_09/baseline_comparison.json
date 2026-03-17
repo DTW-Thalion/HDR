@@ -33,5 +33,10 @@
   "T": 256,
   "total_maladaptive_episodes": 170,
   "results_are_valid": true,
-  "validity_note": "N_mal=170: valid"
+  "validity_note": "N_mal=170: valid",
+  "provenance": {
+    "hdr_version": "7.3.0",
+    "generated_at": "2026-03-17T02:36:06.763012Z",
+    "git_commit": "45df68f"
+  }
 }

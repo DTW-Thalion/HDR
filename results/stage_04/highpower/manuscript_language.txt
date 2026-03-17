@@ -1,6 +1,9 @@
-BENCHMARK A CONFIRMED
-The 95% CI lower bound clears the +3% criterion.
-The manuscript claim is statistically supported.
+BENCHMARK A — CRITERION NOT MET AT 95% CI LEVEL
+CI lower bound +0.0297 < +0.030
+Point estimate +0.0350 (above threshold)
 
-Recommended manuscript language:
-"HDR achieves a mean fractional cost reduction of +3.7% over the pooled_lqr_estimated baseline on maladaptive-basin episodes (95% CI: [+3.1%, +4.2%]; win rate 84%; N=179 episodes across 20 independent seeds)."
+Diagnosis:
+The CI just misses the +0.03 threshold.  The point estimate is robust but the precision requires more episodes.  Running 30 episodes per seed (600 total) would likely close the gap.
+
+Recommended manuscript language (weaker-but-honest framing):
+HDR achieves a mean fractional cost reduction of +3.5% over the pooled_lqr_estimated baseline on maladaptive-basin episodes (win rate 83%; N=179 episodes across 20 independent seeds).  The 95% bootstrap CI [+3.0%, +4.0%] does not exclude gains below +3%, indicating meaningful but not yet precisely characterised improvement.

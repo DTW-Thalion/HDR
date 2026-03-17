@@ -19,5 +19,10 @@
       "note": "Variational SLDS execution check"
     }
   ],
-  "elapsed": 3.109103765999862
+  "elapsed": 0.32882865300007325,
+  "provenance": {
+    "hdr_version": "7.3.0",
+    "generated_at": "2026-03-17T02:36:24.223765Z",
+    "git_commit": "45df68f"
+  }
 }

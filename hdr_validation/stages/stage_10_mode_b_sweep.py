@@ -1,5 +1,5 @@
 """
-Stage 10 — Mode B FP/FN Sweep (HDR v5.2)
+Stage 10 — Mode B FP/FN Sweep
 ==========================================
 
 Validates Lemma 9.3 (the calibration-to-decision-risk bound) empirically by
@@ -245,6 +245,8 @@ def run_stage_10(
         "T": T,
     }
 
+    from hdr_validation.provenance import get_provenance
+    result_json["provenance"] = get_provenance()
     out_path = output_dir / "mode_b_fp_fn_sweep.json"
     out_path.write_text(json.dumps(result_json, indent=2))
 

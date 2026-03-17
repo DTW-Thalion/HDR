@@ -78,6 +78,44 @@ def _projected_reference(
     return x_ref
 
 
+def precompute_mode_a_cache(
+    basin, config: dict, with_tau: bool = True, R_u_full: np.ndarray | None = None,
+) -> dict:
+    """Pre-compute expensive invariants for solve_mode_a.
+
+    Call once per episode (or once per basin if config is constant),
+    then pass the results to solve_mode_a via keyword arguments.
+
+    Returns dict with keys: 'P_terminal', 'C_pinv'.
+    """
+    n = basin.A.shape[0]
+
+    # Q_eff base (without coherence, which varies per step)
+    denom = max(1.0 - basin.rho ** 2, 1e-6)
+    w_tau = min(float(config["w2"]) / denom, 10.0) if with_tau else 0.0
+    w_dev = float(config["w1"]) + w_tau
+    Q_eff_base = np.eye(n) * w_dev
+
+    if R_u_full is not None:
+        R_eff = np.asarray(R_u_full, dtype=float)
+    else:
+        R_eff = np.eye(basin.B.shape[1]) * float(config["lambda_u"])
+
+    # DARE terminal cost
+    try:
+        from .lqr import dlqr_robust
+        mismatch_bound = float(config.get("model_mismatch_bound", 0.347))
+        _, P_terminal = dlqr_robust(basin.A, basin.B, Q_eff_base, R_eff,
+                                     mismatch_bound=mismatch_bound)
+    except Exception:
+        P_terminal = Q_eff_base.copy()
+
+    # C pseudoinverse
+    C_pinv = np.linalg.pinv(basin.C)
+
+    return {"P_terminal": P_terminal, "C_pinv": C_pinv}
+
+
 def solve_mode_a(
     x_hat: np.ndarray,
     P_hat: np.ndarray,
@@ -90,6 +128,9 @@ def solve_mode_a(
     with_tau: bool = True,
     with_coherence: bool = True,
     R_u_full: np.ndarray | None = None,
+    # Optional pre-computed terminal cost and gains
+    P_terminal_precomputed: np.ndarray | None = None,
+    C_pinv_precomputed: np.ndarray | None = None,
 ) -> MPCResult:
     """
     Mode A finite-horizon MPC (fixed implementation).
@@ -119,7 +160,12 @@ def solve_mode_a(
     # ── Chance-constraint tightening: map observation delta → state delta ──
     delta_obs = chance_tightening(basin.C, P_hat, basin.R, alpha)
     try:
-        Cpinv = np.linalg.pinv(basin.C)
+        if C_pinv_precomputed is not None:
+            Cpinv = C_pinv_precomputed
+        elif hasattr(basin, 'C_pinv'):
+            Cpinv = basin.C_pinv
+        else:
+            Cpinv = np.linalg.pinv(basin.C)
         state_delta = np.minimum(np.abs(Cpinv) @ delta_obs, 0.18)
     except Exception:
         state_delta = np.zeros(n)
@@ -151,9 +197,30 @@ def solve_mode_a(
         g_grad = coherence_grad(kappa_hat, float(config["kappa_lo"]), float(config["kappa_hi"]))
         g_pen = coherence_penalty(kappa_hat, float(config["kappa_lo"]), float(config["kappa_hi"]))
         coupling_scale = float(config["w3"]) * (abs(g_grad) * 0.5 + g_pen * 0.3)
-        for idx in [1, 5, 6]:
-            if idx < n:
-                Q_eff[idx, idx] += coupling_scale
+        # Axis-differential coherence weighting.
+        # If config provides "J_coupling" (an (n,n) array), weight each axis
+        # by its normalised row norm: axes with stronger coupling receive
+        # proportionally larger Q boost. This routes planning effort toward
+        # the axes that most affect system-wide coherence.
+        # If "J_coupling" is absent (legacy / isotropic models), fall back
+        # to the previous hardcoded behaviour (uniform boost on axes [1,5,6])
+        # so all existing tests continue to pass unchanged.
+        J_coupling = config.get("J_coupling", None)
+        if J_coupling is not None:
+            J = np.asarray(J_coupling, dtype=float)
+            row_norms = np.linalg.norm(J, axis=1)          # shape (n,)
+            total = row_norms.sum()
+            if total > 1e-10:
+                axis_weights = row_norms / total            # normalised
+            else:
+                axis_weights = np.ones(n) / n
+            for i in range(n):
+                Q_eff[i, i] += coupling_scale * axis_weights[i] * n
+        else:
+            # Legacy fallback: uniform boost on axes [1, 5, 6]
+            for idx in [1, 5, 6]:
+                if idx < n:
+                    Q_eff[idx, idx] += coupling_scale
 
     # ── Tightened-constraint Q boost: when a dimension is tightly constrained
     # (tight margin < threshold), raise Q on that dimension so the controller
@@ -187,15 +254,18 @@ def solve_mode_a(
     # can be destabilising when ρ(A−B*K)*(1+δ) ≥ 1, which occurs for the
     # maladaptive basin (ρ=0.96) under 22% mismatch.  The robust gain deflates
     # the feedback to maintain stability across the mismatch envelope.
-    try:
-        from .lqr import dlqr_robust
-        mismatch_bound = float(config.get("model_mismatch_bound", 0.347))
-        _, P_terminal = dlqr_robust(basin.A, basin.B, Q_eff, R_eff, mismatch_bound=mismatch_bound)
-    except Exception:
+    if P_terminal_precomputed is not None:
+        P_terminal = P_terminal_precomputed
+    else:
         try:
-            P_terminal, _ = dare_terminal_cost(basin.A, basin.B, Q_eff, R_eff)
+            from .lqr import dlqr_robust
+            mismatch_bound = float(config.get("model_mismatch_bound", 0.347))
+            _, P_terminal = dlqr_robust(basin.A, basin.B, Q_eff, R_eff, mismatch_bound=mismatch_bound)
         except Exception:
-            P_terminal = Q_eff.copy()
+            try:
+                P_terminal, _ = dare_terminal_cost(basin.A, basin.B, Q_eff, R_eff)
+            except Exception:
+                P_terminal = Q_eff.copy()
     gains = finite_horizon_tracking(basin.A, basin.B, Q_eff, R_eff, H, P_terminal=P_terminal)
 
     # ── First control action: track Π(x̂, S*) ──

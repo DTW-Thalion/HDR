@@ -1,4 +1,4 @@
-"""mRPI terminal set and tube-MPC for HDR v7.1 (IG1 Path B).
+"""mRPI terminal set and tube-MPC (IG1 Path B).
 
 Implements the Raković et al. (2005) algorithm for computing the maximal
 robust positively invariant (mRPI) set as a zonotope, and a tube-MPC
@@ -14,7 +14,7 @@ from .mpc import MPCResult, solve_mode_a
 from .lqr import dlqr
 
 
-def compute_disturbance_set(Q_w: np.ndarray, n: int, beta: float = 0.95):
+def compute_disturbance_set(Q_w: np.ndarray, n: int, beta: float = 0.999):
     """Compute ellipsoidal disturbance set W_k = {w : w^T Q_w^{-1} w <= chi2}.
 
     Parameters
@@ -24,7 +24,7 @@ def compute_disturbance_set(Q_w: np.ndarray, n: int, beta: float = 0.95):
     n : int
         State dimension.
     beta : float
-        Quantile of chi-squared distribution (default 0.95).
+        Quantile of chi-squared distribution (default 0.999, per Appendix J).
 
     Returns
     -------
@@ -111,12 +111,19 @@ def compute_mRPI_zonotope(
 
     scale = 1.0 / (1.0 - alpha_s) if alpha_s < 1.0 else 1e6
 
+    G_final = scale * G_accum
+    try:
+        G_pinv = np.linalg.pinv(G_final)
+    except Exception:
+        G_pinv = None
+
     return {
-        "G": scale * G_accum,
+        "G": G_final,
         "center": np.zeros(n),
         "alpha_s": float(alpha_s),
         "iterations": iterations,
         "scale": float(scale),
+        "G_pinv": G_pinv,
     }
 
 
@@ -139,16 +146,21 @@ def zonotope_containment_check(
     x: np.ndarray,
     G: np.ndarray,
     center: np.ndarray,
+    G_pinv: np.ndarray | None = None,
 ) -> bool:
     """Check if x is inside zonotope {G @ xi + center : ||xi||_inf <= 1}.
 
-    Uses LP reformulation: min sum(t_i) s.t. G @ xi = x - center, -t <= xi <= t, t >= 0.
+    Fast path: if G_pinv is provided, first checks the sufficient
+    condition ||G_pinv @ (x - center)||_inf <= 1. This is exact when
+    m == n and a conservative inner approximation when m > n.
+    Falls back to LP for borderline cases.
 
     Parameters
     ----------
     x : np.ndarray, shape (n,)
     G : np.ndarray, shape (n, m)
     center : np.ndarray, shape (n,)
+    G_pinv : np.ndarray or None, shape (m, n)
 
     Returns
     -------
@@ -157,28 +169,26 @@ def zonotope_containment_check(
     n, m = G.shape
     b_eq = x - center
 
-    # Variables: [xi (m), t (m)]
-    # Objective: min sum(t)
-    c_obj = np.zeros(2 * m)
-    c_obj[m:] = 1.0  # minimize sum of t_i
+    # Fast path: pseudoinverse sufficient condition
+    if G_pinv is not None:
+        xi_approx = G_pinv @ b_eq
+        if np.max(np.abs(xi_approx)) <= 1.0:
+            return True
 
-    # Equality: G @ xi = b_eq
+    # Full LP (existing implementation)
+    c_obj = np.zeros(2 * m)
+    c_obj[m:] = 1.0
+
     A_eq = np.hstack([G, np.zeros((n, m))])
 
-    # Inequality: xi - t <= 0 and -xi - t <= 0
-    # xi_i <= t_i:  xi_i - t_i <= 0
-    # -xi_i <= t_i: -xi_i - t_i <= 0
-    A_ub = np.zeros((2 * m, 2 * m))
-    for i in range(m):
-        # xi_i - t_i <= 0
-        A_ub[i, i] = 1.0
-        A_ub[i, m + i] = -1.0
-        # -xi_i - t_i <= 0
-        A_ub[m + i, i] = -1.0
-        A_ub[m + i, m + i] = -1.0
+    # Vectorized A_ub construction
+    I_m = np.eye(m)
+    A_ub = np.block([
+        [ I_m, -I_m],
+        [-I_m, -I_m],
+    ])
     b_ub = np.zeros(2 * m)
 
-    # Bounds: xi unbounded, t >= 0
     bounds = [(None, None)] * m + [(0.0, None)] * m
 
     try:

@@ -19,75 +19,17 @@ from typing import Any
 
 import numpy as np
 
-# ── Inline smoke config ────────────────────────────────────────────────────────
-SMOKE_CONFIG: dict[str, Any] = {
-    # Dimensions
-    "state_dim": 8,
-    "obs_dim": 16,
-    "control_dim": 8,
-    "disturbance_dim": 8,
-    "K": 3,
-    # Control
-    "H": 6,
-    "w1": 1.0,
-    "w2": 0.5,
-    "w3": 0.3,
-    "lambda_u": 0.1,
-    "alpha_i": 0.05,
-    "eps_safe": 0.01,
-    # Dynamics
-    "rho_reference": [0.72, 0.96, 0.55],
-    "max_dwell_len": 128,
-    "model_mismatch_bound": 0.347,
-    # Target set
-    "kappa_lo": 0.55,
-    "kappa_hi": 0.75,
-    "pA": 0.70,
-    "qmin": 0.15,
-    # Safety / time
-    "steps_per_day": 48,
-    "dt_minutes": 30,
-    "coherence_window": 24,
-    "default_burden_budget": 28.0,
-    "circadian_locked_controls": [5, 6],
-    # ICI
-    "R_brier_max": 0.05,
-    "omega_min_factor": 0.005,
-    "T_C_max": 50,
-    "k_calib": 1.0,
-    "sigma_dither": 0.08,
-    "epsilon_control": 0.50,
-    "missing_fraction_target": 0.516,
-    "mode1_base_rate": 0.16,
-    "observer_mode_accuracy_approx": 0.55,
-    "w3_sweep_values": [0.05, 0.10, 0.20, 0.30, 0.50],
-    # v7.0 extension parameters
-    "n_irr": 2,
-    "n_sites": 2,
-    "epsilon_G": 0.02,
-    "R_k_regions": 2,
-    "lambda_cat_max": 0.05,
-    "drift_rate": 0.001,
-    "delay_steps": 10,
-    "n_cum_exp": 1,
-    "xi_max": 100.0,
-    "n_expansion": 2,
-    "delta_J_max": 0.05,
-    "m_d": 1,
-    "n_particles": 100,
-    "n_patients": 10,
-    "T_p_values": [10, 50],
-    "jump_risk_threshold": 0.3,
-    "irr_boundary_threshold": 0.9,
-    "lambda_irr": 1.0,
-    # Smoke profile
-    "profile_name": "smoke",
-    "seeds": [101],
-    "episodes_per_experiment": 8,
-    "steps_per_episode": 128,
-    "mc_rollouts": 50,
-    "selected_trace_cap": 5,
-}
+from hdr_validation.defaults import make_config
+
+# ── Smoke profile config (overrides only) ─────────────────────────────────────
+SMOKE_CONFIG: dict[str, Any] = make_config(
+    profile_name="smoke",
+    seeds=[101],
+    episodes_per_experiment=8,
+    steps_per_episode=128,
+    mc_rollouts=50,
+    selected_trace_cap=5,
+)
 
 # ── Setup sys.path ─────────────────────────────────────────────────────────────
 ROOT = Path(__file__).parent
@@ -240,12 +182,14 @@ def stage01_math():
 # ═══════════════════════════════════════════════════════════════════════════════
 # Stage 02 — Synthetic episode generation
 # ═══════════════════════════════════════════════════════════════════════════════
-def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -> dict:
+def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0,
+                      eval_model=None) -> dict:
     """Simplified inline episode generator for smoke testing."""
     from hdr_validation.model.slds import make_evaluation_model
     from hdr_validation.specification import observation_schedule, generate_observation, heteroskedastic_R
 
-    eval_model = make_evaluation_model(cfg, rng)
+    if eval_model is None:
+        eval_model = make_evaluation_model(cfg, rng)
     basin = eval_model.basins[basin_idx]
     T = cfg["steps_per_episode"]
     n, m = cfg["state_dim"], cfg["obs_dim"]
@@ -260,7 +204,7 @@ def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -
     for t in range(T):
         u = np.zeros(u_dim)
         w = rng.multivariate_normal(np.zeros(n), basin.Q)
-        x_next = basin.A @ x + basin.B @ u + basin.E[:, :basin.Q.shape[0]] @ w + basin.b
+        x_next = basin.A @ x + basin.B @ u + w + basin.b
         R_t = heteroskedastic_R(basin.R, x, mask_sched[t], t)
         y = generate_observation(x, basin.C, basin.c, R_t, mask_sched[t], rng)
 
@@ -646,13 +590,11 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     gains_maladaptive = np.array(gains_maladaptive)
 
     def _bootstrap_ci(data, n_boot=10_000, ci=0.95, rng_seed=42):
-        """Bootstrap percentile CI for the mean."""
+        """Bootstrap percentile CI for the mean (vectorized)."""
         rng = np.random.default_rng(rng_seed)
-        data = np.asarray(data)
-        boot_means = np.array([
-            rng.choice(data, size=len(data), replace=True).mean()
-            for _ in range(n_boot)
-        ])
+        data = np.asarray(data, dtype=float)
+        indices = rng.integers(0, len(data), size=(n_boot, len(data)))
+        boot_means = data[indices].mean(axis=1)
         lo = float(np.percentile(boot_means, 100 * (1 - ci) / 2))
         hi = float(np.percentile(boot_means, 100 * (1 + ci) / 2))
         return lo, hi
@@ -850,9 +792,9 @@ def stage06_coherence() -> None:
                     u_lqr = u_lqr_raw
                 used_burden_lqr += float(np.sum(np.abs(u_lqr)))
                 w = rng_ep.multivariate_normal(np.zeros(n), basin.Q)
-                x_hdr = basin.A @ x_hdr + basin.B @ u_hdr + basin.E[:, :n] @ w + basin.b
-                x_ol  = basin.A @ x_ol  + basin.B @ np.zeros(m_u) + basin.E[:, :n] @ w + basin.b
-                x_lqr = basin.A @ x_lqr + basin.B @ u_lqr + basin.E[:, :n] @ w + basin.b
+                x_hdr = basin.A @ x_hdr + basin.B @ u_hdr + w + basin.b
+                x_ol  = basin.A @ x_ol  + w + basin.b
+                x_lqr = basin.A @ x_lqr + basin.B @ u_lqr + w + basin.b
         return (
             hdr_steps / max(total, 1),
             ol_steps  / max(total, 1),
@@ -1020,7 +962,7 @@ def stage07_robustness() -> None:
             in_band_cnt += int(np.linalg.norm(x_w3) <= kappa_hi_07)
             res_w3 = solve_mode_a(x_w3, P_w3, basin_w3, target_w3, kappa_hat=0.6, config=cfg_w3, step=t)
             ww = rng_w3s.multivariate_normal(np.zeros(n), basin_w3.Q)
-            x_w3 = basin_w3.A @ x_w3 + basin_w3.B @ res_w3.u + basin_w3.E[:, :n] @ ww + basin_w3.b
+            x_w3 = basin_w3.A @ x_w3 + basin_w3.B @ res_w3.u + ww + basin_w3.b
         tib_by_w3[w3] = in_band_cnt / max(T_w3, 1)
 
     best_w3_tib = max(tib_by_w3.values())

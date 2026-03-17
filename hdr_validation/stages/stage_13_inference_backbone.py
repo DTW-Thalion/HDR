@@ -1,5 +1,5 @@
 """
-Stage 13 — Alternative Inference Backbone Benchmark (HDR v7.0)
+Stage 13 — Alternative Inference Backbone Benchmark
 ===============================================================
 Validates Claims 27: PF consistency.
 """
@@ -28,11 +28,9 @@ def run_stage_13(
     from hdr_validation.inference.variational import VariationalSLDS
 
     t0 = time.perf_counter()
-    cfg = {
-        "state_dim": 8, "obs_dim": 16, "control_dim": 8,
-        "disturbance_dim": 8, "K": 3, "rho_reference": [0.72, 0.96, 0.55],
-        "max_dwell_len": 64,
-    }
+    from hdr_validation.defaults import DEFAULTS
+    cfg = dict(DEFAULTS)
+    cfg["max_dwell_len"] = 64
     rng = np.random.default_rng(101)
     model = make_evaluation_model(cfg, rng)
 
@@ -57,7 +55,7 @@ def run_stage_13(
             observations.append(y)
 
         # Run PF
-        pf = ParticleFilter(n_particles, model.basins)
+        pf = ParticleFilter(n_particles, model.basins, rng=np.random.default_rng(101 + sc))
         for y in observations:
             pf.predict(np.zeros(cfg["control_dim"]))
             pf.update(y)
@@ -116,6 +114,8 @@ def run_stage_13(
     elapsed = time.perf_counter() - t0
     results["elapsed"] = elapsed
 
+    from hdr_validation.provenance import get_provenance
+    results["provenance"] = get_provenance()
     out_dir = ROOT / "results" / "stage_13"
     out_dir.mkdir(parents=True, exist_ok=True)
     with open(out_dir / "results.json", "w") as f:

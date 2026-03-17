@@ -1,10 +1,10 @@
 {
   "variants": {
     "hdr_full": {
-      "mean_gain": 0.0768,
-      "ci_lo": 0.0749,
-      "ci_hi": 0.0787,
-      "win_rate": 1.0,
+      "mean_gain": -0.8395,
+      "ci_lo": -0.9021,
+      "ci_hi": -0.781,
+      "win_rate": 0.0,
       "N_mal": 170,
       "diagnostics_mean": {
         "coherence_steps_active_pct": 0.30078125,
@@ -13,10 +13,10 @@
       }
     },
     "mpc_only": {
-      "mean_gain": 0.0748,
-      "ci_lo": 0.0727,
-      "ci_hi": 0.0768,
-      "win_rate": 1.0,
+      "mean_gain": -1.0017,
+      "ci_lo": -1.0806,
+      "ci_hi": -0.9276,
+      "win_rate": 0.0,
       "N_mal": 170,
       "diagnostics_mean": {
         "coherence_steps_active_pct": 0.0,
@@ -25,10 +25,10 @@
       }
     },
     "mpc_plus_surrogate": {
-      "mean_gain": 0.0768,
-      "ci_lo": 0.0749,
-      "ci_hi": 0.0787,
-      "win_rate": 1.0,
+      "mean_gain": -0.8395,
+      "ci_lo": -0.9021,
+      "ci_hi": -0.781,
+      "win_rate": 0.0,
       "N_mal": 170,
       "diagnostics_mean": {
         "coherence_steps_active_pct": 0.0,
@@ -37,10 +37,10 @@
       }
     },
     "mpc_plus_coherence": {
-      "mean_gain": 0.0748,
-      "ci_lo": 0.0727,
-      "ci_hi": 0.0768,
-      "win_rate": 1.0,
+      "mean_gain": -1.0018,
+      "ci_lo": -1.0806,
+      "ci_hi": -0.9276,
+      "win_rate": 0.0,
       "N_mal": 170,
       "diagnostics_mean": {
         "coherence_steps_active_pct": 0.30078125,
@@ -49,10 +49,10 @@
       }
     },
     "hdr_no_calib": {
-      "mean_gain": 0.0768,
-      "ci_lo": 0.0749,
-      "ci_hi": 0.0787,
-      "win_rate": 1.0,
+      "mean_gain": -0.8395,
+      "ci_lo": -0.9021,
+      "ci_hi": -0.781,
+      "win_rate": 0.0,
       "N_mal": 170,
       "diagnostics_mean": {
         "coherence_steps_active_pct": 0.28515625,
@@ -68,5 +68,10 @@
   "results_are_valid": true,
   "validity_note": "N_mal=170: valid",
   "ablation_criterion_met": true,
-  "ablation_criterion_note": "hdr_full (+0.0768) >= mpc_only (+0.0748)"
+  "ablation_criterion_note": "hdr_full (-0.8395) >= mpc_only (-1.0017)",
+  "provenance": {
+    "hdr_version": "7.3.0",
+    "generated_at": "2026-03-17T02:32:26.062959Z",
+    "git_commit": "45df68f"
+  }
 }

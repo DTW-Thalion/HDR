@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This repository is an **in-silico validation suite** for the **Homeodynamic Remediation Framework (HDR) v7.1** — a multi-mode adaptive control system for constrained stochastic linear dynamical systems (SLDS). The framework validates mathematical properties, implementation correctness, and empirical performance across synthetic physiological scenarios.
+This repository is an **in-silico validation suite** for the **Homeodynamic Remediation Framework (HDR) v7.3** — a multi-mode adaptive control system for constrained stochastic linear dynamical systems (SLDS). The framework validates mathematical properties, implementation correctness, and empirical performance across synthetic physiological scenarios.
 
 HDR models a latent physiological state (e.g., neuroendocrine system) with K discrete operating modes ("basins") and switches between three control strategies based on inference quality:
 
@@ -21,6 +21,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │   │   ├── lqr.py               # DLQR, committor calculations, value iteration, committor_with_jumps
 │   │   ├── mode_b.py            # Structured exploration control (Mode B)
 │   │   ├── mode_c.py            # Information-maximizing dither control (Mode C)
+│   │   ├── mode_c_fisher.py     # Fisher-information dither policy and proxy (Mode C)
 │   │   ├── mimpc.py             # Mixed-Integer MPC (v7.0)
 │   │   ├── supervisor.py        # Extended 8-branch supervisor (v7.0)
 │   │   ├── mpc.py               # Model Predictive Control (Mode A), solve_mode_a_unstable, solve_mode_a_irr
@@ -42,6 +43,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │   │   ├── extensions.py        # v7.0 structural extensions (basin classifier, PWA, jump-diffusion, etc.)
 │   │   ├── adaptive.py          # Forgetting-factor RLS, drift detection, adaptive mismatch bound (v7.1)
 │   │   ├── saturation.py        # Michaelis-Menten saturating dose-response (v7.1)
+│   │   ├── stability_check.py   # Basin spectral radius validation
 │   │   └── multirate.py         # Multi-rate observer, delay augmentation (v7.0)
 │   ├── identification/          # v7.0 identification subpackage
 │   │   ├── hierarchical.py      # Hierarchical empirical-Bayes coupling estimation
@@ -53,6 +55,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │   │   └── risk_information.py  # Risk-information frontier
 │   └── stages/                  # Stage scripts for stages 08–16
 │       ├── stage_08_ablation.py
+│       ├── stage_08b_ablation.py # Multi-axis asymmetric ablation (coherence + calibration marginal gains)
 │       ├── stage_09_baselines.py
 │       ├── stage_10_mode_b_sweep.py
 │       ├── stage_11_invariant_set.py
@@ -62,15 +65,20 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │       ├── stage_15_proxy_composite.py  # v7.0
 │       └── stage_16_extensions.py  # v7.1 — model-failure extension integration
 ├── results/                     # Experiment outputs (auto-generated)
-│   ├── stage_04/ … stage_15/    # Per-stage result artifacts
-│   └── stage_03b/, stage_03c/   # Sub-stage artifacts
+│   └── stage_04/ … stage_16/    # Per-stage result artifacts (incl. stage_08b)
 ├── smoke_runner.py              # Smoke profile runner (stage functions + SMOKE_CONFIG)
 ├── standard_runner.py           # Standard profile runner
 ├── extended_runner.py           # Extended profile runner
+├── extended_512_runner.py       # Extended profile with T=512
 ├── validation_runner.py         # Validation profile runner
-├── test_*.py                    # Pytest test modules (29 files, 243 tests)
-├── run_all.py                   # Orchestration script (stages 01–16)
+├── highpower_runner.py          # High-power profile runner (20 seeds × 30 ep/seed)
+├── test_*.py                    # Pytest test modules (30 files, 295 tests)
+├── run_all.py                   # Orchestration script (stages 01–16, --full-validation)
 ├── plotting.py                  # Visualization utilities
+├── analyse_highpower.py         # High-power run analysis
+├── analyse_mismatch.py          # Model mismatch analysis
+├── derive_criterion.py          # Criterion derivation utility
+├── generate_reports.py          # Report generation utility
 ├── config.json                  # Master configuration
 ├── paper_defaults.json          # Reference parameter values from paper
 └── config (N).json              # Parameter sweep variants
@@ -108,13 +116,31 @@ from hdr_validation.packaging import zip_paths
 from hdr_validation.specification import observation_schedule, generate_observation
 ```
 
-Stage logic for stages 01–07 lives in the profile runner modules (`smoke_runner.py`, `standard_runner.py`, etc.). Stages 08–16 are in `hdr_validation/stages/`.
+Stage logic for stages 01–07 lives in the profile runner modules (`smoke_runner.py`, `standard_runner.py`, etc.). Stages 08–16 (including 08b) are in `hdr_validation/stages/`.
 
 ---
 
 ## Running the Validation Pipeline
 
-### Full pipeline
+### Recommended: full validation (all 32 claims)
+
+```bash
+python run_all.py --full-validation        # Complete validation of all 32 claims
+```
+
+This is the **recommended entry point** for reviewers. It runs four phases:
+
+| Phase | What runs | Claims covered |
+|-------|-----------|----------------|
+| 1 | Extended profile, stages 01–03c + 05–07 | 3–14 |
+| 2 | Highpower benchmark (20 seeds × 30 ep/seed) | 1–2 (authoritative) |
+| 3 | Stages 08–16 at production scale + pytest | 9, 13, 15–32 |
+| 4 | Full pytest suite (295 tests, 30 files) | 15–32 (unit test layer) |
+
+Output ends with a per-claim pass/fail summary table. Supports `--resume --skip-done`
+for resuming interrupted runs, and `--force` to re-run completed stages.
+
+### Per-profile runs
 
 ```bash
 python run_all.py                          # Run all stages, all profiles
@@ -129,6 +155,7 @@ python run_all.py --profiles smoke standard extended validation
 python run_all.py --profiles smoke --stages 03 04 --force    # Force-rerun stages 3 & 4
 python run_all.py --stages 01 03b 03c                        # Multiple stages
 python run_all.py --stages 12 13 14 15                       # v7.0 stages only
+python run_all.py --stages 08 08b --run-tests                # Run stages then pytest
 ```
 
 ### Stage IDs
@@ -145,6 +172,7 @@ python run_all.py --stages 12 13 14 15                       # v7.0 stages only
 | 06   | (in profile runner)       | State coherence checks                   |
 | 07   | (in profile runner)       | Robustness across parameter sweeps       |
 | 08   | `stage_08_ablation.py`    | Ablation study                           |
+| 08b  | `stage_08b_ablation.py`   | Multi-axis asymmetric ablation           |
 | 09   | `stage_09_baselines.py`   | Baseline comparison                      |
 | 10   | `stage_10_mode_b_sweep.py` | Mode B FP/FN sweep                      |
 | 11   | `stage_11_invariant_set.py` | Riccati invariant set verification     |
@@ -160,7 +188,7 @@ python run_all.py --stages 12 13 14 15                       # v7.0 stages only
 
 ### Profile hierarchy
 
-Each profile runner (e.g., `smoke_runner.py`) defines its own config dict inline (e.g., `SMOKE_CONFIG`). The master defaults come from `config.json`.
+Each profile runner (e.g., `smoke_runner.py`) defines its own config dict inline (e.g., `SMOKE_CONFIG`). Additional runners include `extended_512_runner.py` (T=512 variant) and `highpower_runner.py` (20-seed Benchmark A). The master defaults come from `config.json`.
 
 ### Key configuration parameters
 
@@ -190,12 +218,14 @@ Each profile runner (e.g., `smoke_runner.py`) defines its own config dict inline
 
 ### Profile sizes
 
-| Profile    | Seeds     | Episodes | Steps/ep | MC Rollouts |
-|------------|-----------|----------|----------|-------------|
-| smoke      | [101]     | 8        | 128      | 50          |
-| standard   | [101,202] | 12       | 128      | 100         |
-| extended   | [101,202,303] | 20   | 256      | 150         |
-| validation | [101,202,303] | 12   | 128      | 150         |
+| Profile      | Seeds           | Episodes | Steps/ep | MC Rollouts |
+|--------------|-----------------|----------|----------|-------------|
+| smoke        | [101]           | 8        | 128      | 50          |
+| standard     | [101,202]       | 12       | 128      | 100         |
+| extended     | [101,202,303]   | 20       | 256      | 150         |
+| extended_512 | [101,202,303]   | 10       | 512      | 150         |
+| validation   | [101,202,303]   | 12       | 128      | 150         |
+| highpower    | 20 seeds        | 30/seed  | 256      | —           |
 
 ---
 
@@ -236,37 +266,9 @@ def test_mpc_returns_bounded_control():
 
 ### Test files
 
-| File                      | Tests                                          |
-|---------------------------|-------------------------------------------------|
-| `test_packaging.py`       | Zip archive creation                            |
-| `test_ici.py`             | ICI state computation and bounds                |
-| `test_imm.py`             | IMM inference filter                            |
-| `test_mpc.py`             | MPC/Mode A control bounds                       |
-| `test_mode_c.py`          | Mode C dither injection                         |
-| `test_mode_c_fisher.py`   | Mode C Fisher information proxy                 |
-| `test_hsmm.py`            | HSMM dwell distribution models                  |
-| `test_target_set.py`      | Target set geometry                             |
-| `test_committor.py`       | Committor BVP solution                          |
-| `test_recovery.py`        | Recovery trajectory analysis                    |
-| `test_stability_check.py` | Basin stability classification                  |
-| `test_stage_08.py`        | Stage 08 ablation study                         |
-| `test_stage_09.py`        | Stage 09 baseline comparison                    |
-| `test_stage_10.py`        | Stage 10 Mode B sweep                           |
-| `test_stage_11.py`        | Stage 11 invariant set                          |
-| `test_extensions.py`      | v7.0 model extensions (25 tests)                |
-| `test_adaptive.py`        | FF-RLS and drift detection (v7.0)               |
-| `test_multirate.py`       | Multi-rate observation (v7.0)                   |
-| `test_mimpc.py`           | Mixed-integer MPC (v7.0)                        |
-| `test_supervisor.py`      | Extended supervisor 8-branch logic (v7.0)       |
-| `test_particle.py`        | Particle filter / SMC (v7.0)                    |
-| `test_variational.py`     | Variational SLDS inference (v7.0)               |
-| `test_identification.py`  | Identification subpackage (v7.0, 15 tests)      |
-| `test_committor_jump.py`  | Committor with jumps (v7.0)                     |
-| `test_tube_mpc.py`        | mRPI terminal set and tube-MPC (v7.1)           |
-| `test_interaction_matrix.py` | Cross-column interaction matrix R_u_full (v7.1) |
-| `test_saturation.py`      | Michaelis-Menten dose-response (v7.1)           |
-| `test_stage_16.py`        | Stage 16 extension integration (v7.1)           |
-| `test_adaptive_delta.py`  | Adaptive mismatch bound via FF-RLS (v7.1)       |
+30 test files at the repo root (`test_*.py`) cover all 32 claims. See `CLAIM_MATRIX.md`
+for the per-claim test file mapping. Run `python check_claims.py --verbose` for automated
+validation of claim criteria against test results and stage artifacts.
 
 ---
 
@@ -387,7 +389,7 @@ np.savez_compressed(path,
 
 ## Result Artifacts
 
-Each stage outputs to `results/stage_{id}/{profile_name}/{component}/`:
+Stages 01–07 (profile-runner stages) output to `results/stage_{id}/{profile_name}/{component}/`:
 
 ```
 results/stage_03b/smoke/ici_diagnostic/
@@ -397,6 +399,14 @@ results/stage_03b/smoke/ici_diagnostic/
 ├── metrics.csv       # Tabular results
 ├── manifest.json     # Artifact manifest
 └── plots/            # Optional visualizations
+```
+
+Stages 08–16 (profile-independent stages) output flat JSON files directly:
+
+```
+results/stage_08/
+├── ablation_results.json      # Production-scale ablation output
+└── ablation_diagnosis.json    # Diagnostic/fix history
 ```
 
 ---
@@ -417,7 +427,10 @@ The suite validates 32 claims across v5.0, v7.0, and v7.1:
 - **Claims 29–32** (v7.0): B_k sample complexity, basin boundary convergence, population planning, proxy-composite estimation
 
 Claims 1–14 are evaluated by stages 01–11; Claims 15–32 by stages 12–16.
-A claim is marked `Supported` only when it passes its criterion in both smoke and standard profiles.
+A claim is marked `Supported` only when it passes its criterion in the appropriate profile.
+Claims 1–2 require the highpower runner (20 seeds × 30 ep/seed) for authoritative validation.
+
+**To validate all 32 claims in a single run:** `python run_all.py --full-validation`
 
 See `CLAIM_CRITERIA.md` for full criterion definitions and `CLAIM_MATRIX.md` for current status.
 
@@ -456,4 +469,4 @@ matplotlib    # visualization in plotting.py
 
 ## File Naming Note
 
-Some files at the repository root have names that do not match their content due to upload history (multiple "Add files via upload" commits). When navigating the codebase, verify file content rather than relying solely on filename. The canonical organized package is in `control/`, `inference/`, and `model/` subdirectories.
+Some production source files in `hdr_validation/` may have names that do not perfectly match their content due to upload history (multiple "Add files via upload" commits). The canonical organized package is in `control/`, `inference/`, `model/`, and `identification/` subdirectories. Test files at the repo root have been renamed to match their actual content.

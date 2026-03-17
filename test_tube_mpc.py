@@ -66,7 +66,8 @@ def test_zonotope_containment_origin():
     Q_w = 0.01 * np.eye(n)
     _, chi2_bound = compute_disturbance_set(Q_w, n)
     result = compute_mRPI_zonotope(A_cl, Q_w, chi2_bound)
-    assert zonotope_containment_check(np.zeros(n), result["G"], result["center"])
+    assert zonotope_containment_check(np.zeros(n), result["G"], result["center"],
+                                      G_pinv=result.get("G_pinv"))
 
 
 def test_zonotope_containment_outside():
@@ -76,7 +77,8 @@ def test_zonotope_containment_outside():
     Q_w = 0.01 * np.eye(n)
     _, chi2_bound = compute_disturbance_set(Q_w, n)
     result = compute_mRPI_zonotope(A_cl, Q_w, chi2_bound)
-    assert not zonotope_containment_check(100 * np.ones(n), result["G"], result["center"])
+    assert not zonotope_containment_check(100 * np.ones(n), result["G"], result["center"],
+                                          G_pinv=result.get("G_pinv"))
 
 
 def test_tube_mpc_returns_valid_result():
@@ -187,7 +189,8 @@ def test_tube_mpc_containment_rate():
                     u = np.zeros(n)
 
                 # Check containment
-                inside = zonotope_containment_check(x, mRPI["G"], mRPI["center"])
+                inside = zonotope_containment_check(x, mRPI["G"], mRPI["center"],
+                                                    G_pinv=mRPI.get("G_pinv"))
                 containment_counts[k_idx]["total"] += 1
                 if inside:
                     containment_counts[k_idx]["inside"] += 1

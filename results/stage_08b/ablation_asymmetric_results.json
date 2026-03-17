@@ -1,0 +1,85 @@
+{
+  "scenario": "multi_axis_asymmetric",
+  "variants": {
+    "hdr_full": {
+      "mean_gain": -0.8454,
+      "ci_lo": -0.9099,
+      "ci_hi": -0.7859,
+      "win_rate": 0.0,
+      "N_mal": 170,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.30859375,
+        "coherence_mean_coupling": 0.007576031972803582,
+        "kappa_hat_mean": 0.620443359375
+      }
+    },
+    "mpc_only": {
+      "mean_gain": -1.0086,
+      "ci_lo": -1.0893,
+      "ci_hi": -0.9332,
+      "win_rate": 0.0,
+      "N_mal": 170,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.0,
+        "coherence_mean_coupling": 0.0,
+        "kappa_hat_mean": 0.620443359375
+      }
+    },
+    "mpc_plus_surrogate": {
+      "mean_gain": -0.8454,
+      "ci_lo": -0.9099,
+      "ci_hi": -0.7859,
+      "win_rate": 0.0,
+      "N_mal": 170,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.0,
+        "coherence_mean_coupling": 0.0,
+        "kappa_hat_mean": 0.620443359375
+      }
+    },
+    "mpc_plus_coherence": {
+      "mean_gain": -1.0085,
+      "ci_lo": -1.0892,
+      "ci_hi": -0.9331,
+      "win_rate": 0.0,
+      "N_mal": 170,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.30859375,
+        "coherence_mean_coupling": 0.007576031972803582,
+        "kappa_hat_mean": 0.620443359375
+      }
+    },
+    "hdr_no_calib": {
+      "mean_gain": -0.8454,
+      "ci_lo": -0.9099,
+      "ci_hi": -0.7859,
+      "win_rate": 0.0,
+      "N_mal": 170,
+      "diagnostics_mean": {
+        "coherence_steps_active_pct": 0.28515625,
+        "coherence_mean_coupling": 0.006687575151384085,
+        "kappa_hat_mean": 0.6331054687500002
+      }
+    }
+  },
+  "n_seeds": 20,
+  "n_ep_per_seed": 30,
+  "T": 256,
+  "total_maladaptive_episodes": 170,
+  "J_diagnostics": {
+    "strong_axis_mean_norm": 0.5886,
+    "weak_axis_mean_norm": 0.0673,
+    "row_norm_ratio": 8.75
+  },
+  "results_are_valid": true,
+  "validity_note": "N_mal=170: valid",
+  "ablation_criterion_met": true,
+  "coherence_marginal_gain": 0.0001,
+  "calibration_marginal_gain": 0.0,
+  "ablation_criterion_note": "hdr_full (-0.8454) >= mpc_only (-1.0086)",
+  "provenance": {
+    "hdr_version": "7.3.0",
+    "generated_at": "2026-03-17T02:34:43.097878Z",
+    "git_commit": "45df68f"
+  }
+}

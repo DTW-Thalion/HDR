@@ -1,5 +1,5 @@
 """
-Stage 08 — Ablation Study (HDR v5.3)
+Stage 08 — Ablation Study
 ======================================
 
 Isolates the contribution of each HDR Mode A component to the +3.7% gain
@@ -47,45 +47,19 @@ ABLATION_VARIANTS: list[AblationConfig] = [
 
 def _make_benchmark_config(n_seeds: int = 20, n_ep: int = 30, T: int = 256) -> dict[str, Any]:
     """Create the Benchmark A configuration."""
-    return {
-        "state_dim": 8,
-        "obs_dim": 16,
-        "control_dim": 8,
-        "disturbance_dim": 8,
-        "K": 3,
-        "H": 6,
-        "w1": 1.0,
-        "w2": 0.5,
-        "w3": 0.3,
-        "lambda_u": 0.1,
-        "alpha_i": 0.05,
-        "eps_safe": 0.01,
-        "rho_reference": [0.72, 0.96, 0.55],
+    from hdr_validation.defaults import DEFAULTS
+
+    cfg = dict(DEFAULTS)
+    cfg.update({
         "max_dwell_len": 256,
-        "model_mismatch_bound": 0.347,
-        "kappa_lo": 0.55,
-        "kappa_hi": 0.75,
-        "pA": 0.70,
-        "qmin": 0.15,
-        "steps_per_day": 48,
-        "dt_minutes": 30,
-        "coherence_window": 24,
         "default_burden_budget": 56.0,  # 28 * T/128 = 56 for T=256
-        "circadian_locked_controls": [5, 6],
-        "R_brier_max": 0.05,
-        "omega_min_factor": 0.005,
-        "T_C_max": 50,
-        "k_calib": 1.0,
-        "sigma_dither": 0.08,
-        "epsilon_control": 0.50,
-        "missing_fraction_target": 0.516,
-        "mode1_base_rate": 0.16,
         # Benchmark A parameters
         "n_seeds": n_seeds,
         "n_ep_per_seed": n_ep,
         "steps_per_episode": T,
         "profile_name": "highpower",
-    }
+    })
+    return cfg
 
 
 def _kappa_schedule(t: int, T: int, cfg: dict) -> float:
@@ -158,7 +132,7 @@ def _run_episode(
     """
     from hdr_validation.model.slds import make_evaluation_model
     from hdr_validation.model.target_set import build_target_set
-    from hdr_validation.control.mpc import solve_mode_a
+    from hdr_validation.control.mpc import solve_mode_a, precompute_mode_a_cache
     from hdr_validation.control.lqr import dlqr
     from hdr_validation.model.coherence import coherence_grad, coherence_penalty
 
@@ -179,6 +153,9 @@ def _run_episode(
         variant_cfg["R_brier_max"] = 1.0
         variant_cfg["k_calib"] = 0.0
 
+    # Pre-compute expensive invariants for this episode
+    mpc_cache = precompute_mode_a_cache(basin, variant_cfg)
+
     # Pooled LQR baseline (estimated model, no mode switching)
     Q_lqr = np.eye(n)
     R_lqr = np.eye(n) * float(cfg.get("lambda_u", 0.1))
@@ -187,8 +164,10 @@ def _run_episode(
     except Exception:
         K_pool = np.zeros((n, n))
 
-    # Initial state
-    x = rng.normal(scale=0.5, size=n)
+    # Initial state — shared starting point for both policies
+    x0 = rng.normal(scale=0.5, size=n)
+    x_hdr = x0.copy()
+    x_base = x0.copy()
     x_ref = np.zeros(n)
     P_hat = np.eye(n) * 0.2
 
@@ -202,29 +181,32 @@ def _run_episode(
     u_base_norms: list[float] = []
 
     for t in range(T):
-        # State cost (shared)
-        state_cost = float(np.dot(x, x))
+        # State costs on independent trajectories
+        hdr_state_cost = float(np.dot(x_hdr, x_hdr))
+        base_state_cost = float(np.dot(x_base, x_base))
 
         # Compute time-varying kappa_hat with calibration modulation
         kappa_hat_t = _get_kappa_hat(ablation_cfg, t, T, variant_cfg)
 
-        # HDR Mode A control
+        # HDR Mode A control (on HDR trajectory)
         try:
             res = solve_mode_a(
-                x, P_hat, basin, target,
+                x_hdr, P_hat, basin, target,
                 kappa_hat=kappa_hat_t,
                 config=variant_cfg, step=t,
+                P_terminal_precomputed=mpc_cache["P_terminal"],
+                C_pinv_precomputed=mpc_cache["C_pinv"],
             )
             u_hdr = res.u
         except Exception:
             u_hdr = np.zeros(cfg["control_dim"])
 
-        # Baseline control (pooled LQR)
-        u_base = -K_pool @ (x - x_ref)
+        # Baseline control on baseline trajectory (pooled LQR)
+        u_base = -K_pool @ (x_base - x_ref)
         u_base = np.clip(u_base, -0.6, 0.6)
 
-        hdr_cost += state_cost + lambda_u * float(np.dot(u_hdr, u_hdr))
-        baseline_cost += state_cost + lambda_u * float(np.dot(u_base, u_base))
+        hdr_cost += hdr_state_cost + lambda_u * float(np.dot(u_hdr, u_hdr))
+        baseline_cost += base_state_cost + lambda_u * float(np.dot(u_base, u_base))
 
         # Measure coherence coupling_scale for diagnostics
         g_pen_t = coherence_penalty(
@@ -240,9 +222,12 @@ def _run_episode(
         u_hdr_norms.append(float(np.linalg.norm(u_hdr)))
         u_base_norms.append(float(np.linalg.norm(u_base)))
 
-        # Advance state (same dynamics, different controls)
-        w = rng.multivariate_normal(np.zeros(n), basin.Q)
-        x = basin.A @ x + basin.B @ u_hdr + basin.b + w
+        # Shared process noise for paired comparison (pre-computed Cholesky)
+        w = basin.Q_cholesky @ rng.standard_normal(n)
+
+        # Advance independent trajectories
+        x_hdr = basin.A @ x_hdr + basin.B @ u_hdr + basin.b + w
+        x_base = basin.A @ x_base + basin.B @ u_base + basin.b + w
 
     gain = (baseline_cost - hdr_cost) / max(baseline_cost, 1e-12)
 
@@ -273,7 +258,7 @@ def _bootstrap_ci(
     ci: float = 0.95,
     rng_seed: int = 42,
 ) -> tuple[float, float]:
-    """Bootstrap percentile CI for the mean."""
+    """Bootstrap percentile CI for the mean (vectorized)."""
     rng = np.random.default_rng(rng_seed)
     data = np.asarray(data, dtype=float)
     if len(data) == 0:
@@ -282,10 +267,9 @@ def _bootstrap_ci(
             "This indicates zero maladaptive episodes were collected. "
             "Check N_MAL_MIN guard in run_stage_08."
         )
-    boot_means = np.array([
-        rng.choice(data, size=len(data), replace=True).mean()
-        for _ in range(n_boot)
-    ])
+    # Vectorized: draw all bootstrap samples at once
+    indices = rng.integers(0, len(data), size=(n_boot, len(data)))
+    boot_means = data[indices].mean(axis=1)
     lo = float(np.percentile(boot_means, 100 * (1 - ci) / 2))
     hi = float(np.percentile(boot_means, 100 * (1 + ci) / 2))
     return lo, hi
@@ -468,6 +452,8 @@ def run_stage_08(
         )
 
     # Save JSON
+    from hdr_validation.provenance import get_provenance
+    result_json["provenance"] = get_provenance()
     out_path = output_dir / "ablation_results.json"
     out_path.write_text(json.dumps(result_json, indent=2))
 

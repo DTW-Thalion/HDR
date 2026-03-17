@@ -1,0 +1,66 @@
+{
+    "_comment": "Machine-readable manuscript claims. Validated by check_claims.py.",
+    "hdr_version": "7.3.0",
+    "claims": {
+        "pytest_total_defined": {
+            "expected": 295,
+            "source": "pytest --collect-only",
+            "manuscript_ref": "Table 13"
+        },
+        "pytest_total_passing": {
+            "expected": 293,
+            "source": "pytest -k 'not production'",
+            "manuscript_ref": "Table 13"
+        },
+        "pytest_total_skipped": {
+            "expected": 2,
+            "source": "pytest -k 'not production'",
+            "manuscript_ref": "Table 13"
+        },
+        "pytest_test_files": {
+            "expected": 30,
+            "source": "pytest --collect-only",
+            "manuscript_ref": "Table 13"
+        },
+        "benchmark_a_mean_gain": {
+            "expected_ge": 0.03,
+            "artifact": "results/stage_04/highpower/highpower_summary.json",
+            "key": "hdr_vs_pe_maladaptive_mean",
+            "manuscript_ref": "Table 1, Claim 1"
+        },
+        "benchmark_a_win_rate": {
+            "expected_ge": 0.70,
+            "artifact": "results/stage_04/highpower/highpower_summary.json",
+            "key": "hdr_mal_win_rate",
+            "manuscript_ref": "Table 1, Claim 2"
+        },
+        "stage_11_basin0_rpi": {
+            "expected_ge": 0.90,
+            "artifact": "results/stage_11/invariant_set_verification.json",
+            "key": "basins.0.containment_rate_rpi",
+            "manuscript_ref": "Table 4"
+        },
+        "stage_11_basin1_rpi": {
+            "expected_ge": 0.90,
+            "artifact": "results/stage_11/invariant_set_verification.json",
+            "key": "basins.1.containment_rate_rpi",
+            "manuscript_ref": "Table 4"
+        },
+        "stage_11_basin2_rpi": {
+            "expected_ge": 0.90,
+            "artifact": "results/stage_11/invariant_set_verification.json",
+            "key": "basins.2.containment_rate_rpi",
+            "manuscript_ref": "Table 4"
+        },
+        "test_stage_08b_count": {
+            "expected": 14,
+            "source": "pytest --collect-only test_stage_08b.py",
+            "manuscript_ref": "Table 13, row test_stage_08b"
+        },
+        "stage_16_subtests": {
+            "expected": 17,
+            "note": "16.01 through 16.17 all implemented",
+            "manuscript_ref": "Section 7.4"
+        }
+    }
+}

@@ -1,5 +1,5 @@
 """
-Stage 15 — Proxy-Composite Estimation Benchmark (HDR v7.0)
+Stage 15 — Proxy-Composite Estimation Benchmark
 ============================================================
 Validates Claim 32: Proxy-composite estimation quality.
 """
@@ -26,11 +26,9 @@ def run_stage_15(
 
     t0 = time.perf_counter()
     sigma_values = sigma_values or [0.0, 0.1, 0.25, 0.5, 1.0, 2.0]
-    cfg = {
-        "state_dim": 8, "obs_dim": 16, "control_dim": 8,
-        "disturbance_dim": 8, "K": 3, "rho_reference": [0.72, 0.96, 0.55],
-        "max_dwell_len": 64,
-    }
+    from hdr_validation.defaults import DEFAULTS
+    cfg = dict(DEFAULTS)
+    cfg["max_dwell_len"] = 64
     rng = np.random.default_rng(101)
     model = make_evaluation_model(cfg, rng)
 
@@ -94,6 +92,8 @@ def run_stage_15(
     elapsed = time.perf_counter() - t0
     results["elapsed"] = elapsed
 
+    from hdr_validation.provenance import get_provenance
+    results["provenance"] = get_provenance()
     out_dir = ROOT / "results" / "stage_15"
     out_dir.mkdir(parents=True, exist_ok=True)
     with open(out_dir / "results.json", "w") as f:

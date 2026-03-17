@@ -20,75 +20,17 @@ from typing import Any
 
 import numpy as np
 
-# ── Standard profile config ────────────────────────────────────────────────────
-STANDARD_CONFIG: dict[str, Any] = {
-    # Dimensions
-    "state_dim": 8,
-    "obs_dim": 16,
-    "control_dim": 8,
-    "disturbance_dim": 8,
-    "K": 3,
-    # Control
-    "H": 6,
-    "w1": 1.0,
-    "w2": 0.5,
-    "w3": 0.3,
-    "lambda_u": 0.1,
-    "alpha_i": 0.05,
-    "eps_safe": 0.01,
-    # Dynamics
-    "rho_reference": [0.72, 0.96, 0.55],
-    "max_dwell_len": 128,
-    "model_mismatch_bound": 0.347,
-    # Target set
-    "kappa_lo": 0.55,
-    "kappa_hi": 0.75,
-    "pA": 0.70,
-    "qmin": 0.15,
-    # Safety / time
-    "steps_per_day": 48,
-    "dt_minutes": 30,
-    "coherence_window": 24,
-    "default_burden_budget": 28.0,
-    "circadian_locked_controls": [5, 6],
-    # ICI
-    "R_brier_max": 0.05,
-    "omega_min_factor": 0.005,
-    "T_C_max": 50,
-    "k_calib": 1.0,
-    "sigma_dither": 0.08,
-    "epsilon_control": 0.50,
-    "missing_fraction_target": 0.516,
-    "mode1_base_rate": 0.16,
-    "observer_mode_accuracy_approx": 0.55,
-    "w3_sweep_values": [0.05, 0.10, 0.20, 0.30, 0.50],
-    # v7.0 extension parameters
-    "n_irr": 2,
-    "n_sites": 2,
-    "epsilon_G": 0.02,
-    "R_k_regions": 2,
-    "lambda_cat_max": 0.05,
-    "drift_rate": 0.001,
-    "delay_steps": 10,
-    "n_cum_exp": 1,
-    "xi_max": 100.0,
-    "n_expansion": 2,
-    "delta_J_max": 0.05,
-    "m_d": 1,
-    "n_particles": 100,
-    "n_patients": 10,
-    "T_p_values": [10, 50],
-    "jump_risk_threshold": 0.3,
-    "irr_boundary_threshold": 0.9,
-    "lambda_irr": 1.0,
-    # Standard profile
-    "profile_name": "standard",
-    "seeds": [101, 202],
-    "episodes_per_experiment": 12,
-    "steps_per_episode": 128,
-    "mc_rollouts": 100,
-    "selected_trace_cap": 5,
-}
+from hdr_validation.defaults import make_config
+
+# ── Standard profile config (overrides only) ──────────────────────────────────
+STANDARD_CONFIG: dict[str, Any] = make_config(
+    profile_name="standard",
+    seeds=[101, 202],
+    episodes_per_experiment=12,
+    steps_per_episode=128,
+    mc_rollouts=100,
+    selected_trace_cap=5,
+)
 
 # ── Setup sys.path ─────────────────────────────────────────────────────────────
 ROOT = Path(__file__).parent
@@ -241,11 +183,13 @@ def stage01_math():
 # ═══════════════════════════════════════════════════════════════════════════════
 # Episode generator (used by stage02)
 # ═══════════════════════════════════════════════════════════════════════════════
-def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -> dict:
+def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0,
+                      eval_model=None) -> dict:
     from hdr_validation.model.slds import make_evaluation_model
     from hdr_validation.specification import observation_schedule, generate_observation, heteroskedastic_R
 
-    eval_model = make_evaluation_model(cfg, rng)
+    if eval_model is None:
+        eval_model = make_evaluation_model(cfg, rng)
     basin = eval_model.basins[basin_idx]
     T = cfg["steps_per_episode"]
     n, m = cfg["state_dim"], cfg["obs_dim"]
@@ -260,7 +204,7 @@ def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -
     for t in range(T):
         u = np.zeros(u_dim)
         w = rng.multivariate_normal(np.zeros(n), basin.Q)
-        x_next = basin.A @ x + basin.B @ u + basin.E[:, :basin.Q.shape[0]] @ w + basin.b
+        x_next = basin.A @ x + basin.B @ u + w + basin.b
         R_t = heteroskedastic_R(basin.R, x, mask_sched[t], t)
         y = generate_observation(x, basin.C, basin.c, R_t, mask_sched[t], rng)
 
@@ -579,7 +523,6 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     from hdr_validation.model.safety import (
         apply_control_constraints,
         observation_intervals,
-        risk_score,
         gaussian_calibration_toy,
     )
     from hdr_validation.inference.imm import IMMFilter
@@ -701,12 +644,26 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     # Fixed covariance for safety checks (consistent across all policies)
     P_safety = np.eye(n) * 0.1
 
-    def _safety_violation(x_state, basin_obj):
-        """Check if predicted observation exceeds safety bounds."""
+    # HP-2: Pre-compute safety std per basin (cached by seed)
+    from scipy.stats import norm as _norm_dist
+    _safety_std_cache: dict[int, dict[int, np.ndarray]] = {}
+    eps_safe_val = float(cfg["eps_safe"])
+
+    def _get_safety_std(seed_val, basin_k_idx, basin_obj):
+        if seed_val not in _safety_std_cache:
+            _safety_std_cache[seed_val] = {}
+        cache = _safety_std_cache[seed_val]
+        if basin_k_idx not in cache:
+            y_cov_k = basin_obj.C @ P_safety @ basin_obj.C.T + basin_obj.R
+            cache[basin_k_idx] = np.sqrt(np.maximum(np.diag(y_cov_k), 1e-12))
+        return cache[basin_k_idx]
+
+    def _safety_violation_fast(x_state, basin_obj, basin_k_idx, seed_val):
+        std = _get_safety_std(seed_val, basin_k_idx, basin_obj)
         y_mean = basin_obj.C @ x_state + basin_obj.c
-        y_cov = basin_obj.C @ P_safety @ basin_obj.C.T + basin_obj.R
-        r = risk_score(y_mean, y_cov, y_lo, y_hi)
-        return r > float(cfg["eps_safe"])
+        lower = _norm_dist.cdf((y_lo - y_mean) / std)
+        upper = _norm_dist.cdf((y_mean - y_hi) / std)
+        return float(np.max(lower + upper)) > eps_safe_val
 
     # --- Run 5 policies over all pooled episodes ---
     # hdr_main and pooled_lqr_estimated share a single IMM filter per episode
@@ -741,10 +698,24 @@ def stage04_mode_a(episodes: list[dict]) -> None:
         obs_rng = np.random.default_rng(cfg["seeds"][0] + 6000 + ep_idx)
         mask_sched = observation_schedule(T, m_obs, obs_rng, profile_name=cfg["profile_name"])
 
+        # HP-1: Pre-generate raw observation noise
+        obs_noise_raw = np.empty((T, m_obs))
+        for _t in range(T):
+            _obs_rng = np.random.default_rng(cfg["seeds"][0] + 7000 + ep_idx * T + _t)
+            obs_noise_raw[_t] = _obs_rng.standard_normal(m_obs)
+
+        # HP-3: Pre-compute target sets
+        target_sets = [build_target_set(k, cfg) for k in range(len(sim_model.basins))]
+
+        # HP-8: Alias hot basin attributes
+        basin_A = basin_obj.A
+        basin_B = basin_obj.B
+        basin_b = basin_obj.b
+        basin_C = basin_obj.C
+        basin_c = basin_obj.c
+        basin_R = basin_obj.R
+
         # --- Phase 1: estimation-based policies (independent IMM filters) ---
-        # Each policy drives its own IMM filter from its own trajectory's observations.
-        # Missingness pattern (mask_sched) and process noise are shared; observation
-        # noise seed is shared per timestep so noise structure is identical.
         imm_filt_hdr = IMMFilter.for_hard_regime(sim_model)
         imm_filt_pe = IMMFilter.for_hard_regime(sim_model)
         x_hdr = x_init.copy()
@@ -756,24 +727,29 @@ def stage04_mode_a(episodes: list[dict]) -> None:
         u_prev_pe = np.zeros(m_u)
 
         for t in range(T):
-            base_seed_t = cfg["seeds"][0] + 7000 + ep_idx * T + t
-            # HDR filter: observations generated from x_hdr
-            obs_rng_t_hdr = np.random.default_rng(base_seed_t)
-            R_t_hdr = heteroskedastic_R(basin_obj.R, x_hdr, mask_sched[t], t)
-            y_t_hdr = generate_observation(x_hdr, basin_obj.C, basin_obj.c, R_t_hdr, mask_sched[t], obs_rng_t_hdr)
-            mask_t_hdr = (~np.isnan(y_t_hdr)).astype(int)
+            noise_t = obs_noise_raw[t]
+            mask_t = mask_sched[t]
+            mask_t_bool = mask_t.astype(bool)
+
+            # HP-1: HDR observations using pre-drawn noise
+            R_t_hdr = heteroskedastic_R(basin_R, x_hdr, mask_t, t)
+            diag_R_hdr = np.diag(R_t_hdr)
+            y_t_hdr = basin_C @ x_hdr + basin_c + noise_t * np.sqrt(diag_R_hdr)
+            y_t_hdr = np.where(mask_t_bool, y_t_hdr, np.nan)
+            mask_int_hdr = (~np.isnan(y_t_hdr)).astype(int)
             y_clean_hdr = np.where(np.isnan(y_t_hdr), 0.0, y_t_hdr)
-            imm_state_hdr = imm_filt_hdr.step(y_clean_hdr, mask_t_hdr, u_prev_hdr)
+            imm_state_hdr = imm_filt_hdr.step(y_clean_hdr, mask_int_hdr, u_prev_hdr)
             x_hat_hdr = imm_state_hdr.mixed_mean
             P_hat_hdr = imm_state_hdr.mixed_cov
 
-            # PE filter: observations generated from x_pe (same noise seed → same noise realization)
-            obs_rng_t_pe = np.random.default_rng(base_seed_t)
-            R_t_pe = heteroskedastic_R(basin_obj.R, x_pe, mask_sched[t], t)
-            y_t_pe = generate_observation(x_pe, basin_obj.C, basin_obj.c, R_t_pe, mask_sched[t], obs_rng_t_pe)
-            mask_t_pe = (~np.isnan(y_t_pe)).astype(int)
+            # HP-1: PE observations using pre-drawn noise
+            R_t_pe = heteroskedastic_R(basin_R, x_pe, mask_t, t)
+            diag_R_pe = np.diag(R_t_pe)
+            y_t_pe = basin_C @ x_pe + basin_c + noise_t * np.sqrt(diag_R_pe)
+            y_t_pe = np.where(mask_t_bool, y_t_pe, np.nan)
+            mask_int_pe = (~np.isnan(y_t_pe)).astype(int)
             y_clean_pe = np.where(np.isnan(y_t_pe), 0.0, y_t_pe)
-            imm_state_pe = imm_filt_pe.step(y_clean_pe, mask_t_pe, u_prev_pe)
+            imm_state_pe = imm_filt_pe.step(y_clean_pe, mask_int_pe, u_prev_pe)
             x_hat_pe = imm_state_pe.mixed_mean
 
             if ep_idx == 0 and t < 3:
@@ -782,7 +758,7 @@ def stage04_mode_a(episodes: list[dict]) -> None:
             # hdr_main: MPC on estimated basin using its own filter
             est_bi = imm_state_hdr.map_mode
             est_basin = sim_model.basins[est_bi]
-            est_target = build_target_set(est_bi, cfg)
+            est_target = target_sets[est_bi]  # HP-3
             mpc_res = solve_mode_a(
                 x_hat_hdr, P_hat_hdr, est_basin, est_target,
                 kappa_hat=0.6, config=cfg, step=t, used_burden=used_burden_hdr,
@@ -797,53 +773,66 @@ def stage04_mode_a(episodes: list[dict]) -> None:
             cost_hdr += float(np.dot(x_hdr, x_hdr) + lambda_u * np.dot(u_hdr, u_hdr))
             cost_pe += float(np.dot(x_pe, x_pe) + lambda_u * np.dot(u_pe, u_pe))
 
-            # Safety
-            if _safety_violation(x_hdr, basin_obj):
+            # HP-2: Safety
+            if _safety_violation_fast(x_hdr, basin_obj, basin_idx, seed):
                 viol_hdr += 1
-            if _safety_violation(x_pe, basin_obj):
+            if _safety_violation_fast(x_pe, basin_obj, basin_idx, seed):
                 viol_pe += 1
 
-            # Evolve both with shared process noise
+            # HP-4: Evolve (E=I elided)
             w = process_noise[t]
-            x_hdr = basin_obj.A @ x_hdr + basin_obj.B @ u_hdr + basin_obj.E[:, :n] @ w + basin_obj.b
-            x_pe = basin_obj.A @ x_pe + basin_obj.B @ u_pe + basin_obj.E[:, :n] @ w + basin_obj.b
+            x_hdr = basin_A @ x_hdr + basin_B @ u_hdr + w + basin_b
+            x_pe = basin_A @ x_pe + basin_B @ u_pe + w + basin_b
             used_burden_hdr += float(np.sum(np.abs(u_hdr)))
             used_burden_pe += float(np.sum(np.abs(u_pe)))
-            u_prev_hdr = u_hdr.copy()
-            u_prev_pe = u_pe.copy()
+            u_prev_hdr = u_hdr  # HP-7
+            u_prev_pe = u_pe    # HP-7
 
         ep_costs["hdr_main"].append(cost_hdr)
         ep_costs["pooled_lqr_estimated"].append(cost_pe)
         ep_safety_rates["hdr_main"].append(viol_hdr / T)
         ep_safety_rates["pooled_lqr_estimated"].append(viol_pe / T)
 
-        # --- Phase 2: oracle-state policies (no IMM needed) ---
-        for pol_name in ["open_loop", "pooled_lqr", "basin_lqr"]:
-            x = x_init.copy()
-            used_burden = 0.0
-            cost_accum = 0.0
-            violations = 0
+        # --- Phase 2: oracle-state policies (merged loop, HP-5) ---
+        x_ol = x_init.copy()
+        x_pl = x_init.copy()
+        x_bl = x_init.copy()
+        cost_ol, cost_pl, cost_bl = 0.0, 0.0, 0.0
+        viol_ol, viol_pl, viol_bl = 0, 0, 0
+        used_pl, used_bl = 0.0, 0.0
+        K_bl = K_basin_lqr[basin_idx]
 
-            for t in range(T):
-                if pol_name == "open_loop":
-                    u = np.zeros(m_u)
-                elif pol_name == "pooled_lqr":
-                    u = -K_pooled @ x
-                    u, _ = apply_control_constraints(u, cfg, step=t, used_burden=used_burden)
-                elif pol_name == "basin_lqr":
-                    u = -K_basin_lqr[basin_idx] @ x
-                    u, _ = apply_control_constraints(u, cfg, step=t, used_burden=used_burden)
+        for t in range(T):
+            cost_ol += float(x_ol @ x_ol)
 
-                cost_accum += float(np.dot(x, x) + lambda_u * np.dot(u, u))
-                if _safety_violation(x, basin_obj):
-                    violations += 1
+            u_pl = -K_pooled @ x_pl
+            u_pl, _ = apply_control_constraints(u_pl, cfg, step=t, used_burden=used_pl)
+            cost_pl += float(x_pl @ x_pl + lambda_u * (u_pl @ u_pl))
 
-                w = process_noise[t]
-                x = basin_obj.A @ x + basin_obj.B @ u + basin_obj.E[:, :n] @ w + basin_obj.b
-                used_burden += float(np.sum(np.abs(u)))
+            u_bl = -K_bl @ x_bl
+            u_bl, _ = apply_control_constraints(u_bl, cfg, step=t, used_burden=used_bl)
+            cost_bl += float(x_bl @ x_bl + lambda_u * (u_bl @ u_bl))
 
-            ep_costs[pol_name].append(cost_accum)
-            ep_safety_rates[pol_name].append(violations / T)
+            if _safety_violation_fast(x_ol, basin_obj, basin_idx, seed):
+                viol_ol += 1
+            if _safety_violation_fast(x_pl, basin_obj, basin_idx, seed):
+                viol_pl += 1
+            if _safety_violation_fast(x_bl, basin_obj, basin_idx, seed):
+                viol_bl += 1
+
+            w = process_noise[t]
+            x_ol = basin_A @ x_ol + w + basin_b
+            x_pl = basin_A @ x_pl + basin_B @ u_pl + w + basin_b
+            x_bl = basin_A @ x_bl + basin_B @ u_bl + w + basin_b
+            used_pl += float(np.sum(np.abs(u_pl)))
+            used_bl += float(np.sum(np.abs(u_bl)))
+
+        ep_costs["open_loop"].append(cost_ol)
+        ep_costs["pooled_lqr"].append(cost_pl)
+        ep_costs["basin_lqr"].append(cost_bl)
+        ep_safety_rates["open_loop"].append(viol_ol / T)
+        ep_safety_rates["pooled_lqr"].append(viol_pl / T)
+        ep_safety_rates["basin_lqr"].append(viol_bl / T)
 
     # --- Compute headline metrics ---
     costs_open = np.array(ep_costs["open_loop"])
@@ -878,13 +867,11 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     gains_maladaptive = paired_ratios_all[mask_mal] if np.any(mask_mal) else np.array([0.0])
 
     def _bootstrap_ci(data, n_boot=10_000, ci=0.95, rng_seed=42):
-        """Bootstrap percentile CI for the mean."""
+        """Bootstrap percentile CI for the mean (vectorized)."""
         rng = np.random.default_rng(rng_seed)
-        data = np.asarray(data)
-        boot_means = np.array([
-            rng.choice(data, size=len(data), replace=True).mean()
-            for _ in range(n_boot)
-        ])
+        data = np.asarray(data, dtype=float)
+        indices = rng.integers(0, len(data), size=(n_boot, len(data)))
+        boot_means = data[indices].mean(axis=1)
         lo = float(np.percentile(boot_means, 100 * (1 - ci) / 2))
         hi = float(np.percentile(boot_means, 100 * (1 + ci) / 2))
         return lo, hi
@@ -1029,7 +1016,7 @@ def stage04_mode_a(episodes: list[dict]) -> None:
                 u_mu = np.clip(u_mu, -0.6, 0.6)
                 mu_cost += float(np.dot(x_mu, x_mu) + lambda_u * np.dot(u_mu, u_mu))
                 w_mu = noise_rng_mu.multivariate_normal(np.zeros(n), basin_sim.Q)
-                x_mu = basin_sim.A @ x_mu + basin_sim.B @ u_mu + basin_sim.E[:, :n] @ w_mu + basin_sim.b
+                x_mu = basin_sim.A @ x_mu + basin_sim.B @ u_mu + w_mu + basin_sim.b
         cost_at_mu.append(mu_cost / n_mu_eps)
 
     arr_cost_mu = np.array(cost_at_mu)
@@ -1066,7 +1053,7 @@ def stage04_mode_a(episodes: list[dict]) -> None:
                 u_d = np.clip(u_d, -0.6, 0.6)
                 drift_cost += float(np.dot(x_d, x_d) + lambda_u * np.dot(u_d, u_d))
                 w_d = noise_rng_d.multivariate_normal(np.zeros(n), basin_sim.Q)
-                x_d = basin_sim.A @ x_d + basin_sim.B @ u_d + basin_sim.E[:, :n] @ w_d + basin_sim.b
+                x_d = basin_sim.A @ x_d + basin_sim.B @ u_d + w_d + basin_sim.b
         cost_at_drift.append(drift_cost / n_drift_eps)
 
     arr_cost_drift = np.array(cost_at_drift)
@@ -1343,9 +1330,9 @@ def stage06_coherence() -> None:
                     u_lqr = u_lqr_raw
                 used_burden_lqr += float(np.sum(np.abs(u_lqr)))
                 w = rng_ep.multivariate_normal(np.zeros(n), basin.Q)
-                x_hdr = basin.A @ x_hdr + basin.B @ u_hdr + basin.E[:, :n] @ w + basin.b
-                x_ol  = basin.A @ x_ol  + basin.B @ np.zeros(m_u) + basin.E[:, :n] @ w + basin.b
-                x_lqr = basin.A @ x_lqr + basin.B @ u_lqr + basin.E[:, :n] @ w + basin.b
+                x_hdr = basin.A @ x_hdr + basin.B @ u_hdr + w + basin.b
+                x_ol  = basin.A @ x_ol  + w + basin.b
+                x_lqr = basin.A @ x_lqr + basin.B @ u_lqr + w + basin.b
         return (
             hdr_steps / max(total, 1),
             ol_steps  / max(total, 1),
@@ -1522,7 +1509,7 @@ def stage07_robustness() -> None:
             in_band_cnt += int(np.linalg.norm(x_w3) <= kappa_hi_07)
             res_w3 = solve_mode_a(x_w3, P_w3, basin_w3, target_w3, kappa_hat=0.6, config=cfg_w3, step=t)
             ww = rng_w3s.multivariate_normal(np.zeros(n), basin_w3.Q)
-            x_w3 = basin_w3.A @ x_w3 + basin_w3.B @ res_w3.u + basin_w3.E[:, :n] @ ww + basin_w3.b
+            x_w3 = basin_w3.A @ x_w3 + basin_w3.B @ res_w3.u + ww + basin_w3.b
         tib_by_w3[w3] = in_band_cnt / max(T_w3, 1)
 
     best_w3_tib = max(tib_by_w3.values())

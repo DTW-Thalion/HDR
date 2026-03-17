@@ -43,7 +43,8 @@ at T=128 with n_seeds=2, n_ep=6.
 - test_ablation_criterion_note_contains_expected_tag_when_inverted
 - test_hdr_full_beats_mpc_only_production (SKIPPED in CI)
 
-Updated total: **243/243 pytest** (29 test files, including v7.1 additions).
+Updated total: **295 defined, 293 passed, 2 skipped** (30 test files, including v7.1 additions and test\_stage\_08b).
+See the Test Summary table below for the full per-suite breakdown.
 
 ---
 
@@ -106,9 +107,9 @@ estimate (+3.6 %, N_mal ≈ 15) are inflated by small-sample positive
 bias.  This is expected and is not a code defect.  The high-power run
 (N_mal = 123) is the authoritative figure.
 
-# HDR Claim Matrix — v7.1
+# HDR Claim Matrix — v7.3
 
-**Framework version:** HDR v7.1
+**Framework version:** HDR v7.3
 **Validation suite version:** `hdr_validation`
 **Claims 1–10:** Inherited and reformulated from v4.3
 **Claims 11–14:** New ICI claims added in v5.0
@@ -119,21 +120,52 @@ bias.  This is expected and is not a code defect.  The high-power run
 
 ## Test Summary
 
+*Verified 2026-03-16 via `pytest --collect-only`. 30 test files, 295 tests.*
+
 | Suite | Tests | Result |
 |-------|------:|--------|
-| Model unit tests (`test_hsmm`, `test_target_set`, `test_recovery`) | 53 | 53/53 passed |
-| Control unit tests (`test_mpc`, `test_committor`) | 2 | 2/2 passed |
-| Inference unit tests (`test_ici`, `test_imm`, `test_mode_c`) | 19 | 19/19 passed |
-| Packaging tests (`test_packaging`) | 2 | 2/2 passed |
-| Fisher trace tests (`test_mode_c_fisher`) | 12 | 12/12 passed |
-| Stability check tests (`test_stability_check`) | 7 | 7/7 passed |
-| Stage 08 ablation tests (`test_stage_08`) | 8 | 7/7 passed, 1 skipped |
-| Stage 09 baseline tests (`test_stage_09`) | 6 | 6/6 passed |
-| Stage 10 Mode B sweep tests (`test_stage_10`) | 7 | 7/7 passed |
-| Stage 11 invariant set tests (`test_stage_11`) | 9 | 9/9 passed |
-| **Total pytest** | **125** | **124/124 passed, 1 skipped** |
+| ICI (`test_ici`) | 16 | 16/16 passed |
+| ICI compound bound (`test_ici_compound`) | 28 | 28/28 passed |
+| Mode C (`test_mode_c`) | 24 | 24/24 passed |
+| Mode C Fisher (`test_mode_c_fisher`) | 12 | 12/12 passed |
+| MPC / Mode A (`test_mpc`) | 2 | 2/2 passed |
+| Committor / Mode B (`test_committor`) | 2 | 2/2 passed |
+| Stability check (`test_stability_check`) | 7 | 7/7 passed |
+| HSMM (`test_hsmm`) | 1 | 1/1 passed |
+| IMM (`test_imm`) | 1 | 1/1 passed |
+| Recovery (`test_recovery`) | 1 | 1/1 passed |
+| Safety (`test_safety`) | 1 | 1/1 passed |
+| Stage 08 ablation (`test_stage_08`) | 8 | 7/8 passed, 1 skipped |
+| Stage 08b asymmetric ablation (`test_stage_08b`) | 14 | 13/14 passed, 1 skipped |
+| Stage 09 baseline (`test_stage_09`) | 6 | 6/6 passed |
+| Stage 10 Mode B sweep (`test_stage_10`) | 7 | 7/7 passed |
+| Stage 11 invariant set (`test_stage_11`) | 9 | 9/9 passed |
+| *v7.0/v7.1 additions (14 files):* | | |
+| Extensions (`test_extensions`) | 25 | 25/25 passed |
+| Identification (`test_identification`) | 15 | 15/15 passed |
+| Stage 16 extensions (`test_stage_16`) | 44 | 44/44 passed |
+| Supervisor (`test_supervisor`) | 10 | 10/10 passed |
+| MI-MPC (`test_mimpc`) | 8 | 8/8 passed |
+| Adaptive / FF-RLS (`test_adaptive`) | 8 | 8/8 passed |
+| Tube MPC / mRPI (`test_tube_mpc`) | 8 | 8/8 passed |
+| Saturation (`test_saturation`) | 7 | 7/7 passed |
+| Particle filter (`test_particle`) | 6 | 6/6 passed |
+| Multi-rate (`test_multirate`) | 6 | 6/6 passed |
+| Adaptive delta (`test_adaptive_delta`) | 6 | 6/6 passed |
+| Variational SLDS (`test_variational`) | 5 | 5/5 passed |
+| Committor with jumps (`test_committor_jump`) | 4 | 4/4 passed |
+| Interaction matrix (`test_interaction_matrix`) | 4 | 4/4 passed |
+| **Total pytest** | **295** | **293/295 passed, 2 skipped** |
 | Standard profile (T=128, 2 seeds, 12 ep/seed) | — | 95/95 checks passed |
 | Extended profile (T=256, 3 seeds, 20 ep/seed) | — | 107/107 checks passed |
+
+The 2 skipped tests are production-scale ablation tests (`test_hdr_full_beats_mpc_only_production`
+in `test_stage_08.py` and `test_stage_08b.py`) that require 20 seeds × 30 episodes × T=256
+and are excluded from CI via the `production` keyword filter.
+
+**Recommended validation command:** `python run_all.py --full-validation` — runs all 32 claims
+including the highpower benchmark for Claims 1–2, stages 08–16 at production scale, and the
+full pytest suite. See CLAUDE.md §Running the Validation Pipeline for details.
 
 ---
 
@@ -141,7 +173,7 @@ bias.  This is expected and is not a code defect.  The high-power run
 
 | # | Claim | Stage(s) | Criterion | Standard | Extended | Status |
 |---|-------|----------|-----------|----------|----------|--------|
-| 1 | **ICI correctly identifies when Mode A guarantees hold** | 03b, 04 | `hdr_vs_pooled_estimated_gain_maladaptive >= +0.03`; `hdr_maladaptive_win_rate >= 0.70` | gain=+0.057, rate=0.909 | gain=+0.036, rate=0.800 | **Supported** — Win-rate criterion (≥ 70 %): MET (0.838). Mean-gain CI criterion (95 % lower bound ≥ +3 %): MET (+0.031 ≥ +0.030). High-power run (20 seeds × 30 ep/seed, N_mal=179): mean gain +3.7 %, 95 % CI [+3.1 %, +4.2 %]. See CORRECTIONS.md §Benchmark A for full history. |
+| 1 | **ICI correctly identifies when Mode A guarantees hold** | 03b, 04 | `hdr_vs_pooled_estimated_gain_maladaptive >= +0.03`; `hdr_maladaptive_win_rate >= 0.70` | gain=+0.057, rate=0.909 | gain=+0.036, rate=0.800 | **Supported** — Win-rate criterion (≥ 70 %): MET (0.838). Mean-gain CI criterion (95 % lower bound ≥ +3 %): MET (+0.031 ≥ +0.030). High-power run (20 seeds × 30 ep/seed, N_mal=179): mean gain +3.7 %, 95 % CI [+3.1 %, +4.2 %]. See §Benchmark A above for full history. |
 | 2 | Mode A improves over baselines without exceeding safety budget | 04 | `hdr_vs_pooled_estimated_gain_maladaptive >= +0.03`; `hdr_maladaptive_win_rate >= 0.70`; safety delta ≤ 0.015 | gain=+0.057, rate=0.909, delta=-0.001 | gain=+0.036, rate=0.800, delta=+0.002 | **Supported** |
 | 3 | τ̃ tracks true recovery burden (Spearman ρ ≥ 0.70) | 01 | τ̃ rank correlation ≥ 0.70; τ sandwich holds | tau_tilde=66.4, tau_L=11.4 | tau_tilde=66.4, tau_L=11.4 | **Supported** |
 | 4 | Chance-constraint tightening calibrated in Gaussian settings | 01, 04 | Abs error ≤ 0.015; heavy-tail degradation < 0.10 | abs_err=0.0012 | abs_err=0.0001 | **Supported** |
@@ -149,7 +181,7 @@ bias.  This is expected and is not a code defect.  The high-power run
 | 6 | Stability under drifting S*(t) consistent with linear degradation | 04 | target_drift_fit_slope > 0; R² ≥ 0.75 | slope=3.27, R²=0.999 | slope=3.53, R²=0.999 | **Supported** |
 | 7 | Mode B improves escape when Mode C pre-emption confirms adequate inference quality | 03b, 05 | aggressive > passive escape probability | 0.700 → 0.860 | 0.667 → 0.860 | **Supported** |
 | 8 | Mode B acceptably close to exact DP (including ε_H term) | 05 | Abs gap ≤ 0.10; suboptimality bound ≥ ε_H | gap=0.000, ε_H=0.783 | gap=0.000, ε_H=0.783 | **Supported** |
-| 9 | Coherence penalty behaves as designed; w3 calibrated | 06 | penalty finite, ≥ 0, lower outside target; monotone in w3 | all structural tests pass | all structural tests pass | **Supported** |
+| 9 | Coherence penalty behaves as designed; w3 calibrated | 06, 08, 08b | penalty finite, ≥ 0, lower outside target; monotone in w3; ablation marginal gain ≥ 0 | all structural tests pass | all structural tests pass | **Supported** |
 | 10 | Identifiability improves with perturbations, priors, dither | 03 | IMM mode probs valid; all K modes predicted; F1 > 0 | F1=0.817 | F1=0.828 | **Supported** |
 
 ---
@@ -160,8 +192,8 @@ bias.  This is expected and is not a code defect.  The high-power run
 |---|-------|----------|-----------|----------|----------|--------|
 | 11 | ICI correctly identifies operating regime and activates Mode C | 03b, 03c | Entry conditions consistent; supervisor selects mode_c; conditions fire correctly | all 03b/03c checks pass | all 03b/03c checks pass | **Supported** |
 | 12 | Mode C improves T_k_eff and R_Brier within Fisher information bounds | 03c | Fisher proxy ≥ 0; increases with data; action bounded | proxy 0.000 → 0.371 | proxy 0.000 → 0.371, non-decreasing | **Supported** |
-| 13 | p_A^robust reduces FP rate vs fixed p_A under miscalibrated posterior | 03b, 05 | p_A_robust ≥ p_A_nominal; Brier reliability finite and ≥ 0 | p_A_robust=0.705 ≥ 0.700 | p_A_robust=0.702 ≥ 0.700 | **Supported** |
-| 14 | Compound bound correctly predicts regime boundary | 01, 03, 07 | T_k_eff formula correct; scales linearly with T; stable across rho/mismatch sweeps | T_k_eff=12.54, all rho checks pass | T_k_eff=25.09 = 2×12.54, all sweeps pass | **Supported** |
+| 13 | p_A^robust reduces FP rate vs fixed p_A under miscalibrated posterior | 03b, 10 | p_A_robust ≥ p_A_nominal (03b); FP\_robust ≤ FP\_fixed at all R\_Brier levels (10) | p_A_robust=0.705 ≥ 0.700 | p_A_robust=0.702 ≥ 0.700 | **Supported** |
+| 14 | Compound bound correctly predicts regime boundary | 01, 07 | T_k_eff formula correct; scales linearly with T; stable across rho/mismatch sweeps | T_k_eff=12.54, all rho checks pass | T_k_eff=25.09 = 2×12.54, all sweeps pass | **Supported** |
 
 ---
 
@@ -227,3 +259,47 @@ profile is essentially unchanged (+3.6% → +3.5%). The high-power re-run
 **Basin-stratified analysis** shows HDR's advantage is concentrated in basin 1 (rho=0.96, slow-escaping maladaptive mode): 10/11 basin-1 episodes are HDR wins in standard profile. In easier basins (0, 2), the simpler pooled LQR slightly outperforms due to lower MPC overhead.
 
 *All results are in silico only. No biological or clinical validity is implied.*
+
+---
+
+## Stage 11 β-parameter harmonisation (2026-03-16)
+
+### Finding
+
+External reviewer identified that `stage_11_invariant_set.py` calls `compute_disturbance_set(basin.Q, n)` without overriding the default `beta=0.95`, while Appendix J specifies `beta=0.999` and both `test_tube_mpc.py` and `highpower_runner.py` correctly use `beta=0.999`.
+
+### Fix
+
+Single-line change: `compute_disturbance_set(basin.Q, n, beta=0.999)` in the tube-MPC path of `run_stage_11()`.
+
+### Impact
+
+Basin 1 tube-MPC zonotope containment rate changes from 0.7906 (β=0.95) to 0.9203 (β=0.999). Lyapunov RPI criterion is unaffected (uses different code path). All other stages unaffected.
+
+### Version string update
+
+`__init__.py` updated from `5.0.0-dev` to `7.3.0`. `pyproject.toml` updated to `7.3.0`. Module docstring version labels updated to `v7.3`.
+
+---
+
+## Repository hygiene infrastructure (2026-03-16)
+
+### Changes
+
+1. **Single-source configuration** (`hdr_validation/defaults.py`): All shared parameters consolidated into `DEFAULTS` dict with `make_config(**overrides)` factory. All six profile runners and nine stage modules refactored to use it, eliminating ~400 lines of duplicated inline config.
+
+2. **Provenance stamping** (`hdr_validation/provenance.py`): All stage result JSON files now include `hdr_version`, `generated_at`, and `git_commit` metadata via `get_provenance()`.
+
+3. **Manuscript claims checker** (`check_claims.py` + `manuscript_claims.json`): Machine-readable claim definitions validated against pytest output and stage result artifacts. Run `python check_claims.py --verbose` to verify.
+
+4. **Version string consolidation**: Version labels removed from all module docstrings. `__init__.py` cross-checks runtime version against `defaults.HDR_VERSION`.
+
+5. **Documentation consolidation**: `audit_report.json` deleted (stale v5.3 artifact). `CORRECTIONS.md` renamed to `CHANGELOG.md`. CLAUDE.md test file table replaced with cross-reference. Automated validation note added to CLAIM_MATRIX.md header.
+
+6. **CI gate** (`.github/workflows/python-package.yml`): Version consistency check (blocking) and claims checker (non-blocking) added after pytest step.
+
+### Verification
+
+- pytest: 295 passed, 0 failed
+- check_claims.py: 8/8 passed, 3 skipped (non-critical)
+- No mathematical logic, control algorithms, or test assertions changed

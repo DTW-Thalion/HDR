@@ -1,5 +1,5 @@
 """
-Challenge-Response Tau Estimation — HDR v7.0
+Challenge-Response Tau Estimation
 =============================================
 Def 11.11: Nonlinear least-squares fit of exponential recovery model.
 """

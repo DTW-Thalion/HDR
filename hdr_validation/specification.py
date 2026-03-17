@@ -39,7 +39,12 @@ def generate_observation(
     mean = C @ x + c
     if nonlinear_scale > 0:
         mean = mean + nonlinear_scale * np.sin(mean)
-    noise = rng.multivariate_normal(np.zeros(len(mean)), R)
+    # Fast path for diagonal R (always the case in this codebase)
+    diag_R = np.diag(R)
+    if np.allclose(R, np.diag(diag_R)):
+        noise = rng.standard_normal(len(mean)) * np.sqrt(diag_R)
+    else:
+        noise = rng.multivariate_normal(np.zeros(len(mean)), R)
     y = mean + noise
     y = np.where(mask.astype(bool), y, np.nan)
     return y

@@ -1,5 +1,5 @@
 """
-Stage 14 — Population-Prior Treatment-Planning Benchmark (HDR v7.0)
+Stage 14 — Population-Prior Treatment-Planning Benchmark
 ====================================================================
 Validates Claim 31: Population-prior planning accuracy.
 """
@@ -93,6 +93,8 @@ def run_stage_14(
     elapsed = time.perf_counter() - t0
     results["elapsed"] = elapsed
 
+    from hdr_validation.provenance import get_provenance
+    results["provenance"] = get_provenance()
     out_dir = ROOT / "results" / "stage_14"
     out_dir.mkdir(parents=True, exist_ok=True)
     with open(out_dir / "results.json", "w") as f:

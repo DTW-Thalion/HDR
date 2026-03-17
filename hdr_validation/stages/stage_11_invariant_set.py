@@ -1,5 +1,5 @@
 """
-Stage 11 — Riccati Invariant Set Verification (HDR v5.2)
+Stage 11 — Riccati Invariant Set Verification
 ==========================================================
 
 Verifies numerically that Benchmark A trajectories stay within the Lyapunov
@@ -163,39 +163,17 @@ def check_trajectory_containment(
 
 def _make_benchmark_config(n_seeds: int = 5, T: int = 128) -> dict[str, Any]:
     """Create benchmark configuration for Stage 11."""
-    return {
-        "state_dim": 8,
-        "obs_dim": 16,
-        "control_dim": 8,
-        "disturbance_dim": 8,
-        "K": 3,
-        "H": 6,
-        "w1": 1.0,
-        "w2": 0.5,
-        "w3": 0.3,
-        "lambda_u": 0.1,
-        "alpha_i": 0.05,
-        "eps_safe": 0.01,
-        "rho_reference": [0.72, 0.96, 0.55],
+    from hdr_validation.defaults import DEFAULTS
+
+    cfg = dict(DEFAULTS)
+    cfg.update({
         "max_dwell_len": 256,
-        "model_mismatch_bound": 0.347,
-        "kappa_lo": 0.55,
-        "kappa_hi": 0.75,
-        "pA": 0.70,
-        "qmin": 0.15,
-        "steps_per_day": 48,
-        "dt_minutes": 30,
-        "coherence_window": 24,
         "default_burden_budget": 56.0,
-        "circadian_locked_controls": [5, 6],
-        "R_brier_max": 0.05,
-        "k_calib": 1.0,
-        "sigma_dither": 0.08,
-        "missing_fraction_target": 0.516,
         "n_seeds": n_seeds,
         "steps_per_episode": T,
         "profile_name": "highpower",
-    }
+    })
+    return cfg
 
 
 def _simulate_benchmark_trajectories(
@@ -214,7 +192,7 @@ def _simulate_benchmark_trajectories(
     """
     from hdr_validation.model.slds import make_evaluation_model
     from hdr_validation.model.target_set import build_target_set
-    from hdr_validation.control.mpc import solve_mode_a
+    from hdr_validation.control.mpc import solve_mode_a, precompute_mode_a_cache
     from hdr_validation.control.lqr import dlqr
 
     trajectories: list[np.ndarray] = []
@@ -273,15 +251,20 @@ def _simulate_benchmark_trajectories(
             traj = np.empty((T, n))
             labels = np.full(T, basin_idx, dtype=int)
 
+            # Pre-compute expensive invariants for this episode
+            mpc_cache = precompute_mode_a_cache(basin, cfg)
+
             for t in range(T):
                 traj[t] = x
                 try:
-                    res = solve_mode_a(x, P_hat, basin, target, kappa_hat=0.65, config=cfg, step=t)
+                    res = solve_mode_a(x, P_hat, basin, target, kappa_hat=0.65, config=cfg, step=t,
+                                       P_terminal_precomputed=mpc_cache["P_terminal"],
+                                       C_pinv_precomputed=mpc_cache["C_pinv"])
                     u = res.u
                 except Exception:
                     u = np.zeros(cfg["control_dim"])
 
-                w = rng.multivariate_normal(np.zeros(n), basin.Q)
+                w = basin.Q_cholesky @ rng.standard_normal(n)
                 x = basin.A @ x + basin.B @ u + basin.b + w
 
             trajectories.append(traj)
@@ -412,7 +395,9 @@ def run_stage_11(
             except Exception:
                 K_k = np.zeros((n, n))
             A_cl_k = basin.A - basin.B @ K_k
-            _, chi2_bound = compute_disturbance_set(basin.Q, n)
+            # beta=0.999 per Appendix J (Definition J.1) and consistent with
+            # test_tube_mpc.py and highpower_runner.py
+            _, chi2_bound = compute_disturbance_set(basin.Q, n, beta=0.999)
             mRPI_data = compute_mRPI_zonotope(A_cl_k, basin.Q, chi2_bound, epsilon=0.01)
             tube_mRPI_data[k_idx] = mRPI_data
             tube_K_banks[k_idx] = K_k
@@ -440,7 +425,7 @@ def run_stage_11(
                         u = res.u
                     except Exception:
                         u = np.zeros(cfg["control_dim"])
-                    w = rng.multivariate_normal(np.zeros(n), basin.Q)
+                    w = basin.Q_cholesky @ rng.standard_normal(n)
                     x = basin.A @ x + basin.B @ u + basin.b + w
 
                 tube_trajs.append(traj)
@@ -456,7 +441,8 @@ def run_stage_11(
                     if int(labels[t]) != k_idx:
                         continue
                     total_count += 1
-                    if zonotope_containment_check(traj[t], mRPI["G"], mRPI["center"]):
+                    if zonotope_containment_check(traj[t], mRPI["G"], mRPI["center"],
+                                                    G_pinv=mRPI.get("G_pinv")):
                         inside_count += 1
             rate = inside_count / max(total_count, 1) if total_count > 0 else float("nan")
             basins_out[str(k_idx)]["containment_rate_tube"] = (
@@ -481,6 +467,8 @@ def run_stage_11(
         ),
     }
 
+    from hdr_validation.provenance import get_provenance
+    result_json["provenance"] = get_provenance()
     out_path = output_dir / "invariant_set_verification.json"
     out_path.write_text(json.dumps(result_json, indent=2))
 

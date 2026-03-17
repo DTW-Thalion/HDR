@@ -19,78 +19,21 @@ from typing import Any
 
 import numpy as np
 
-# ── High-power profile config (matches EXTENDED_CONFIG, overrides below) ──────
-HIGHPOWER_CONFIG: dict[str, Any] = {
-    # Dimensions
-    "state_dim": 8,
-    "obs_dim": 16,
-    "control_dim": 8,
-    "disturbance_dim": 8,
-    "K": 3,
-    # Control
-    "H": 6,
-    "w1": 1.0,
-    "w2": 0.5,
-    "w3": 0.3,
-    "lambda_u": 0.1,
-    "alpha_i": 0.05,
-    "eps_safe": 0.01,
-    # Dynamics
-    "rho_reference": [0.72, 0.96, 0.55],
-    "max_dwell_len": 256,
-    "model_mismatch_bound": 0.347,
-    # Target set
-    "kappa_lo": 0.55,
-    "kappa_hi": 0.75,
-    "pA": 0.70,
-    "qmin": 0.15,
-    # Safety / time
-    "steps_per_day": 48,
-    "dt_minutes": 30,
-    "coherence_window": 24,
-    "default_burden_budget": 28.0,
-    "circadian_locked_controls": [5, 6],
-    # ICI
-    "R_brier_max": 0.05,
-    "omega_min_factor": 0.005,
-    "T_C_max": 50,
-    "k_calib": 1.0,
-    "sigma_dither": 0.08,
-    "epsilon_control": 0.50,
-    "missing_fraction_target": 0.516,
-    "mode1_base_rate": 0.16,
-    "observer_mode_accuracy_approx": 0.55,
-    "w3_sweep_values": [0.05, 0.10, 0.20, 0.30, 0.50],
-    # v7.0 extension parameters
-    "n_irr": 2,
-    "n_sites": 2,
-    "epsilon_G": 0.02,
-    "R_k_regions": 2,
-    "lambda_cat_max": 0.05,
-    "drift_rate": 0.001,
-    "delay_steps": 10,
-    "n_cum_exp": 1,
-    "xi_max": 100.0,
-    "n_expansion": 2,
-    "delta_J_max": 0.05,
-    "m_d": 1,
-    "n_particles": 100,
-    "n_patients": 10,
-    "T_p_values": [10, 50],
-    "jump_risk_threshold": 0.3,
-    "irr_boundary_threshold": 0.9,
-    "lambda_irr": 1.0,
-    # ── Highpower overrides ─────────────────────────────────────────────────
-    "profile_name": "highpower",
-    "seeds": [
+from hdr_validation.defaults import make_config
+
+# ── High-power profile config (overrides only) ────────────────────────────────
+HIGHPOWER_CONFIG: dict[str, Any] = make_config(
+    profile_name="highpower",
+    max_dwell_len=256,
+    seeds=[
         101, 202, 303, 404, 505, 606, 707, 808, 909, 1010,
         1111, 1212, 1313, 1414, 1515, 1616, 1717, 1818, 1919, 2020,
     ],
-    "episodes_per_experiment": 30,
-    "steps_per_episode": 256,
-    "mc_rollouts": 150,
-    "selected_trace_cap": 5,
-}
+    episodes_per_experiment=30,
+    steps_per_episode=256,
+    mc_rollouts=150,
+    selected_trace_cap=5,
+)
 
 # ── Setup sys.path ─────────────────────────────────────────────────────────────
 ROOT = Path(__file__).parent
@@ -106,7 +49,8 @@ def _atomic_write_json(path: Path, data: Any) -> None:
 
 
 # ── Episode generation (mirrors extended_runner._generate_episode) ─────────────
-def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -> dict:
+def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0,
+                      eval_model=None) -> dict:
     from hdr_validation.model.slds import make_evaluation_model
     from hdr_validation.specification import (
         observation_schedule,
@@ -114,7 +58,8 @@ def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -
         heteroskedastic_R,
     )
 
-    eval_model = make_evaluation_model(cfg, rng)
+    if eval_model is None:
+        eval_model = make_evaluation_model(cfg, rng)
     basin = eval_model.basins[basin_idx]
     T = cfg["steps_per_episode"]
     n = cfg["state_dim"]
@@ -130,7 +75,7 @@ def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -
     for t in range(T):
         u = np.zeros(u_dim)
         w = rng.multivariate_normal(np.zeros(n), basin.Q)
-        x_next = basin.A @ x + basin.B @ u + basin.E[:, : basin.Q.shape[0]] @ w + basin.b
+        x_next = basin.A @ x + basin.B @ u + w + basin.b
         R_t = heteroskedastic_R(basin.R, x, mask_sched[t], t)
         y = generate_observation(x, basin.C, basin.c, R_t, mask_sched[t], rng)
 
@@ -159,15 +104,12 @@ def _bootstrap_ci(
     stat: str = "mean",
 ) -> tuple[float, float]:
     rng = np.random.default_rng(rng_seed)
-    data = np.asarray(data)
+    data = np.asarray(data, dtype=float)
+    indices = rng.integers(0, len(data), size=(n_boot, len(data)))
     if stat == "mean":
-        boot_stats = np.array(
-            [rng.choice(data, size=len(data), replace=True).mean() for _ in range(n_boot)]
-        )
+        boot_stats = data[indices].mean(axis=1)
     else:
-        boot_stats = np.array(
-            [np.median(rng.choice(data, size=len(data), replace=True)) for _ in range(n_boot)]
-        )
+        boot_stats = np.median(data[indices], axis=1)
     lo = float(np.percentile(boot_stats, 100 * (1 - ci) / 2))
     hi = float(np.percentile(boot_stats, 100 * (1 + ci) / 2))
     return lo, hi
@@ -182,12 +124,10 @@ def run_highpower_benchmark() -> None:
     from hdr_validation.model.safety import (
         apply_control_constraints,
         observation_intervals,
-        risk_score,
     )
     from hdr_validation.inference.imm import IMMFilter
     from hdr_validation.specification import (
         observation_schedule,
-        generate_observation,
         heteroskedastic_R,
     )
 
@@ -204,13 +144,7 @@ def run_highpower_benchmark() -> None:
     lambda_u = float(cfg["lambda_u"])
     y_lo, y_hi = observation_intervals(cfg)
     P_safety = np.eye(n) * 0.1
-    policy_names = ["open_loop", "pooled_lqr", "basin_lqr", "hdr_main", "pooled_lqr_estimated"]
-
-    def _safety_violation(x_state, basin_obj):
-        y_mean = basin_obj.C @ x_state + basin_obj.c
-        y_cov = basin_obj.C @ P_safety @ basin_obj.C.T + basin_obj.R
-        r = risk_score(y_mean, y_cov, y_lo, y_hi)
-        return r > float(cfg["eps_safe"])
+    policy_names = ["open_loop", "pooled_lqr", "basin_lqr", "hdr_main", "pooled_lqr_estimated", "hdr_tube_mpc"]
 
     # ── Collect per-seed results (with checkpoint resume) ────────────────────
     seed_results: dict[int, dict] = {}
@@ -262,6 +196,60 @@ def run_highpower_benchmark() -> None:
                 K_b = np.zeros((m_u, n))
             K_basin_lqr.append(K_b)
 
+        # ── Tube-MPC: pre-compute mRPI terminal sets (once per basin) ────
+        # Audit summary (tube_mpc.py):
+        #   - No controller class; functional API with compute_disturbance_set(),
+        #     compute_mRPI_zonotope(), and solve_tube_mpc().
+        #   - mRPI pre-computation: dlqr → A_cl = A - B @ K_fb, then
+        #     compute_disturbance_set(Q_w, n, beta) → compute_mRPI_zonotope(A_cl, Q_w, chi2).
+        #   - Per-step: solve_tube_mpc(x_hat, P_hat, basin, target, mRPI_data, K_fb, ...).
+        #   - mRPI_data is a plain dict (G, center, alpha_s, iterations, scale) —
+        #     fully cacheable across episodes.
+        #   - beta=0.999 matches Stage 11 convention for 99.9th-percentile disturbance.
+        from hdr_validation.control.tube_mpc import (
+            compute_disturbance_set,
+            compute_mRPI_zonotope,
+            solve_tube_mpc,
+        )
+
+        tube_mRPI: dict[int, dict] = {}
+        tube_K_fb: dict[int, np.ndarray] = {}
+        basin_rho = cfg["rho_reference"]
+        for k, basin_k in enumerate(sim_model.basins):
+            K_fb_k = K_basin_lqr[k]  # reuse already-computed LQR gain
+            A_cl_k = basin_k.A - basin_k.B @ K_fb_k
+            _, chi2_bound_k = compute_disturbance_set(basin_k.Q, n, beta=0.999)
+            mrpi_k = compute_mRPI_zonotope(
+                A_cl_k, basin_k.Q, chi2_bound_k, epsilon=0.01
+            )
+            tube_mRPI[k] = mrpi_k
+            tube_K_fb[k] = K_fb_k
+            print(
+                f"    mRPI pre-computed for basin {k} "
+                f"(rho={basin_rho[k]:.3f}, iters={mrpi_k['iterations']})"
+            )
+
+        # HP-2: Pre-compute safety check invariants (constant per basin)
+        from scipy.stats import norm as _norm_dist
+        safety_std_per_basin: dict[int, np.ndarray] = {}
+        for k_idx, basin_k in enumerate(sim_model.basins):
+            y_cov_k = basin_k.C @ P_safety @ basin_k.C.T + basin_k.R
+            safety_std_per_basin[k_idx] = np.sqrt(
+                np.maximum(np.diag(y_cov_k), 1e-12)
+            )
+        eps_safe_val = float(cfg["eps_safe"])
+
+        def _safety_violation_fast(x_state, basin_k_idx):
+            bk = sim_model.basins[basin_k_idx]
+            y_mean = bk.C @ x_state + bk.c
+            std = safety_std_per_basin[basin_k_idx]
+            lower = _norm_dist.cdf((y_lo - y_mean) / std)
+            upper = _norm_dist.cdf((y_mean - y_hi) / std)
+            return float(np.max(lower + upper)) > eps_safe_val
+
+        # HP-3: Pre-compute target sets per basin
+        target_sets = [build_target_set(k, cfg) for k in range(len(sim_model.basins))]
+
         # ── Run closed-loop simulation for this seed's episodes ───────────────
         ep_costs: dict[str, list[float]] = {p: [] for p in policy_names}
         ep_safety_rates: dict[str, list[float]] = {p: [] for p in policy_names}
@@ -287,49 +275,70 @@ def run_highpower_benchmark() -> None:
             obs_rng = np.random.default_rng(cfg["seeds"][0] + 6000 + ep_idx)
             mask_sched = observation_schedule(T, m_obs, obs_rng, profile_name=cfg["profile_name"])
 
+            # HP-1: Pre-generate raw observation noise once per step (not per policy)
+            obs_noise_raw = np.empty((T, m_obs))
+            for _t in range(T):
+                _obs_rng = np.random.default_rng(
+                    cfg["seeds"][0] + 7000 + ep_idx * T + _t
+                )
+                obs_noise_raw[_t] = _obs_rng.standard_normal(m_obs)
+
             # ── Phase 1: estimation-based policies (independent IMM filters) ──
             # Each policy drives its own IMM filter from its own trajectory's
             # observations. Missingness pattern (mask_sched) and process noise
             # are shared; observation noise seed is shared per timestep.
             imm_filt_hdr = IMMFilter.for_hard_regime(sim_model)
             imm_filt_pe = IMMFilter.for_hard_regime(sim_model)
+            imm_filt_tube = IMMFilter.for_hard_regime(sim_model)
             x_hdr = x_init.copy()
             x_pe = x_init.copy()
-            cost_hdr, cost_pe = 0.0, 0.0
-            viol_hdr, viol_pe = 0, 0
-            used_burden_hdr, used_burden_pe = 0.0, 0.0
+            x_tube = x_init.copy()
+            cost_hdr, cost_pe, cost_tube = 0.0, 0.0, 0.0
+            viol_hdr, viol_pe, viol_tube = 0, 0, 0
+            used_burden_hdr, used_burden_pe, used_burden_tube = 0.0, 0.0, 0.0
             u_prev_hdr = np.zeros(m_u)
             u_prev_pe = np.zeros(m_u)
+            u_prev_tube = np.zeros(m_u)
+            tube_fallbacks = 0
+
+            # HP-8: Alias hot basin attributes to avoid repeated lookups
+            basin_A = basin_obj.A
+            basin_B = basin_obj.B
+            basin_b = basin_obj.b
+            basin_C = basin_obj.C
+            basin_c = basin_obj.c
+            basin_R = basin_obj.R
 
             for t in range(T):
-                base_seed_t = cfg["seeds"][0] + 7000 + ep_idx * T + t
-                # HDR filter: observations from x_hdr
-                obs_rng_t_hdr = np.random.default_rng(base_seed_t)
-                R_t_hdr = heteroskedastic_R(basin_obj.R, x_hdr, mask_sched[t], t)
-                y_t_hdr = generate_observation(
-                    x_hdr, basin_obj.C, basin_obj.c, R_t_hdr, mask_sched[t], obs_rng_t_hdr
-                )
-                mask_t_hdr = (~np.isnan(y_t_hdr)).astype(int)
+                noise_t = obs_noise_raw[t]
+                mask_t = mask_sched[t]
+                mask_t_bool = mask_t.astype(bool)
+
+                # HP-1: HDR observations using pre-drawn noise
+                R_t_hdr = heteroskedastic_R(basin_R, x_hdr, mask_t, t)
+                diag_R_hdr = np.diag(R_t_hdr)
+                y_t_hdr = basin_C @ x_hdr + basin_c + noise_t * np.sqrt(diag_R_hdr)
+                y_t_hdr = np.where(mask_t_bool, y_t_hdr, np.nan)
+                mask_int_hdr = (~np.isnan(y_t_hdr)).astype(int)
                 y_clean_hdr = np.where(np.isnan(y_t_hdr), 0.0, y_t_hdr)
-                imm_state_hdr = imm_filt_hdr.step(y_clean_hdr, mask_t_hdr, u_prev_hdr)
+                imm_state_hdr = imm_filt_hdr.step(y_clean_hdr, mask_int_hdr, u_prev_hdr)
                 x_hat_hdr = imm_state_hdr.mixed_mean
                 P_hat_hdr = imm_state_hdr.mixed_cov
 
-                # PE filter: observations from x_pe (same noise seed)
-                obs_rng_t_pe = np.random.default_rng(base_seed_t)
-                R_t_pe = heteroskedastic_R(basin_obj.R, x_pe, mask_sched[t], t)
-                y_t_pe = generate_observation(
-                    x_pe, basin_obj.C, basin_obj.c, R_t_pe, mask_sched[t], obs_rng_t_pe
-                )
-                mask_t_pe = (~np.isnan(y_t_pe)).astype(int)
+                # HP-1: PE observations using pre-drawn noise
+                R_t_pe = heteroskedastic_R(basin_R, x_pe, mask_t, t)
+                diag_R_pe = np.diag(R_t_pe)
+                y_t_pe = basin_C @ x_pe + basin_c + noise_t * np.sqrt(diag_R_pe)
+                y_t_pe = np.where(mask_t_bool, y_t_pe, np.nan)
+                mask_int_pe = (~np.isnan(y_t_pe)).astype(int)
                 y_clean_pe = np.where(np.isnan(y_t_pe), 0.0, y_t_pe)
-                imm_state_pe = imm_filt_pe.step(y_clean_pe, mask_t_pe, u_prev_pe)
+                imm_state_pe = imm_filt_pe.step(y_clean_pe, mask_int_pe, u_prev_pe)
                 x_hat_pe = imm_state_pe.mixed_mean
 
                 # hdr_main: MPC on estimated basin using its own filter
                 est_bi = imm_state_hdr.map_mode
                 est_basin = sim_model.basins[est_bi]
-                est_target = build_target_set(est_bi, cfg)
+                est_target = target_sets[est_bi]  # HP-3
                 mpc_res = solve_mode_a(
                     x_hat_hdr,
                     P_hat_hdr,
@@ -348,76 +357,119 @@ def run_highpower_benchmark() -> None:
                     u_pe, cfg, step=t, used_burden=used_burden_pe
                 )
 
+                # HP-1: tube-MPC observations using pre-drawn noise
+                R_t_tube = heteroskedastic_R(basin_R, x_tube, mask_t, t)
+                diag_R_tube = np.diag(R_t_tube)
+                y_t_tube = basin_C @ x_tube + basin_c + noise_t * np.sqrt(diag_R_tube)
+                y_t_tube = np.where(mask_t_bool, y_t_tube, np.nan)
+                mask_int_tube = (~np.isnan(y_t_tube)).astype(int)
+                y_clean_tube = np.where(np.isnan(y_t_tube), 0.0, y_t_tube)
+                imm_state_tube = imm_filt_tube.step(y_clean_tube, mask_int_tube, u_prev_tube)
+                x_hat_tube = imm_state_tube.mixed_mean
+                P_hat_tube = imm_state_tube.mixed_cov
+
+                est_bi_tube = imm_state_tube.map_mode
+                est_basin_tube = sim_model.basins[est_bi_tube]
+                est_target_tube = target_sets[est_bi_tube]  # HP-3
+                try:
+                    tube_res = solve_tube_mpc(
+                        x_hat_tube,
+                        P_hat_tube,
+                        est_basin_tube,
+                        est_target_tube,
+                        tube_mRPI[est_bi_tube],
+                        tube_K_fb[est_bi_tube],
+                        kappa_hat=0.6,
+                        config=cfg,
+                        step=t,
+                    )
+                    u_tube = tube_res.u
+                except Exception:
+                    u_tube = np.zeros(m_u)
+                    tube_fallbacks += 1
+
                 # Costs
                 cost_hdr += float(np.dot(x_hdr, x_hdr) + lambda_u * np.dot(u_hdr, u_hdr))
                 cost_pe += float(np.dot(x_pe, x_pe) + lambda_u * np.dot(u_pe, u_pe))
+                cost_tube += float(np.dot(x_tube, x_tube) + lambda_u * np.dot(u_tube, u_tube))
 
-                # Safety
-                if _safety_violation(x_hdr, basin_obj):
+                # HP-2: Safety checks with pre-computed std
+                if _safety_violation_fast(x_hdr, basin_idx):
                     viol_hdr += 1
-                if _safety_violation(x_pe, basin_obj):
+                if _safety_violation_fast(x_pe, basin_idx):
                     viol_pe += 1
+                if _safety_violation_fast(x_tube, basin_idx):
+                    viol_tube += 1
 
-                # Evolve both with shared process noise
+                # HP-4: Evolve all with shared process noise (E=I elided)
                 w = process_noise[t]
-                x_hdr = (
-                    basin_obj.A @ x_hdr
-                    + basin_obj.B @ u_hdr
-                    + basin_obj.E[:, :n] @ w
-                    + basin_obj.b
-                )
-                x_pe = (
-                    basin_obj.A @ x_pe
-                    + basin_obj.B @ u_pe
-                    + basin_obj.E[:, :n] @ w
-                    + basin_obj.b
-                )
+                x_hdr = basin_A @ x_hdr + basin_B @ u_hdr + w + basin_b
+                x_pe = basin_A @ x_pe + basin_B @ u_pe + w + basin_b
+                x_tube = basin_A @ x_tube + basin_B @ u_tube + w + basin_b
                 used_burden_hdr += float(np.sum(np.abs(u_hdr)))
                 used_burden_pe += float(np.sum(np.abs(u_pe)))
-                u_prev_hdr = u_hdr.copy()
-                u_prev_pe = u_pe.copy()
+                used_burden_tube += float(np.sum(np.abs(u_tube)))
+                # HP-7: No .copy() needed — u arrays are freshly allocated each step
+                u_prev_hdr = u_hdr
+                u_prev_pe = u_pe
+                u_prev_tube = u_tube
 
             ep_costs["hdr_main"].append(cost_hdr)
             ep_costs["pooled_lqr_estimated"].append(cost_pe)
+            ep_costs["hdr_tube_mpc"].append(cost_tube)
             ep_safety_rates["hdr_main"].append(viol_hdr / T)
             ep_safety_rates["pooled_lqr_estimated"].append(viol_pe / T)
+            ep_safety_rates["hdr_tube_mpc"].append(viol_tube / T)
 
-            # ── Phase 2: oracle-state policies (no IMM needed) ────────────────
-            for pol_name in ["open_loop", "pooled_lqr", "basin_lqr"]:
-                x = x_init.copy()
-                used_burden = 0.0
-                cost_accum = 0.0
-                violations = 0
+            # ── Phase 2: oracle-state policies (merged loop, HP-5) ──────────
+            x_ol = x_init.copy()
+            x_pl = x_init.copy()
+            x_bl = x_init.copy()
+            cost_ol, cost_pl, cost_bl = 0.0, 0.0, 0.0
+            viol_ol, viol_pl, viol_bl = 0, 0, 0
+            used_pl, used_bl = 0.0, 0.0
+            K_bl = K_basin_lqr[basin_idx]
 
-                for t in range(T):
-                    if pol_name == "open_loop":
-                        u = np.zeros(m_u)
-                    elif pol_name == "pooled_lqr":
-                        u = -K_pooled @ x
-                        u, _ = apply_control_constraints(
-                            u, cfg, step=t, used_burden=used_burden
-                        )
-                    elif pol_name == "basin_lqr":
-                        u = -K_basin_lqr[basin_idx] @ x
-                        u, _ = apply_control_constraints(
-                            u, cfg, step=t, used_burden=used_burden
-                        )
+            for t in range(T):
+                # Open loop: u = 0
+                cost_ol += float(x_ol @ x_ol)
 
-                    cost_accum += float(np.dot(x, x) + lambda_u * np.dot(u, u))
-                    if _safety_violation(x, basin_obj):
-                        violations += 1
+                # Pooled LQR
+                u_pl = -K_pooled @ x_pl
+                u_pl, _ = apply_control_constraints(
+                    u_pl, cfg, step=t, used_burden=used_pl
+                )
+                cost_pl += float(x_pl @ x_pl + lambda_u * (u_pl @ u_pl))
 
-                    w = process_noise[t]
-                    x = (
-                        basin_obj.A @ x
-                        + basin_obj.B @ u
-                        + basin_obj.E[:, :n] @ w
-                        + basin_obj.b
-                    )
-                    used_burden += float(np.sum(np.abs(u)))
+                # Basin LQR (oracle)
+                u_bl = -K_bl @ x_bl
+                u_bl, _ = apply_control_constraints(
+                    u_bl, cfg, step=t, used_burden=used_bl
+                )
+                cost_bl += float(x_bl @ x_bl + lambda_u * (u_bl @ u_bl))
 
-                ep_costs[pol_name].append(cost_accum)
-                ep_safety_rates[pol_name].append(violations / T)
+                # HP-2: Safety checks
+                if _safety_violation_fast(x_ol, basin_idx):
+                    viol_ol += 1
+                if _safety_violation_fast(x_pl, basin_idx):
+                    viol_pl += 1
+                if _safety_violation_fast(x_bl, basin_idx):
+                    viol_bl += 1
+
+                # HP-4: State evolution (E=I elided)
+                w = process_noise[t]
+                x_ol = basin_A @ x_ol + w + basin_b
+                x_pl = basin_A @ x_pl + basin_B @ u_pl + w + basin_b
+                x_bl = basin_A @ x_bl + basin_B @ u_bl + w + basin_b
+                used_pl += float(np.sum(np.abs(u_pl)))
+                used_bl += float(np.sum(np.abs(u_bl)))
+
+            ep_costs["open_loop"].append(cost_ol)
+            ep_costs["pooled_lqr"].append(cost_pl)
+            ep_costs["basin_lqr"].append(cost_bl)
+            ep_safety_rates["open_loop"].append(viol_ol / T)
+            ep_safety_rates["pooled_lqr"].append(viol_pl / T)
+            ep_safety_rates["basin_lqr"].append(viol_bl / T)
 
         # ── Write per-seed partial checkpoint ─────────────────────────────────
         partial_data = {
@@ -428,6 +480,7 @@ def run_highpower_benchmark() -> None:
             "ep_safety_rates": {
                 "hdr_main": ep_safety_rates["hdr_main"],
                 "pooled_lqr_estimated": ep_safety_rates["pooled_lqr_estimated"],
+                "hdr_tube_mpc": ep_safety_rates["hdr_tube_mpc"],
             },
         }
         partial_path = out_dir / f"seed_{s:04d}_partial.json"
@@ -443,6 +496,7 @@ def run_highpower_benchmark() -> None:
     all_ep_basins: list[int] = []
     all_safety_hdr: list[float] = []
     all_safety_pe: list[float] = []
+    all_safety_tube: list[float] = []
 
     for s in cfg["seeds"]:
         sd = seed_results[s]
@@ -451,6 +505,7 @@ def run_highpower_benchmark() -> None:
         all_ep_basins.extend(sd["ep_basins"])
         all_safety_hdr.extend(sd["ep_safety_rates"]["hdr_main"])
         all_safety_pe.extend(sd["ep_safety_rates"]["pooled_lqr_estimated"])
+        all_safety_tube.extend(sd["ep_safety_rates"]["hdr_tube_mpc"])
 
     costs_hdr = np.array(all_ep_costs["hdr_main"])
     costs_pe = np.array(all_ep_costs["pooled_lqr_estimated"])
@@ -475,6 +530,29 @@ def run_highpower_benchmark() -> None:
     n_maladaptive_episodes = int(np.sum(mask_mal))
 
     gains_maladaptive = paired_ratios_all[mask_mal] if np.any(mask_mal) else np.array([0.0])
+
+    # ── Tube-MPC vs pooled_lqr_estimated ──────────────────────────────────
+    costs_tube = np.array(all_ep_costs["hdr_tube_mpc"])
+    with np.errstate(divide="ignore", invalid="ignore"):
+        tube_ratios_all = np.where(
+            costs_pe > 1e-12, (costs_pe - costs_tube) / costs_pe, 0.0
+        )
+    tube_vs_pe_maladaptive = float(np.mean(tube_ratios_all[mask_mal])) if np.any(mask_mal) else 0.0
+    tube_vs_pe_adaptive = float(np.mean(tube_ratios_all[mask_adp])) if np.any(mask_adp) else 0.0
+    tube_mal_win_rate = (
+        float(np.mean((costs_pe - costs_tube)[mask_mal] > 0)) if np.any(mask_mal) else 0.0
+    )
+    safety_delta_tube = float(np.mean(all_safety_tube) - np.mean(all_safety_pe))
+
+    # ── Tube-MPC vs hdr_main (head-to-head) ───────────────────────────────
+    with np.errstate(divide="ignore", invalid="ignore"):
+        tube_vs_hdr_ratios = np.where(
+            costs_hdr > 1e-12, (costs_hdr - costs_tube) / costs_hdr, 0.0
+        )
+    tube_vs_hdr_maladaptive = float(np.mean(tube_vs_hdr_ratios[mask_mal])) if np.any(mask_mal) else 0.0
+    tube_vs_hdr_all = float(np.mean(tube_vs_hdr_ratios))
+
+    gains_tube_maladaptive = tube_ratios_all[mask_mal] if np.any(mask_mal) else np.array([0.0])
 
     # ── Bootstrap CIs ─────────────────────────────────────────────────────────
     ci_95_mean_lo, ci_95_mean_hi = _bootstrap_ci(gains_maladaptive, n_boot=10_000, ci=0.95, rng_seed=42, stat="mean")
@@ -516,6 +594,19 @@ def run_highpower_benchmark() -> None:
     print(f"    seeds >= 0.03              = {n_seeds_above}/20")
     print(f"    seed_gain_std              = {seed_gain_std:.4f}")
 
+    # ── Tube-MPC bootstrap CIs ─────────────────────────────────────────────
+    ci_tube_95_lo, ci_tube_95_hi = _bootstrap_ci(gains_tube_maladaptive, n_boot=10_000, ci=0.95, rng_seed=43, stat="mean")
+
+    print(f"\n  Tube-MPC vs pooled_lqr_estimated (maladaptive):")
+    print(f"    tube_vs_pe_maladaptive     = {tube_vs_pe_maladaptive:+.4f}")
+    print(f"    tube_vs_pe_adaptive        = {tube_vs_pe_adaptive:+.4f}")
+    print(f"    tube_mal_win_rate          = {tube_mal_win_rate:.4f}")
+    print(f"    safety_delta_tube_vs_pe    = {safety_delta_tube:+.4f}")
+    print(f"    95% CI mean                = [{ci_tube_95_lo:+.4f}, {ci_tube_95_hi:+.4f}]")
+    print(f"  Tube-MPC vs hdr_main (head-to-head):")
+    print(f"    tube_vs_hdr_maladaptive    = {tube_vs_hdr_maladaptive:+.4f}")
+    print(f"    tube_vs_hdr_all            = {tube_vs_hdr_all:+.4f}")
+
     # ── Write summary JSON ─────────────────────────────────────────────────────
     summary = {
         "profile": "highpower",
@@ -543,6 +634,15 @@ def run_highpower_benchmark() -> None:
         "seed_gain_std": seed_gain_std,
         "n_seeds_above_criterion": n_seeds_above,
         "gains_maladaptive_all": gains_maladaptive.tolist(),
+        "tube_vs_pe_maladaptive_mean": tube_vs_pe_maladaptive,
+        "tube_vs_pe_adaptive_mean": tube_vs_pe_adaptive,
+        "tube_mal_win_rate": tube_mal_win_rate,
+        "safety_delta_tube_vs_pe": safety_delta_tube,
+        "ci_tube_95_mean_lo": ci_tube_95_lo,
+        "ci_tube_95_mean_hi": ci_tube_95_hi,
+        "tube_vs_hdr_maladaptive_mean": tube_vs_hdr_maladaptive,
+        "tube_vs_hdr_all_mean": tube_vs_hdr_all,
+        "gains_tube_maladaptive_all": gains_tube_maladaptive.tolist(),
         "config_snapshot": {
             "lambda_u": float(cfg["lambda_u"]),
             "default_burden_budget": float(cfg["default_burden_budget"]),
@@ -553,6 +653,8 @@ def run_highpower_benchmark() -> None:
             "control_dim": int(cfg["control_dim"]),
         },
     }
+    from hdr_validation.provenance import get_provenance
+    summary["provenance"] = get_provenance()
     _atomic_write_json(out_dir / "highpower_summary.json", summary)
     print("  Wrote highpower_summary.json")
 

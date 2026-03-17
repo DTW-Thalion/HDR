@@ -1,5 +1,5 @@
 """
-Stage 09 — MJLS-SMPC and Belief-MPC Baselines (HDR v5.2)
+Stage 09 — MJLS-SMPC and Belief-MPC Baselines
 ==========================================================
 
 Adds two additional baselines to situate HDR's novelty:
@@ -107,44 +107,18 @@ def belief_mpc_policy(
 
 def _make_benchmark_config(n_seeds: int = 20, n_ep: int = 30, T: int = 256) -> dict[str, Any]:
     """Create the Benchmark A configuration."""
-    return {
-        "state_dim": 8,
-        "obs_dim": 16,
-        "control_dim": 8,
-        "disturbance_dim": 8,
-        "K": 3,
-        "H": 6,
-        "w1": 1.0,
-        "w2": 0.5,
-        "w3": 0.3,
-        "lambda_u": 0.1,
-        "alpha_i": 0.05,
-        "eps_safe": 0.01,
-        "rho_reference": [0.72, 0.96, 0.55],
+    from hdr_validation.defaults import DEFAULTS
+
+    cfg = dict(DEFAULTS)
+    cfg.update({
         "max_dwell_len": 256,
-        "model_mismatch_bound": 0.347,
-        "kappa_lo": 0.55,
-        "kappa_hi": 0.75,
-        "pA": 0.70,
-        "qmin": 0.15,
-        "steps_per_day": 48,
-        "dt_minutes": 30,
-        "coherence_window": 24,
         "default_burden_budget": 56.0,
-        "circadian_locked_controls": [5, 6],
-        "R_brier_max": 0.05,
-        "omega_min_factor": 0.005,
-        "T_C_max": 50,
-        "k_calib": 1.0,
-        "sigma_dither": 0.08,
-        "epsilon_control": 0.50,
-        "missing_fraction_target": 0.516,
-        "mode1_base_rate": 0.16,
         "n_seeds": n_seeds,
         "n_ep_per_seed": n_ep,
         "steps_per_episode": T,
         "profile_name": "highpower",
-    }
+    })
+    return cfg
 
 
 def _run_episode_all_policies(
@@ -368,6 +342,8 @@ def run_stage_09(
         result_json["results_are_valid"] = True
         result_json["validity_note"] = f"N_mal={total_maladaptive}: valid"
 
+    from hdr_validation.provenance import get_provenance
+    result_json["provenance"] = get_provenance()
     out_path = output_dir / "baseline_comparison.json"
     out_path.write_text(json.dumps(result_json, indent=2))
 

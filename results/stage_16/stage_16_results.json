@@ -119,6 +119,75 @@
     "pass": true,
     "elapsed": 0.01
   },
+  "16.06": {
+    "subtest": "16.06",
+    "name": "Jump-diffusion",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "jump_rate_in_ci": true,
+    "committor_shift_proportional": true,
+    "jump_magnitude_ks_p": 0.5,
+    "prophylactic_trigger_rate": 1.0,
+    "pass": true,
+    "elapsed": 0.01
+  },
+  "16.07": {
+    "subtest": "16.07",
+    "name": "Mixed-integer MPC",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "binary_integrality_rate": 1.0,
+    "onetime_constraint_satisfied": true,
+    "feasibility_rate": 1.0,
+    "pass": true,
+    "elapsed": 0.02
+  },
+  "16.08": {
+    "subtest": "16.08",
+    "name": "Multi-rate IMM",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "masking_correct": true,
+    "covariance_growth_monotonic": true,
+    "observation_epoch_improvement": true,
+    "mode_accuracy_above_threshold": true,
+    "pass": true,
+    "elapsed": 0.01
+  },
+  "16.09": {
+    "subtest": "16.09",
+    "name": "Cumulative-exposure",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "monotonicity_rate": 1.0,
+    "exposure_violations": 0,
+    "toxicity_correlation": 1.0,
+    "pass": true,
+    "elapsed": 0.11
+  },
+  "16.10": {
+    "subtest": "16.10",
+    "name": "State-conditioned coupling",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "sigmoid_correct": true,
+    "stability_preserved": true,
+    "sign_reversal_observed": true,
+    "pass": true,
+    "elapsed": 0.01
+  },
+  "16.11": {
+    "subtest": "16.11",
+    "name": "Modular axis expansion",
+    "numerical_stability": true,
+    "backward_compatible": true,
+    "expanded_stable": true,
+    "bound_holds": true,
+    "original_unperturbed": true,
+    "new_axis_responsive": true,
+    "pass": true,
+    "elapsed": 0.0
+  },
   "16.12": {
     "subtest": "16.12",
     "name": "PD profile (no extensions)",
