@@ -397,7 +397,7 @@ def _run_subtest_16_03_basin_stability(cfg, n_seeds, T):
         eigvals, eigvecs = np.linalg.eig(A_unstable)
         P_plus = np.zeros((n, n), dtype=complex)
         P_minus = np.zeros((n, n), dtype=complex)
-        eigvecs_inv = np.linalg.inv(eigvecs)
+        eigvecs_inv = np.linalg.solve(eigvecs, np.eye(n).astype(eigvecs.dtype))
         for i in range(n):
             proj_i = np.outer(eigvecs[:, i], eigvecs_inv[i, :])
             if abs(eigvals[i]) >= 1.0:
@@ -868,7 +868,8 @@ def _run_subtest_16_08_multirate(cfg, n_seeds, T):
                     R_active = np.eye(int(np.sum(active_rows))) * 0.1
                     S = C_active @ P_pred @ C_active.T + R_active
                     try:
-                        K = P_pred @ C_active.T @ np.linalg.inv(S)
+                        PCT = P_pred @ C_active.T
+                        K = np.linalg.solve(S.T, PCT.T).T
                         P_est = (np.eye(n) - K @ C_active) @ P_pred
                     except np.linalg.LinAlgError:
                         P_est = P_pred

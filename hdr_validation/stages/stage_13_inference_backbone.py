@@ -55,7 +55,7 @@ def run_stage_13(
             observations.append(y)
 
         # Run PF
-        pf = ParticleFilter(n_particles, model.basins)
+        pf = ParticleFilter(n_particles, model.basins, rng=np.random.default_rng(101 + sc))
         for y in observations:
             pf.predict(np.zeros(cfg["control_dim"]))
             pf.update(y)

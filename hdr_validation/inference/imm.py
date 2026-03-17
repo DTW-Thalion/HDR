@@ -75,15 +75,18 @@ class IMMFilter:
         mu_prev = self.state.mode_probs
         c_j = T.T @ mu_prev
         c_j = np.clip(c_j, 1e-10, 1.0)
+
+        # Hoist: stack means and covs once for prior mixing
+        prev_means = np.stack([s.mean for s in self.state.states], axis=0)   # (K, n)
+        prev_covs = np.stack([s.cov for s in self.state.states], axis=0)     # (K, n, n)
+
         mixed_states: list[KalmanState] = []
         for j in range(K):
-            weights = T[:, j] * mu_prev / c_j[j]
-            means = np.stack([s.mean for s in self.state.states], axis=0)
-            mean_j = np.sum(weights[:, None] * means, axis=0)
-            cov_j = np.zeros_like(self.state.states[0].cov)
-            for i, st in enumerate(self.state.states):
-                d = st.mean - mean_j
-                cov_j += weights[i] * (st.cov + np.outer(d, d))
+            w_j = T[:, j] * mu_prev / c_j[j]
+            mean_j = w_j @ prev_means                                        # (n,)
+            diffs = prev_means - mean_j                                      # (K, n)
+            outer_prods = np.einsum('ij,ik->ijk', diffs, diffs)              # (K, n, n)
+            cov_j = np.einsum('i,ijk->jk', w_j, prev_covs + outer_prods)
             mixed_states.append(KalmanState(mean=mean_j, cov=cov_j))
 
         new_states = []
@@ -98,14 +101,17 @@ class IMMFilter:
         log_weights = np.log(c_j) + log_likes
         log_weights /= self.temperature
         log_weights -= np.max(log_weights)
-        weights = np.exp(log_weights)
-        mode_probs = weights / np.sum(weights)
-        means = np.stack([s.mean for s in new_states], axis=0)
-        mixed_mean = np.sum(mode_probs[:, None] * means, axis=0)
-        mixed_cov = np.zeros_like(new_states[0].cov)
-        for j, st in enumerate(new_states):
-            d = st.mean - mixed_mean
-            mixed_cov += mode_probs[j] * (st.cov + np.outer(d, d))
+        weights_post = np.exp(log_weights)
+        mode_probs = weights_post / np.sum(weights_post)
+
+        # Posterior mixing (vectorized)
+        new_means = np.stack([s.mean for s in new_states], axis=0)           # (K, n)
+        new_covs = np.stack([s.cov for s in new_states], axis=0)             # (K, n, n)
+        mixed_mean = mode_probs @ new_means                                  # (n,)
+        diffs_post = new_means - mixed_mean                                  # (K, n)
+        outer_post = np.einsum('ij,ik->ijk', diffs_post, diffs_post)         # (K, n, n)
+        mixed_cov = np.einsum('i,ijk->jk', mode_probs, new_covs + outer_post)
+
         map_mode = int(np.argmax(mode_probs))
         dwell = self.state.dwell_length + 1 if map_mode == self.state.map_mode else 1
         self.state = IMMState(

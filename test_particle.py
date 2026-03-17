@@ -20,7 +20,7 @@ def _simple_basins():
 
 def test_pf_weight_normalisation():
     basins = _simple_basins()
-    pf = ParticleFilter(50, basins)
+    pf = ParticleFilter(50, basins, rng=np.random.default_rng(42))
     assert np.isclose(np.sum(pf.weights), 1.0)
     y = np.zeros(4)
     pf.update(y)
@@ -29,7 +29,7 @@ def test_pf_weight_normalisation():
 
 def test_pf_systematic_resampling():
     basins = _simple_basins()
-    pf = ParticleFilter(100, basins)
+    pf = ParticleFilter(100, basins, rng=np.random.default_rng(42))
     # Make weights very uneven
     pf.weights = np.zeros(100)
     pf.weights[0] = 1.0
@@ -41,7 +41,7 @@ def test_pf_systematic_resampling():
 
 def test_pf_ess_computation():
     basins = _simple_basins()
-    pf = ParticleFilter(100, basins)
+    pf = ParticleFilter(100, basins, rng=np.random.default_rng(42))
     # Uniform weights -> ESS = N
     ess = pf.ess()
     assert np.isclose(ess, 100.0, atol=0.1)
@@ -55,7 +55,7 @@ def test_pf_ess_computation():
 def test_pf_convergence_simple_model():
     """PF should track state in a simple linear-Gaussian model."""
     basins = _simple_basins()
-    pf = ParticleFilter(200, basins[:1])  # single basin
+    pf = ParticleFilter(200, basins[:1], rng=np.random.default_rng(42))  # single basin
     rng = np.random.default_rng(100)
     x_true = np.zeros(4)
     for t in range(20):
@@ -74,7 +74,7 @@ def test_pf_convergence_simple_model():
 def test_pf_population_proposal():
     """ParticleFilter with proposal_inflation > 1 should still have valid weights."""
     basins = _simple_basins()
-    pf = ParticleFilter(50, basins, proposal_inflation=2.0)
+    pf = ParticleFilter(50, basins, proposal_inflation=2.0, rng=np.random.default_rng(42))
     pf.predict(np.zeros(2))
     y = np.zeros(4)
     pf.update(y)
@@ -84,7 +84,7 @@ def test_pf_population_proposal():
 def test_pf_degeneracy_detection():
     """ESS should drop when one particle dominates."""
     basins = _simple_basins()
-    pf = ParticleFilter(50, basins)
+    pf = ParticleFilter(50, basins, rng=np.random.default_rng(42))
     pf.weights = np.zeros(50)
     pf.weights[0] = 0.99
     pf.weights[1:] = 0.01 / 49

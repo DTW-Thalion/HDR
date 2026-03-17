@@ -49,7 +49,8 @@ def _atomic_write_json(path: Path, data: Any) -> None:
 
 
 # ── Episode generation (mirrors extended_runner._generate_episode) ─────────────
-def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -> dict:
+def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0,
+                      eval_model=None) -> dict:
     from hdr_validation.model.slds import make_evaluation_model
     from hdr_validation.specification import (
         observation_schedule,
@@ -57,7 +58,8 @@ def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0) -
         heteroskedastic_R,
     )
 
-    eval_model = make_evaluation_model(cfg, rng)
+    if eval_model is None:
+        eval_model = make_evaluation_model(cfg, rng)
     basin = eval_model.basins[basin_idx]
     T = cfg["steps_per_episode"]
     n = cfg["state_dim"]
