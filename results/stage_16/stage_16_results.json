@@ -124,7 +124,7 @@
     "name": "PD profile (no extensions)",
     "backward_compatible": true,
     "pass": true,
-    "elapsed": 0.05
+    "elapsed": 0.06
   },
   "16.13": {
     "subtest": "16.13",
@@ -156,7 +156,7 @@
     "individual_invariants_pass": true,
     "reconvergence_within_bound": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.16": {
     "subtest": "16.16",
@@ -181,7 +181,7 @@
   },
   "provenance": {
     "hdr_version": "7.3.0",
-    "generated_at": "2026-03-17T02:22:12.018178Z",
-    "git_commit": "e52e682"
+    "generated_at": "2026-03-17T02:36:52.349401Z",
+    "git_commit": "45df68f"
   }
 }

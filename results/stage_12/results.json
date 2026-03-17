@@ -4,7 +4,7 @@
       "check": "error_decreases_with_T_p",
       "passed": true,
       "value": "1.00",
-      "note": "5/5 patients show decrease"
+      "note": "10/10 patients show decrease"
     },
     {
       "check": "T_p_0_equals_group_mean",
@@ -31,6 +31,11 @@
       "note": "Claim 30 \u2014 Prop 11.7: committor boundary error decreases with sample size"
     }
   ],
-  "n_patients": 5,
-  "elapsed": 0.0161580710000635
+  "n_patients": 10,
+  "elapsed": 0.011402829999951791,
+  "provenance": {
+    "hdr_version": "7.3.0",
+    "generated_at": "2026-03-17T02:36:23.890050Z",
+    "git_commit": "45df68f"
+  }
 }
