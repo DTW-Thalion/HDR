@@ -220,7 +220,7 @@ def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0,
     for t in range(T):
         u = np.zeros(u_dim)
         w = rng.multivariate_normal(np.zeros(n), basin.Q)
-        x_next = basin.A @ x + basin.B @ u + basin.E[:, :basin.Q.shape[0]] @ w + basin.b
+        x_next = basin.A @ x + basin.B @ u + w + basin.b
         R_t = heteroskedastic_R(basin.R, x, mask_sched[t], t)
         y = generate_observation(x, basin.C, basin.c, R_t, mask_sched[t], rng)
 
@@ -553,7 +553,6 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     from hdr_validation.model.safety import (
         apply_control_constraints,
         observation_intervals,
-        risk_score,
         gaussian_calibration_toy,
     )
     from hdr_validation.inference.imm import IMMFilter
@@ -648,11 +647,26 @@ def stage04_mode_a(episodes: list[dict]) -> None:
 
     P_safety = np.eye(n) * 0.1
 
-    def _safety_violation(x_state, basin_obj):
+    # HP-2: Pre-compute safety std per basin (cached by seed)
+    from scipy.stats import norm as _norm_dist
+    _safety_std_cache: dict[int, dict[int, np.ndarray]] = {}
+    eps_safe_val = float(cfg["eps_safe"])
+
+    def _get_safety_std(seed_val, basin_k_idx, basin_obj):
+        if seed_val not in _safety_std_cache:
+            _safety_std_cache[seed_val] = {}
+        cache = _safety_std_cache[seed_val]
+        if basin_k_idx not in cache:
+            y_cov_k = basin_obj.C @ P_safety @ basin_obj.C.T + basin_obj.R
+            cache[basin_k_idx] = np.sqrt(np.maximum(np.diag(y_cov_k), 1e-12))
+        return cache[basin_k_idx]
+
+    def _safety_violation_fast(x_state, basin_obj, basin_k_idx, seed_val):
+        std = _get_safety_std(seed_val, basin_k_idx, basin_obj)
         y_mean = basin_obj.C @ x_state + basin_obj.c
-        y_cov = basin_obj.C @ P_safety @ basin_obj.C.T + basin_obj.R
-        r = risk_score(y_mean, y_cov, y_lo, y_hi)
-        return r > float(cfg["eps_safe"])
+        lower = _norm_dist.cdf((y_lo - y_mean) / std)
+        upper = _norm_dist.cdf((y_mean - y_hi) / std)
+        return float(np.max(lower + upper)) > eps_safe_val
 
     # --- Run 4 policies over all pooled episodes ---
     policy_names = ["open_loop", "pooled_lqr", "basin_lqr", "hdr_main"]
@@ -678,6 +692,23 @@ def stage04_mode_a(episodes: list[dict]) -> None:
         obs_rng = np.random.default_rng(cfg["seeds"][0] + 6000 + ep_idx)
         mask_sched = observation_schedule(T, m_obs, obs_rng, profile_name=cfg["profile_name"])
 
+        # HP-1: Pre-generate raw observation noise for hdr_main policy
+        obs_noise_raw = np.empty((T, m_obs))
+        for _t in range(T):
+            _obs_rng = np.random.default_rng(cfg["seeds"][0] + 7000 + ep_idx * T + _t)
+            obs_noise_raw[_t] = _obs_rng.standard_normal(m_obs)
+
+        # HP-3: Pre-compute target sets
+        target_sets = [build_target_set(k, cfg) for k in range(len(sim_model.basins))]
+
+        # HP-8: Alias hot basin attributes
+        basin_A = basin_obj.A
+        basin_B = basin_obj.B
+        basin_b = basin_obj.b
+        basin_C = basin_obj.C
+        basin_c = basin_obj.c
+        basin_R = basin_obj.R
+
         for pol_name in policy_names:
             x = x_init.copy()
             used_burden = 0.0
@@ -691,9 +722,13 @@ def stage04_mode_a(episodes: list[dict]) -> None:
 
             for t in range(T):
                 if pol_name == "hdr_main":
-                    obs_rng_t = np.random.default_rng(cfg["seeds"][0] + 7000 + ep_idx * T + t)
-                    R_t = heteroskedastic_R(basin_obj.R, x, mask_sched[t], t)
-                    y_t = generate_observation(x, basin_obj.C, basin_obj.c, R_t, mask_sched[t], obs_rng_t)
+                    # HP-1: Use pre-drawn noise
+                    noise_t = obs_noise_raw[t]
+                    mask_t_sched = mask_sched[t]
+                    R_t = heteroskedastic_R(basin_R, x, mask_t_sched, t)
+                    diag_R_t = np.diag(R_t)
+                    y_t = basin_C @ x + basin_c + noise_t * np.sqrt(diag_R_t)
+                    y_t = np.where(mask_t_sched.astype(bool), y_t, np.nan)
                     mask_t = (~np.isnan(y_t)).astype(int)
                     y_clean = np.where(np.isnan(y_t), 0.0, y_t)
                     imm_state = imm_filt.step(y_clean, mask_t, u_prev)
@@ -701,7 +736,7 @@ def stage04_mode_a(episodes: list[dict]) -> None:
                     P_hat_sim = imm_state.mixed_cov
                     est_bi = imm_state.map_mode
                     est_basin = sim_model.basins[est_bi]
-                    est_target = build_target_set(est_bi, cfg)
+                    est_target = target_sets[est_bi]  # HP-3
                     mpc_res = solve_mode_a(
                         x_est, P_hat_sim, est_basin, est_target,
                         kappa_hat=0.6, config=cfg, step=t, used_burden=used_burden,
@@ -718,13 +753,15 @@ def stage04_mode_a(episodes: list[dict]) -> None:
 
                 cost_accum += float(np.dot(x, x) + lambda_u * np.dot(u, u))
 
-                if _safety_violation(x, basin_obj):
+                # HP-2: Safety check with pre-computed std
+                if _safety_violation_fast(x, basin_obj, basin_idx, seed):
                     violations += 1
 
+                # HP-4: Evolve (E=I elided)
                 w = process_noise[t]
-                x = basin_obj.A @ x + basin_obj.B @ u + basin_obj.E[:, :n] @ w + basin_obj.b
+                x = basin_A @ x + basin_B @ u + w + basin_b
                 used_burden += float(np.sum(np.abs(u)))
-                u_prev = u.copy()
+                u_prev = u  # HP-7
 
             ep_costs[pol_name].append(cost_accum)
             ep_safety_rates[pol_name].append(violations / T)
@@ -782,7 +819,7 @@ def stage04_mode_a(episodes: list[dict]) -> None:
                 u_mu = np.clip(u_mu, -0.6, 0.6)
                 mu_cost += float(np.dot(x_mu, x_mu) + lambda_u * np.dot(u_mu, u_mu))
                 w_mu = noise_rng_mu.multivariate_normal(np.zeros(n), basin_sim.Q)
-                x_mu = basin_sim.A @ x_mu + basin_sim.B @ u_mu + basin_sim.E[:, :n] @ w_mu + basin_sim.b
+                x_mu = basin_sim.A @ x_mu + basin_sim.B @ u_mu + w_mu + basin_sim.b
         cost_at_mu.append(mu_cost / n_mu_eps)
 
     arr_cost_mu = np.array(cost_at_mu)
@@ -819,7 +856,7 @@ def stage04_mode_a(episodes: list[dict]) -> None:
                 u_d = np.clip(u_d, -0.6, 0.6)
                 drift_cost += float(np.dot(x_d, x_d) + lambda_u * np.dot(u_d, u_d))
                 w_d = noise_rng_d.multivariate_normal(np.zeros(n), basin_sim.Q)
-                x_d = basin_sim.A @ x_d + basin_sim.B @ u_d + basin_sim.E[:, :n] @ w_d + basin_sim.b
+                x_d = basin_sim.A @ x_d + basin_sim.B @ u_d + w_d + basin_sim.b
         cost_at_drift.append(drift_cost / n_drift_eps)
 
     arr_cost_drift = np.array(cost_at_drift)

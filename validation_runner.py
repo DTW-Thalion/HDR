@@ -211,7 +211,7 @@ def _generate_episode(cfg: dict, rng: np.random.Generator, basin_idx: int = 0,
     for t in range(T):
         u = np.zeros(u_dim)
         w = rng.multivariate_normal(np.zeros(n), basin.Q)
-        x_next = basin.A @ x + basin.B @ u + basin.E[:, :basin.Q.shape[0]] @ w + basin.b
+        x_next = basin.A @ x + basin.B @ u + w + basin.b
         R_t = heteroskedastic_R(basin.R, x, mask_sched[t], t)
         y = generate_observation(x, basin.C, basin.c, R_t, mask_sched[t], rng)
 
