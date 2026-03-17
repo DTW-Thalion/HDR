@@ -1,71 +1,130 @@
-from __future__ import annotations
+# HDR Validation Suite v7.4.0
 
-import numpy as np
-from scipy.linalg import solve_discrete_are, solve_discrete_lyapunov
+An in-silico validation suite for the **Homeodynamic Remediation (HDR) Framework v7.4** — a multi-mode adaptive control system for constrained stochastic linear dynamical systems (SLDS). The suite validates mathematical properties, implementation correctness, and empirical performance across synthetic physiological scenarios covering 32 claims spanning v5.0, v7.0, and v7.1 of the framework.
 
-from .target_set import TargetSet
+## Repository Structure
 
+```
+HDR/
+├── hdr_validation/              # Python package
+│   ├── control/                 # Control policies (LQR, MPC, Mode B/C, tube-MPC, MI-MPC, supervisor)
+│   ├── inference/               # Estimation (ICI, IMM, Kalman, particle filter, variational, population)
+│   ├── model/                   # System models (SLDS, HSMM, coherence, safety, target set, extensions)
+│   ├── identification/          # v7.0 identification (hierarchical, BOED, committor, transition rates)
+│   └── stages/                  # Stage scripts for stages 08–16
+├── results/                     # Per-stage result artifacts (auto-generated)
+├── run_all.py                   # Orchestration script (stages 01–16)
+├── smoke_runner.py              # Smoke profile runner
+├── standard_runner.py           # Standard profile runner
+├── extended_runner.py           # Extended profile runner
+├── extended_512_runner.py       # Extended profile (T=512)
+├── validation_runner.py         # Validation profile runner
+├── highpower_runner.py          # Benchmark A (20 seeds × 30 ep/seed)
+├── test_*.py                    # 30 pytest test files
+├── config.json                  # Master configuration
+└── paper_defaults.json          # Reference parameter values from paper
+```
 
-def tau_tilde(x: np.ndarray, target: TargetSet, Q: np.ndarray, rho: float, method: str = "box") -> float:
-    dist2 = target.dist2(x, Q=Q, method=method)
-    denom = max(1.0 - rho**2, 1e-6)
-    return float(dist2 / denom)
+## Requirements
 
+- Python >= 3.10
+- numpy >= 1.24
+- scipy >= 1.10
+- pandas >= 1.5 (for result aggregation)
+- pytest >= 7.4 (for testing)
+- matplotlib >= 3.7 (optional, for plotting)
 
-def lyapunov_cost(A: np.ndarray, Q: np.ndarray, x: np.ndarray) -> tuple[float, np.ndarray]:
-    P = solve_discrete_lyapunov(A, Q)
-    x = np.asarray(x, dtype=float)
-    return float(x.T @ P @ x), P
+## Running the Validation Suite
 
+### Full validation (all 32 claims)
 
-def dare_terminal_cost(A: np.ndarray, B: np.ndarray, Q: np.ndarray, R: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    P = solve_discrete_are(A, B, Q, R)
-    K = np.linalg.solve(R + B.T @ P @ B, B.T @ P @ A)
-    return P, K
+```bash
+python run_all.py --full-validation
+```
 
+This runs four phases:
 
-def tau_sandwich(A: np.ndarray, Q: np.ndarray, x: np.ndarray, target: TargetSet, rho: float) -> dict[str, float]:
-    proj = target.project_box(x)
-    xbar = np.asarray(x) - proj
-    tau_h = tau_tilde(x, target, Q, rho, method="box")
-    tau_L, P = lyapunov_cost(A, Q, xbar)
-    eigvals = np.linalg.eigvalsh(np.sqrt(Q) @ P @ np.linalg.pinv(np.sqrt(Q)))
-    eigvals = np.real(eigvals)
-    return {
-        "tau_tilde": float(tau_h),
-        "tau_L": float(tau_L),
-        "lower_coeff": float(np.min(eigvals)),
-        "upper_coeff": float(np.max(eigvals)),
-    }
+| Phase | What runs | Claims covered |
+|-------|-----------|----------------|
+| 1 | Extended profile, stages 01–03c + 05–07 | 3–14 |
+| 2 | Highpower benchmark (20 seeds × 30 ep/seed) | 1–2 |
+| 3 | Stages 08–16 at production scale | 9, 13, 15–32 |
+| 4 | Full pytest suite (30 files) | 15–32 |
 
-## Reproducing Benchmark A (high-power run)
+### Per-profile runs
 
-The headline Benchmark A result (N_mal = 123, 20 seeds × 20 episodes)
-is produced by a standalone script that is NOT part of run_all.py:
+```bash
+python run_all.py --profiles smoke             # Fastest (1 seed, 8 episodes)
+python run_all.py --profiles smoke standard extended validation
+python run_all.py --resume --skip-done         # Resume interrupted runs
+```
 
-    export OPENBLAS_NUM_THREADS=1
-    export OMP_NUM_THREADS=1
-    export MKL_NUM_THREADS=1
-    python highpower_runner.py
+### Selective stage execution
 
-Outputs are written to results/stage_04/highpower/:
-  highpower_summary.json   — machine-readable metrics and per-seed gains
-  highpower_table.txt      — human-readable results table
-  manuscript_language.txt  — recommended manuscript wording
+```bash
+python run_all.py --stages 08 08b 09 10 11 --force
+python run_all.py --stages 12 13 14 15 16
+```
 
-Expected values (fixed seeds 101–2020):
-  N_maladaptive : 123
-  Mean gain     : +0.028  (95 % CI [+0.021, +0.036])
-  Win rate      : 0.772
-  Safety delta  : +0.0004
+### Benchmark A (high-power run)
 
-## Environment setup (required on multi-core Linux)
+```bash
+export OPENBLAS_NUM_THREADS=1
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+python highpower_runner.py
+```
 
-Before running any script or pytest, pin BLAS threads to prevent
-non-determinism and hangs on shared compute nodes:
+Outputs to `results/stage_04/highpower/`.
 
-    export OPENBLAS_NUM_THREADS=1
-    export OMP_NUM_THREADS=1
-    export MKL_NUM_THREADS=1
+### Running tests
 
-Add these lines to your shell profile or CI environment.
+```bash
+pytest                          # All 30 test files
+pytest test_ici.py -v           # Specific test file
+```
+
+## Regenerating Result Artifacts
+
+All result artifacts are regenerated by re-running the appropriate stages:
+
+```bash
+# Stages 08–16 (profile-independent)
+python run_all.py --stages 08 08b 09 10 11 12 13 14 15 16 --force
+
+# Stage 04 highpower benchmark
+python highpower_runner.py
+
+# Full regeneration of all stages across all profiles
+python run_all.py --full-validation --force
+```
+
+Artifacts are written to `results/stage_{id}/` with atomic file I/O. Each artifact carries an `hdr_version` field and `generated_at` ISO timestamp. Use `--resume --skip-done` to skip already-completed stages when resuming long runs.
+
+## Stage Reference
+
+| ID   | Description                              |
+|------|------------------------------------------|
+| 01   | Mathematical validation (tau, committor) |
+| 02   | Synthetic dataset generation             |
+| 03   | Mode identification and calibration      |
+| 03b  | ICI calibration and regime boundaries    |
+| 03c  | Mode C validation                        |
+| 04   | Mode A performance vs baselines          |
+| 05   | Mode B structured exploration            |
+| 06   | State coherence checks                   |
+| 07   | Robustness across parameter sweeps       |
+| 08   | Ablation study                           |
+| 08b  | Multi-axis asymmetric ablation           |
+| 09   | Baseline comparison                      |
+| 10   | Mode B FP/FN sweep                       |
+| 11   | Riccati invariant set verification       |
+| 12   | Hierarchical coupling estimation (v7.0)  |
+| 13   | Inference backbone benchmark (v7.0)      |
+| 14   | Population planning (v7.0)               |
+| 15   | Proxy composite estimation (v7.0)        |
+| 16   | Model-failure extension integration (v7.1)|
+
+## Claim Validation
+
+See `CLAIM_CRITERIA.md` for full criterion definitions and `CLAIM_MATRIX.md` for per-claim test file mappings. Run `python check_claims.py --verbose` for automated validation.

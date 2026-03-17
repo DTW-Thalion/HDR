@@ -32,10 +32,10 @@
     }
   ],
   "n_patients": 10,
-  "elapsed": 0.011402829999951791,
+  "elapsed": 0.005076699999335688,
   "provenance": {
-    "hdr_version": "7.3.0",
-    "generated_at": "2026-03-17T02:36:23.890050Z",
-    "git_commit": "45df68f"
+    "hdr_version": "7.4.0",
+    "generated_at": "2026-03-17T15:49:00.565926Z",
+    "git_commit": "81d18c4"
   }
 }
