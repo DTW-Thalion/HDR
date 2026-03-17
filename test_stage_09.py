@@ -67,9 +67,19 @@ def test_belief_mpc_clipped_to_bounds():
     assert np.all(np.abs(u) <= 0.6 + 1e-9)
 
 
-def test_run_stage_09_fast(tmp_path: Path):
+# ---- Module-scoped fixture for (n_seeds=2, n_ep=3, T=32) group ----
+
+@pytest.fixture(scope="module")
+def stage_09_with_path(tmp_path_factory):
+    """Run Stage 09 once with standard fast parameters; return (result, output_dir)."""
+    tmp = tmp_path_factory.mktemp("stage_09")
+    result = run_stage_09(n_seeds=2, n_ep=3, T=32, output_dir=tmp, fast_mode=False)
+    return result, tmp
+
+
+def test_run_stage_09_fast(stage_09_with_path):
     """Smoke test: run with n_seeds=2, n_ep=3. Check output structure."""
-    result = run_stage_09(n_seeds=2, n_ep=3, T=32, output_dir=tmp_path, fast_mode=False)
+    result, tmp = stage_09_with_path
 
     assert "policies" in result
     required = {"open_loop", "pooled_lqr_estimated", "mjls_smpc", "belief_mpc", "hdr_mode_a"}
@@ -80,13 +90,13 @@ def test_run_stage_09_fast(tmp_path: Path):
     assert "oracle" in result["policies"]["mjls_smpc"]["note"].lower()
 
     # JSON saved
-    out_file = tmp_path / "baseline_comparison.json"
+    out_file = tmp / "baseline_comparison.json"
     assert out_file.exists()
 
 
-def test_belief_mpc_gain_finite(tmp_path: Path):
+def test_belief_mpc_gain_finite(stage_09_with_path):
     """Belief-MPC gain should be finite and within a reasonable range."""
-    result = run_stage_09(n_seeds=2, n_ep=3, T=32, output_dir=tmp_path, fast_mode=False)
+    result, tmp = stage_09_with_path
     gain = result["policies"]["belief_mpc"]["mean_gain_vs_pooled_lqr"]
     assert gain is not None
     assert np.isfinite(gain)
