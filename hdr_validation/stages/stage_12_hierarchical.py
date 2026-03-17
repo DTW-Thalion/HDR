@@ -1,5 +1,5 @@
 """
-Stage 12 — Hierarchical-Prior Coupling Estimation Benchmark (HDR v7.0)
+Stage 12 — Hierarchical-Prior Coupling Estimation Benchmark (HDR v7.3)
 =======================================================================
 Validates Claims 28-30: MAP coupling convergence, B_k sample complexity,
 basin boundary convergence.

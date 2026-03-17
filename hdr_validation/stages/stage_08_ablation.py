@@ -1,5 +1,5 @@
 """
-Stage 08 — Ablation Study (HDR v5.3)
+Stage 08 — Ablation Study (HDR v7.3)
 ======================================
 
 Isolates the contribution of each HDR Mode A component to the +3.7% gain

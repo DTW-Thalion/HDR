@@ -1,5 +1,5 @@
 """
-Stage 14 — Population-Prior Treatment-Planning Benchmark (HDR v7.0)
+Stage 14 — Population-Prior Treatment-Planning Benchmark (HDR v7.3)
 ====================================================================
 Validates Claim 31: Population-prior planning accuracy.
 """

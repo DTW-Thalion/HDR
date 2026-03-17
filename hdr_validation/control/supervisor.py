@@ -1,5 +1,5 @@
 """
-Extended Supervisor — HDR v7.0
+Extended Supervisor — HDR v7.3
 ==============================
 Implements the 8-branch supervisor logic from Table 2 in v7.0.
 """

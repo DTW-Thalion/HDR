@@ -1,4 +1,4 @@
-"""mRPI terminal set and tube-MPC for HDR v7.1 (IG1 Path B).
+"""mRPI terminal set and tube-MPC for HDR v7.3 (IG1 Path B).
 
 Implements the Raković et al. (2005) algorithm for computing the maximal
 robust positively invariant (mRPI) set as a zonotope, and a tube-MPC

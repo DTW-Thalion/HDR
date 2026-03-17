@@ -1,5 +1,5 @@
 """
-Stage 10 — Mode B FP/FN Sweep (HDR v5.2)
+Stage 10 — Mode B FP/FN Sweep (HDR v7.3)
 ==========================================
 
 Validates Lemma 9.3 (the calibration-to-decision-risk bound) empirically by

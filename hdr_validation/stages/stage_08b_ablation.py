@@ -1,5 +1,5 @@
 """
-Stage 08b — Multi-Axis Asymmetric Ablation (HDR v5.3)
+Stage 08b — Multi-Axis Asymmetric Ablation (HDR v7.3)
 =====================================================
 
 Companion to Stage 08 that uses an asymmetric J coupling matrix to

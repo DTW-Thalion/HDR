@@ -1,5 +1,5 @@
 """
-Mode C Fisher Information — HDR v5.2
+Mode C Fisher Information — HDR v7.3
 ======================================
 
 Implements the explicit linear-Gaussian Fisher information form for identifying

@@ -10,7 +10,7 @@
       "n_steps_checked": 1024,
       "proposition_8_4_criterion_met": true,
       "rho_basin": 0.72,
-      "containment_rate_tube": 0.9844
+      "containment_rate_tube": 1.0
     },
     "1": {
       "c_k": 14.9867,
@@ -22,7 +22,7 @@
       "n_steps_checked": 640,
       "proposition_8_4_criterion_met": true,
       "rho_basin": 0.96,
-      "containment_rate_tube": 0.7906
+      "containment_rate_tube": 0.9203
     },
     "2": {
       "c_k": 2.072,
@@ -34,7 +34,7 @@
       "n_steps_checked": 896,
       "proposition_8_4_criterion_met": true,
       "rho_basin": 0.55,
-      "containment_rate_tube": 0.9955
+      "containment_rate_tube": 1.0
     }
   },
   "tube_mpc_enabled": true,

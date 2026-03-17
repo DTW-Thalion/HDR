@@ -1,5 +1,5 @@
 """
-Stage 13 — Alternative Inference Backbone Benchmark (HDR v7.0)
+Stage 13 — Alternative Inference Backbone Benchmark (HDR v7.3)
 ===============================================================
 Validates Claims 27: PF consistency.
 """

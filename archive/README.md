@@ -1,6 +1,6 @@
 # Archive
 
-Files in this directory are superseded by the current version (HDR v5.3)
+Files in this directory are superseded by the current version (HDR v7.3)
 and are retained only for historical reference.
 
 | File | Superseded by | Reason archived |

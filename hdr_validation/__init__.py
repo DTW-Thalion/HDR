@@ -3,7 +3,7 @@ from importlib.metadata import version, PackageNotFoundError
 try:
     __version__ = version("hdr_validation")
 except PackageNotFoundError:
-    __version__ = "5.0.0-dev"
+    __version__ = "7.3.0"
 
 from . import control, inference, model  # noqa: F401
 

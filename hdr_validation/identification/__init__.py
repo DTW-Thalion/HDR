@@ -1,1 +1,1 @@
-"""Identification subpackage — HDR v7.0."""
+"""Identification subpackage — HDR v7.3."""
