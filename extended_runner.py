@@ -930,6 +930,8 @@ def stage04_mode_a(episodes: list[dict]) -> None:
 
     # --- Write chance_calibration.json ---
     cal_results = {
+        "hdr_version": "7.4.0",
+        "generated_at": __import__("datetime").datetime.utcnow().isoformat() + "Z",
         "burden_adherence_hdr_nominal": 1.0,
         "circadian_adherence_hdr_nominal": 1.0,
         "gaussian_calibration_abs_error": gaussian_cal_err,

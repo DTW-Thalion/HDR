@@ -1,4 +1,6 @@
 {
+  "hdr_version": "7.4.0",
+  "generated_at": "2026-03-17T15:19:25.659714Z",
   "burden_adherence_hdr_nominal": 1.0,
   "circadian_adherence_hdr_nominal": 1.0,
   "gaussian_calibration_abs_error": 0.0011718750000000028,

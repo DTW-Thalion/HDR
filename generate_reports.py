@@ -117,6 +117,7 @@ def write_profile_json(profile: str, records: list[dict], elapsed: float,
     total_fail = len(records) - total_pass
 
     doc = {
+        "hdr_version":    "7.4.0",
         "profile":        profile,
         "generated_at":   datetime.utcnow().isoformat() + "Z",
         "elapsed_seconds": round(elapsed, 2),

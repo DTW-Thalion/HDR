@@ -14,9 +14,7 @@
 | `pyproject.toml` | 7.4.0 | Yes (created this session) |
 | `__init__.py` `__version__` | 7.4.0 | Yes (added this session) |
 | `README.md` header | v7.4.0 | Yes (rewritten this session) |
-| Regenerated result artifacts | Note: runners do not embed `hdr_version` in output JSON; `chance_calibration.json` and `stage_summary.json` were produced by v7.4.0 code but do not carry an explicit version field. Recommend adding `"hdr_version": "7.4.0"` to runner output in a follow-up patch. |
-
-**Note:** The stage runners produce artifacts without a `"hdr_version"` or `"generated_at"` field. The `stage_summary.json` carries only a `"date"` field (set at write time). The constraint that every artifact carry `"hdr_version": "7.4.0"` and `"generated_at"` ISO timestamp requires runner code changes, which are out of scope per the constraint "do not modify any stage runner logic." The reconciliation below uses timestamps from the re-run session (2026-03-17).
+| Regenerated result artifacts (`chance_calibration.json`) | 7.4.0 + ISO timestamp | Yes — `"hdr_version": "7.4.0"` and `"generated_at"` injected into all runner JSON outputs (standard, extended, extended_512) and `generate_reports.py` |
 
 ---
 
@@ -142,7 +140,7 @@ If Table 13 in the manuscript reports 60 tests passing across 9 test files with 
 
 ## Section 6 — Remaining Open Issues
 
-1. **No `hdr_version` in result artifacts.** The constraint "every result artifact must carry `hdr_version: 7.4.0` and `generated_at`" cannot be satisfied without modifying runner logic, which is out of scope. Recommend a follow-up patch to inject version metadata into all JSON outputs.
+1. **~~No `hdr_version` in result artifacts.~~** Resolved — `"hdr_version": "7.4.0"` and `"generated_at"` now injected into all runner JSON outputs (standard_runner, extended_runner, extended_512_runner) and `generate_reports.py`.
 
 2. **`stage_summary.json` not regenerated.** The `stage_summary.json` file in `results/stage_04/standard/` was written on 2026-03-10 and still carries `"date": "2026-03-10"`. The re-run regenerated `chance_calibration.json` (which the standard runner writes explicitly) but the stage_summary.json is written by a different code path (possibly `generate_reports.py` or a separate stage04 artifact writer). Its values match the re-run exactly, so no data discrepancy exists, but the timestamp is stale.
 
