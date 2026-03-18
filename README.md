@@ -40,7 +40,7 @@ def tau_sandwich(A: np.ndarray, Q: np.ndarray, x: np.ndarray, target: TargetSet,
 
 ## Reproducing Benchmark A (high-power run)
 
-The headline Benchmark A result (N_mal = 123, 20 seeds × 20 episodes)
+The headline Benchmark A result (20 seeds × 30 episodes per seed)
 is produced by a standalone script that is NOT part of run_all.py:
 
     export OPENBLAS_NUM_THREADS=1
@@ -53,11 +53,31 @@ Outputs are written to results/stage_04/highpower/:
   highpower_table.txt      — human-readable results table
   manuscript_language.txt  — recommended manuscript wording
 
-Expected values (fixed seeds 101–2020):
-  N_maladaptive : 123
-  Mean gain     : +0.028  (95 % CI [+0.021, +0.036])
-  Win rate      : 0.772
-  Safety delta  : +0.0004
+Expected values (fixed seeds 101–2020, 30 ep/seed):
+  N_maladaptive : 179
+  Mean gain     : +0.037  (95 % CI [+0.031, +0.042])
+  Win rate      : 0.838
+  Safety delta  : -0.0001
+
+## Cluster-aware CI analysis (WP-2.3)
+
+To verify robustness to within-seed correlation, run the 100-seed
+cluster bootstrap analysis:
+
+    python cluster_bootstrap_runner.py
+
+This runs Stage 04 with 100 seeds × 30 episodes (3,000 total), then
+computes:
+  - Episode-level and seed-cluster bootstrap 95% CIs
+  - ICC (one-way random effects, seed as grouping factor)
+  - Design effect (DEFF) and effective N
+  - Multi-seed Stage 10 and Stage 15 sweeps
+
+Outputs written to:
+  results/stage_04/cluster_ci_report.json
+  results/stage_04/threshold_claims_audit.txt
+  results/stage_10/multiseed_sweep.json
+  results/stage_15/multiseed_results.json
 
 ## Environment setup (required on multi-core Linux)
 

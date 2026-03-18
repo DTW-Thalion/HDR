@@ -1,3 +1,46 @@
+## WP-2.3: Cluster-Aware Bootstrap CI Analysis (2026-03-18)
+
+### Motivation
+
+A peer reviewer identified that the episode-level bootstrap CI [+0.0297, +0.0403]
+(from the 20-seed highpower run) widens under seed-cluster bootstrapping because
+episodes within a seed share model parameters (ICC ≈ 0.20 estimated by reviewer).
+
+### What was done
+
+1. Increased Stage 04 from 20 seeds to 100 seeds (30 episodes/seed = 3,000 total).
+2. Computed both episode-level and seed-cluster bootstrap 95% CIs (10,000 resamples).
+3. Computed ICC (one-way random effects, seed as grouping factor), DEFF, and effective N.
+4. Ran Stage 10 (Mode B FP/FN sweep) and Stage 15 (proxy-composite) with 10 seeds each.
+
+### Results (100 seeds × 30 episodes, N_mal = 970)
+
+| Metric                     | Value                    |
+|----------------------------|--------------------------|
+| Mean gain                  | +0.0345                  |
+| Episode-level 95% CI       | [+0.0322, +0.0368]       |
+| Seed-cluster 95% CI        | [+0.0314, +0.0378]       |
+| CI widening factor          | 1.36x                    |
+| ICC                        | 0.094                    |
+| DEFF                       | 1.82                     |
+| Effective N                | 532 (vs 970 nominal)     |
+
+Both CI lower bounds clear +0.03. The measured ICC (0.094) is lower than the
+reviewer's estimate (0.20), consistent with within-seed correlation being
+present but moderate. The claim is **robust** to cluster-aware resampling.
+
+### Files added
+
+- `cluster_bootstrap_runner.py` — runner script (100 seeds + cluster CI + ICC)
+- `results/stage_04/cluster_ci_report.json` — all computed statistics
+- `results/stage_04/threshold_claims_audit.txt` — threshold claim audit
+- `results/stage_10/multiseed_sweep.json` — 10-seed FP/FN sweep outputs
+- `results/stage_15/multiseed_results.json` — 10-seed proxy-composite outputs
+
+No core HDR simulation code was modified.
+
+---
+
 ## Stage 08 Ablation Variant Degeneracy — Diagnosis and Fix (2026-03-12)
 
 ### Finding (Revalidation Report v2, §6 — Finding F11)

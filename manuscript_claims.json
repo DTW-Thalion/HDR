@@ -61,6 +61,19 @@
             "expected": 17,
             "note": "16.01 through 16.17 all implemented",
             "manuscript_ref": "Section 7.4"
+        },
+        "benchmark_a_cluster_ci_lower": {
+            "expected_ge": 0.03,
+            "artifact": "results/stage_04/cluster_ci_report.json",
+            "key": "ci_cluster[0]",
+            "note": "Seed-cluster bootstrap 95% CI lower bound (accounts for within-seed ICC)",
+            "manuscript_ref": "Table 1, Claim 1 (robustness check)"
+        },
+        "benchmark_a_icc": {
+            "artifact": "results/stage_04/cluster_ci_report.json",
+            "key": "icc",
+            "note": "Intraclass correlation coefficient (one-way random effects, seed as grouping factor)",
+            "manuscript_ref": "WP-2.3 cluster bootstrap analysis"
         }
     }
 }
