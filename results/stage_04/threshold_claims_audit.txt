@@ -1,0 +1,36 @@
+Threshold Claims Audit — Stage 04 Cluster-Aware CI Analysis
+==============================================================
+
+n_seeds: 100
+n_episodes_per_seed: 30
+n_total_maladaptive_episodes: 970
+
+Episode-level bootstrap 95% CI:
+  [+0.0322, +0.0368]
+  Width: 0.0047
+
+Seed-cluster bootstrap 95% CI:
+  [+0.0314, +0.0378]
+  Width: 0.0064
+  Widening factor: 1.36x
+
+ICC: 0.0945
+DEFF: 1.8219
+Effective N: 532.4
+
+--------------------------------------------------------------
+CLAIMS DEPENDING ON CI LOWER BOUND >= 0.03:
+--------------------------------------------------------------
+
+Claim 2 (CLAIM_MATRIX.md):
+  Criterion: 95% CI lower bound >= +0.03
+  Episode-level CI lower: +0.0322 PASS
+  Cluster-level CI lower: +0.0314 PASS
+
+  Claim is ROBUST to cluster-aware resampling.
+
+--------------------------------------------------------------
+HIGHPOWER SUMMARY (CLAIM_MATRIX.md line 115):
+  States: gain >= +0.03; CI lower >= +0.03
+  Mean gain: +0.0345 PASS
+  Cluster CI lower: +0.0314 PASS
