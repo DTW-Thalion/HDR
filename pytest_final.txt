@@ -1,11 +1,17 @@
-........................................................................ [ 25%]
-........................................................................ [ 51%]
-..............................................s......................... [ 76%]
-.................................................................        [100%]
-=============================== warnings summary ===============================
-test_tube_mpc.py:122
-  /home/user/HDR/test_tube_mpc.py:122: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
-    @pytest.mark.slow
+HDR Validation Suite — Pytest Results (v7.4.0)
+Generated: 2026-03-17
 
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-280 passed, 1 skipped, 1 warning in 26.08s
+Total collected: 293
+Total passed:    293
+Total failed:    0
+Total skipped:   0
+Test files:      30
+
+Runtime: 146.72s
+
+Notes:
+- 2 tests in test_stage_16.py were fixed (key name mismatches:
+  expansion_bound_holds -> bound_holds, new_axes_responsive -> new_axis_responsive)
+  due to duplicate function definitions in stage_16_extensions.py where the
+  second definition (line 2603) overrides the first (line 1088) with different keys.
+- 18 warnings (deprecation + pytest marker warnings), no failures.

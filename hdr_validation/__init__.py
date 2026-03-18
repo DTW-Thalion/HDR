@@ -3,7 +3,7 @@ from importlib.metadata import version, PackageNotFoundError
 try:
     __version__ = version("hdr_validation")
 except PackageNotFoundError:
-    __version__ = "7.3.0"
+    __version__ = "7.4.0"
 
 from .defaults import HDR_VERSION as _HDR_VERSION
 import warnings as _warnings

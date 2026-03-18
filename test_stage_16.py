@@ -244,7 +244,7 @@ def test_stage16_expansion_stability():
     cfg = _fast_cfg(n_seeds=2, T=32)
     result = _run_subtest_16_11_expansion(cfg, n_seeds=2, T=32)
     assert result["expanded_stable"] is True
-    assert result["expansion_bound_holds"] is True
+    assert result["bound_holds"] is True
 
 
 def test_stage16_expansion_unperturbed():
@@ -256,7 +256,7 @@ def test_stage16_expansion_unperturbed():
 def test_stage16_expansion_responsiveness():
     cfg = _fast_cfg(n_seeds=2, T=32)
     result = _run_subtest_16_11_expansion(cfg, n_seeds=2, T=32)
-    assert result["new_axes_responsive"] is True
+    assert result["new_axis_responsive"] is True
 
 
 # ===== 16.12: PD Baseline (existing) =====

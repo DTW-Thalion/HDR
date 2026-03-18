@@ -78,8 +78,8 @@
   "calibration_marginal_gain": 0.0,
   "ablation_criterion_note": "hdr_full (-0.8454) >= mpc_only (-1.0086)",
   "provenance": {
-    "hdr_version": "7.3.0",
-    "generated_at": "2026-03-17T02:34:43.097878Z",
-    "git_commit": "45df68f"
+    "hdr_version": "7.4.0",
+    "generated_at": "2026-03-17T15:48:14.486164Z",
+    "git_commit": "81d18c4"
   }
 }
