@@ -1,0 +1,23 @@
+{
+  "mean_gain": 0.034514945027353416,
+  "ci_episode": [
+    0.0321704974613572,
+    0.036840418591799644
+  ],
+  "ci_cluster": [
+    0.031405057234920285,
+    0.03775908781069651
+  ],
+  "icc": 0.09446763956005423,
+  "deff": 1.8218684641724718,
+  "effective_n": 532.4204348861118,
+  "n_seeds": 100,
+  "n_episodes_per_seed": 30,
+  "n_total_episodes": 970,
+  "n_total_all_basins": 3000,
+  "bootstrap_n_resamples": 10000,
+  "ci_episode_width": 0.004669921130442442,
+  "ci_cluster_width": 0.006354030575776222,
+  "ci_widening_factor": 1.3606290980709181,
+  "n_per_cluster_mean": 9.7
+}

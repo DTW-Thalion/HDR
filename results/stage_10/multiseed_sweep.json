@@ -1,0 +1,417 @@
+{
+  "n_seeds": 10,
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51
+  ],
+  "per_seed_results": [
+    {
+      "seed": 42,
+      "sweep": [
+        {
+          "R_Brier_target": 0.0,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.05,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.1,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0049
+        },
+        {
+          "R_Brier_target": 0.15,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0002,
+          "FN_rate_robust": 0.1175
+        },
+        {
+          "R_Brier_target": 0.2,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0014,
+          "FN_rate_robust": 0.498
+        }
+      ]
+    },
+    {
+      "seed": 43,
+      "sweep": [
+        {
+          "R_Brier_target": 0.0,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.05,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.1,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0047
+        },
+        {
+          "R_Brier_target": 0.15,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0003,
+          "FN_rate_robust": 0.1159
+        },
+        {
+          "R_Brier_target": 0.2,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0011,
+          "FN_rate_robust": 0.5005
+        }
+      ]
+    },
+    {
+      "seed": 44,
+      "sweep": [
+        {
+          "R_Brier_target": 0.0,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.05,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.1,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0049
+        },
+        {
+          "R_Brier_target": 0.15,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0002,
+          "FN_rate_robust": 0.1154
+        },
+        {
+          "R_Brier_target": 0.2,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0012,
+          "FN_rate_robust": 0.4997
+        }
+      ]
+    },
+    {
+      "seed": 45,
+      "sweep": [
+        {
+          "R_Brier_target": 0.0,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.05,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.1,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0055
+        },
+        {
+          "R_Brier_target": 0.15,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0002,
+          "FN_rate_robust": 0.117
+        },
+        {
+          "R_Brier_target": 0.2,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0013,
+          "FN_rate_robust": 0.5009
+        }
+      ]
+    },
+    {
+      "seed": 46,
+      "sweep": [
+        {
+          "R_Brier_target": 0.0,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.05,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.1,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0049
+        },
+        {
+          "R_Brier_target": 0.15,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0002,
+          "FN_rate_robust": 0.1155
+        },
+        {
+          "R_Brier_target": 0.2,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0013,
+          "FN_rate_robust": 0.5002
+        }
+      ]
+    },
+    {
+      "seed": 47,
+      "sweep": [
+        {
+          "R_Brier_target": 0.0,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.05,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.1,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.005
+        },
+        {
+          "R_Brier_target": 0.15,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0002,
+          "FN_rate_robust": 0.1174
+        },
+        {
+          "R_Brier_target": 0.2,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0014,
+          "FN_rate_robust": 0.5001
+        }
+      ]
+    },
+    {
+      "seed": 48,
+      "sweep": [
+        {
+          "R_Brier_target": 0.0,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.05,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.1,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0048
+        },
+        {
+          "R_Brier_target": 0.15,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0003,
+          "FN_rate_robust": 0.1145
+        },
+        {
+          "R_Brier_target": 0.2,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0014,
+          "FN_rate_robust": 0.4975
+        }
+      ]
+    },
+    {
+      "seed": 49,
+      "sweep": [
+        {
+          "R_Brier_target": 0.0,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.05,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.1,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0048
+        },
+        {
+          "R_Brier_target": 0.15,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0003,
+          "FN_rate_robust": 0.1166
+        },
+        {
+          "R_Brier_target": 0.2,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0013,
+          "FN_rate_robust": 0.5008
+        }
+      ]
+    },
+    {
+      "seed": 50,
+      "sweep": [
+        {
+          "R_Brier_target": 0.0,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.05,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.1,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0048
+        },
+        {
+          "R_Brier_target": 0.15,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0002,
+          "FN_rate_robust": 0.1139
+        },
+        {
+          "R_Brier_target": 0.2,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0013,
+          "FN_rate_robust": 0.4993
+        }
+      ]
+    },
+    {
+      "seed": 51,
+      "sweep": [
+        {
+          "R_Brier_target": 0.0,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.05,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.0
+        },
+        {
+          "R_Brier_target": 0.1,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0,
+          "FN_rate_robust": 0.005
+        },
+        {
+          "R_Brier_target": 0.15,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0002,
+          "FN_rate_robust": 0.1167
+        },
+        {
+          "R_Brier_target": 0.2,
+          "FP_rate_fixed": 0.0,
+          "FP_rate_robust": 0.0,
+          "FN_rate_fixed": 0.0014,
+          "FN_rate_robust": 0.5025
+        }
+      ]
+    }
+  ]
+}
