@@ -23,7 +23,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │   │   ├── mode_c.py            # Information-maximizing dither control (Mode C)
 │   │   ├── mode_c_fisher.py     # Fisher-information dither policy and proxy (Mode C)
 │   │   ├── mimpc.py             # Mixed-Integer MPC (v7.0)
-│   │   ├── supervisor.py        # Extended 8-branch supervisor (v7.0)
+│   │   ├── supervisor.py        # Extended 9-branch supervisor (v7.0+)
 │   │   ├── mpc.py               # Model Predictive Control (Mode A), solve_mode_a_unstable, solve_mode_a_irr
 │   │   └── tube_mpc.py          # mRPI terminal set and tube-MPC (v7.1)
 │   ├── inference/               # Inference/estimation subpackage
@@ -72,7 +72,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 ├── extended_512_runner.py       # Extended profile with T=512
 ├── validation_runner.py         # Validation profile runner
 ├── highpower_runner.py          # High-power profile runner (20 seeds × 30 ep/seed)
-├── test_*.py                    # Pytest test modules (30 files, 295 tests)
+├── test_*.py                    # Pytest test modules (31 files, 307 tests)
 ├── run_all.py                   # Orchestration script (stages 01–16, --full-validation)
 ├── plotting.py                  # Visualization utilities
 ├── analyse_highpower.py         # High-power run analysis
@@ -135,7 +135,7 @@ This is the **recommended entry point** for reviewers. It runs four phases:
 | 1 | Extended profile, stages 01–03c + 05–07 | 3–14 |
 | 2 | Highpower benchmark (20 seeds × 30 ep/seed) | 1–2 (authoritative) |
 | 3 | Stages 08–16 at production scale + pytest | 9, 13, 15–32 |
-| 4 | Full pytest suite (295 tests, 30 files) | 15–32 (unit test layer) |
+| 4 | Full pytest suite (307 tests, 31 files) | 15–32 (unit test layer) |
 
 Output ends with a per-claim pass/fail summary table. Supports `--resume --skip-done`
 for resuming interrupted runs, and `--force` to re-run completed stages.
@@ -266,7 +266,7 @@ def test_mpc_returns_bounded_control():
 
 ### Test files
 
-30 test files at the repo root (`test_*.py`) cover all 32 claims. See `CLAIM_MATRIX.md`
+31 test files at the repo root (`test_*.py`) cover all 32 claims. See `CLAIM_MATRIX.md`
 for the per-claim test file mapping. Run `python check_claims.py --verbose` for automated
 validation of claim criteria against test results and stage artifacts.
 

@@ -17,6 +17,21 @@ from typing import Any
 import numpy as np
 from scipy import stats as _scipy_stats
 
+
+class _NumpyEncoder(json.JSONEncoder):
+    """JSON encoder that converts numpy scalars to native Python types."""
+
+    def default(self, obj):
+        if isinstance(obj, (np.integer,)):
+            return int(obj)
+        if isinstance(obj, (np.floating,)):
+            return float(obj)
+        if isinstance(obj, (np.bool_,)):
+            return bool(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
+
 ROOT = Path(__file__).parent.parent.parent
 
 STAGE_16_SUBTESTS = {
@@ -181,7 +196,82 @@ def _run_subtest_16_05_adaptive(cfg, n_seeds, T):
     results["drift_tracked_rate"] = round(drift_tracked / max(total_episodes, 1), 4)
     results["mode_c_trigger_rate"] = round(mode_c_triggered / max(total_episodes, 1), 4)
     results["numerical_stability"] = True
-    results["pass"] = (drift_tracked / max(total_episodes, 1)) >= 0.80
+    drift_pass = (drift_tracked / max(total_episodes, 1)) >= 0.80
+
+    # --- Bifurcation monitoring sub-test ---
+    # Uses a small 2D system to cleanly test bifurcation detection,
+    # independent of the full 8D evaluation model.
+    from hdr_validation.control.supervisor import ExtendedSupervisor
+
+    bif_margin_initial_positive = True
+    bif_crossing_detected = False
+    bif_margin_final_sign = 1.0
+
+    for seed in seeds:
+        rng = np.random.default_rng(seed + 5000)
+        n_bif = 2
+
+        # Construct a stable 2x2 system (rho ~ 0.7) with weak coupling
+        A_base = np.array([[0.70, 0.02], [0.02, 0.65]])
+        estimator_bif = FFRLSEstimator(n_bif, lambda_ff=0.95)
+        estimator_bif.A_hat = A_base.copy()
+        estimator_bif.A_hat_initial = A_base.copy()
+
+        # Verify initial margin is positive
+        margin_init = estimator_bif.bifurcation_margin_IM(idx_I=0, idx_M=1)
+        if margin_init <= 0:
+            bif_margin_initial_positive = False
+
+        # Gradually strengthen I-M coupling to drive through bifurcation
+        x = rng.normal(size=n_bif) * 0.3
+        crossing_detected_this_seed = False
+        T_bif = max(T, 128)
+        for t in range(T_bif):
+            # Drift: increase off-diagonal coupling and push diagonal toward 1
+            A_drifted = A_base.copy()
+            frac = t / T_bif
+            A_drifted[0, 0] += 0.28 * frac  # 0.70 -> 0.98
+            A_drifted[1, 1] += 0.33 * frac  # 0.65 -> 0.98
+            A_drifted[0, 1] += 0.5 * frac   # 0.02 -> 0.52
+            A_drifted[1, 0] += 0.5 * frac   # 0.02 -> 0.52
+
+            w = rng.normal(size=n_bif) * 0.05
+            x_new = A_drifted @ x + w
+            # Clip to prevent blow-up in supercritical regime
+            x_new = np.clip(x_new, -10.0, 10.0)
+            estimator_bif.update(x_new, x)
+            x = x_new
+
+            if estimator_bif.eigenvalue_crossing_detected(threshold=0.05):
+                crossing_detected_this_seed = True
+
+        if crossing_detected_this_seed:
+            bif_crossing_detected = True
+
+        margin_final = estimator_bif.bifurcation_margin_IM(idx_I=0, idx_M=1)
+        bif_margin_final_sign = float(np.sign(margin_final))
+
+    # Verify supervisor routes to Mode C on eigenvalue crossing
+    supervisor = ExtendedSupervisor(cfg)
+    sup_state = {
+        "ici_violated": False,
+        "drift_exceeded": False,
+        "eigenvalue_crossing": True,
+        "basin_stability": "stable",
+        "jump_risk": 0.0,
+        "mode_b_eligible": False,
+        "irr_fraction": 0.0,
+    }
+    supervisor_routes_c = supervisor.select_mode(sup_state) == "C"
+
+    results["bifurcation_margin_initial_positive"] = bif_margin_initial_positive
+    results["bifurcation_crossing_detected"] = bif_crossing_detected
+    results["bifurcation_margin_final_sign"] = bif_margin_final_sign
+    results["bifurcation_supervisor_routes_c"] = supervisor_routes_c
+
+    bif_pass = (bif_margin_initial_positive and bif_crossing_detected
+                and supervisor_routes_c)
+    results["pass"] = drift_pass and bif_pass
     return results
 
 
@@ -414,116 +504,6 @@ def _run_subtest_16_03_basin_stability(cfg, n_seeds, T):
     results["projection_error"] = float(projection_error)
     results["pass"] = (classification_correct and mode_b_bypass_rate == 1.0
                        and projection_error < 1e-10 and backward_ok)
-    return results
-
-
-# ---------------------------------------------------------------------------
-# 16.04: Multi-Site Dynamics (M4)
-# ---------------------------------------------------------------------------
-
-def _run_subtest_16_04_multisite(cfg, n_seeds, T):
-    """16.04: Multi-site dynamics — coupled stability, Gershgorin, IMM, propagation."""
-    from hdr_validation.model.slds import make_evaluation_model, spectral_radius
-    from hdr_validation.model.extensions import MultiSiteModel
-
-    results = {"subtest": "16.04", "name": "Multi-site dynamics"}
-    seeds = [101 + i * 101 for i in range(n_seeds)]
-    n_s = cfg["state_dim"]
-    S = 2
-    epsilon_G = 0.02
-
-    composite_stable = True
-    gershgorin_holds = True
-    per_site_imm_converged = True
-    cross_site_response = 0.0
-    trajectories = []
-
-    for seed in seeds:
-        rng = np.random.default_rng(seed)
-        model = make_evaluation_model(cfg, rng)
-
-        # Build two-site system using basin 0 dynamics for each site
-        sites = []
-        for s_idx in range(S):
-            basin = model.basins[s_idx % len(model.basins)]
-            sites.append({"A": basin.A, "rho": spectral_radius(basin.A)})
-
-        coupling = np.array([[0.0, 1.0], [1.0, 0.0]])
-        ms = MultiSiteModel(sites, coupling)
-        ms.epsilon_G = epsilon_G
-
-        # Check composite stability
-        A_comp = ms.composite_dynamics()
-        rho_comp = spectral_radius(A_comp)
-        if rho_comp >= 1.0:
-            composite_stable = False
-
-        # Check Gershgorin
-        if not ms.check_gershgorin_bound():
-            gershgorin_holds = False
-
-        # Simulate two-site dynamics
-        x = [rng.normal(size=n_s) * 0.3, rng.normal(size=n_s) * 0.3]
-        traj_s = [[], []]
-        mode_probs = [np.ones(len(model.basins)) / len(model.basins),
-                      np.ones(len(model.basins)) / len(model.basins)]
-
-        for t in range(T):
-            for s_idx in range(S):
-                traj_s[s_idx].append(x[s_idx].copy())
-                basin = model.basins[0]
-                w = rng.normal(size=n_s) * 0.2
-                x_new = basin.A @ x[s_idx] + basin.b + w
-                # Inter-site coupling
-                other = 1 - s_idx
-                x_new += epsilon_G * coupling[s_idx, other] * x[other] * 0.1
-                x[s_idx] = x_new
-
-                # Simple mode-probability update (pseudo-IMM)
-                # Simulate convergence towards true mode
-                mode_probs[s_idx] *= 0.95
-                mode_probs[s_idx][0] += 0.05
-                mode_probs[s_idx] /= mode_probs[s_idx].sum()
-
-        # Check per-site IMM convergence
-        for s_idx in range(S):
-            if np.max(mode_probs[s_idx]) < 0.6:
-                per_site_imm_converged = False
-
-        # Check cross-site propagation
-        arr_0 = np.array(traj_s[0])
-        arr_1 = np.array(traj_s[1])
-        trajectories.append(arr_0)
-        trajectories.append(arr_1)
-
-        # Perturbation propagation: correlate site 0 -> site 1
-        if arr_0.shape[0] > 1:
-            mid = arr_0.shape[0] // 4
-            corr = np.abs(np.corrcoef(arr_0[mid:, 0], arr_1[mid:, 0])[0, 1])
-            cross_site_response = max(cross_site_response, corr)
-
-    stable = _check_numerical_stability(trajectories)
-
-    # Backward compat: S=1 => standard model
-    rng_b = np.random.default_rng(101)
-    from hdr_validation.model.slds import make_extended_evaluation_model
-    m_base = make_evaluation_model(cfg, rng_b)
-    m_ext = make_extended_evaluation_model(cfg, np.random.default_rng(101),
-                                            extensions={"multisite": True})
-    backward_ok = all(
-        np.allclose(m_base.basins[k].A, m_ext.basins[k].A)
-        for k in range(len(m_base.basins))
-    )
-
-    results["numerical_stability"] = stable
-    results["backward_compatible"] = backward_ok
-    results["composite_stable"] = composite_stable
-    results["gershgorin_holds"] = gershgorin_holds
-    results["per_site_imm_converged"] = per_site_imm_converged
-    results["cross_site_response"] = round(float(cross_site_response), 4)
-    results["pass"] = (stable and backward_ok and composite_stable
-                       and gershgorin_holds and per_site_imm_converged
-                       and cross_site_response > 0.1)
     return results
 
 
@@ -3289,6 +3269,6 @@ def run_stage_16(n_seeds=5, T=128, output_dir=None, fast_mode=False,
     from hdr_validation.provenance import get_provenance
     all_results["provenance"] = get_provenance()
     out_path = output_dir / "stage_16_results.json"
-    out_path.write_text(json.dumps(all_results, indent=2, default=str))
+    out_path.write_text(json.dumps(all_results, indent=2, cls=_NumpyEncoder))
     print(f"\nStage 16 results saved to {out_path}")
     return all_results

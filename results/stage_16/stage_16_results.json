@@ -5,7 +5,7 @@
     "numerical_stability": true,
     "region_consistency_rate": 1.0,
     "pass": true,
-    "elapsed": 0.06
+    "elapsed": 0.09
   },
   "16.02": {
     "subtest": "16.02",
@@ -38,7 +38,7 @@
     "gershgorin_holds": true,
     "per_site_imm_converged": true,
     "cross_site_response": 0.4216,
-    "pass": "True",
+    "pass": true,
     "elapsed": 0.0
   },
   "16.05": {
@@ -47,8 +47,12 @@
     "drift_tracked_rate": 1.0,
     "mode_c_trigger_rate": 1.0,
     "numerical_stability": true,
+    "bifurcation_margin_initial_positive": true,
+    "bifurcation_crossing_detected": true,
+    "bifurcation_margin_final_sign": -1.0,
+    "bifurcation_supervisor_routes_c": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.06": {
     "subtest": "16.06",
@@ -60,7 +64,7 @@
     "jump_magnitude_ks_p": 0.5,
     "prophylactic_trigger_rate": 1.0,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.07": {
     "subtest": "16.07",
@@ -83,7 +87,7 @@
     "observation_epoch_improvement": true,
     "mode_accuracy_above_threshold": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.09": {
     "subtest": "16.09",
@@ -94,7 +98,7 @@
     "exposure_violations": 0,
     "toxicity_correlation": 1.0,
     "pass": true,
-    "elapsed": 0.05
+    "elapsed": 0.08
   },
   "16.10": {
     "subtest": "16.10",
@@ -105,7 +109,7 @@
     "stability_preserved": true,
     "sign_reversal_observed": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.11": {
     "subtest": "16.11",
@@ -124,7 +128,7 @@
     "name": "PD profile (no extensions)",
     "backward_compatible": true,
     "pass": true,
-    "elapsed": 0.02
+    "elapsed": 0.04
   },
   "16.13": {
     "subtest": "16.13",
@@ -177,11 +181,11 @@
     "expansion_invariants_pass": true,
     "cost_ratio": 1.0085,
     "pass": true,
-    "elapsed": 0.03
+    "elapsed": 0.04
   },
   "provenance": {
     "hdr_version": "7.4.0",
-    "generated_at": "2026-03-17T15:59:22.087643Z",
-    "git_commit": "81d18c4"
+    "generated_at": "2026-03-19T15:59:16.199022Z",
+    "git_commit": "6eba174"
   }
 }

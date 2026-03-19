@@ -119,3 +119,61 @@ def test_drift_detector_trigger_latency():
             triggered = True
             break
     assert triggered, "Drift detector never triggered"
+
+
+def test_bifurcation_margin_stable():
+    """Subcritical regime: margin should be positive."""
+    est = FFRLSEstimator(n=8, lambda_ff=0.98)
+    # Healthy basin: diagonal dominant (rho ~ 0.72)
+    A = np.eye(8) * 0.72
+    A[0, 1] = 0.05  # weak I->M coupling
+    A[1, 0] = 0.04  # weak M->I coupling
+    est.A_hat = A.copy()
+    est.A_hat_initial = A.copy()
+    margin = est.bifurcation_margin_IM(idx_I=0, idx_M=1)
+    assert margin > 0, f"Expected positive margin, got {margin}"
+
+
+def test_bifurcation_margin_critical():
+    """At bifurcation: margin should be near zero."""
+    est = FFRLSEstimator(n=2, lambda_ff=0.98)
+    # Construct A such that det(I - A) = 0
+    # (1 - A_00)(1 - A_11) = A_01 * A_10
+    # Let A_00 = 0.5, A_11 = 0.6 => (0.5)(0.4) = 0.2
+    # So A_01 * A_10 = 0.2 => A_01 = 0.5, A_10 = 0.4
+    A = np.array([[0.5, 0.5], [0.4, 0.6]])
+    est.A_hat = A.copy()
+    margin = est.bifurcation_margin_IM(idx_I=0, idx_M=1)
+    assert abs(margin) < 1e-10, f"Expected near-zero margin, got {margin}"
+
+
+def test_bifurcation_margin_supercritical():
+    """Beyond bifurcation: margin should be negative."""
+    est = FFRLSEstimator(n=2, lambda_ff=0.98)
+    # Strong off-diagonal coupling pushes past bifurcation
+    A = np.array([[0.5, 0.8], [0.7, 0.6]])
+    est.A_hat = A.copy()
+    margin = est.bifurcation_margin_IM(idx_I=0, idx_M=1)
+    assert margin < 0, f"Expected negative margin, got {margin}"
+
+
+def test_eigenvalue_crossing_detected_stable():
+    """Stable basin: no crossing detected."""
+    est = FFRLSEstimator(n=8, lambda_ff=0.98)
+    est.A_hat = np.eye(8) * 0.72
+    assert not est.eigenvalue_crossing_detected(threshold=0.02)
+
+
+def test_eigenvalue_crossing_detected_near_unit():
+    """Near-unit eigenvalue: crossing detected."""
+    est = FFRLSEstimator(n=2, lambda_ff=0.98)
+    # Eigenvalues at 0.99 and 0.5 — 0.99 is within 0.02 of 1.0
+    est.A_hat = np.diag([0.99, 0.5])
+    assert est.eigenvalue_crossing_detected(threshold=0.02)
+
+
+def test_eigenvalue_crossing_not_detected_marginal():
+    """Eigenvalue at 0.95 with threshold 0.02: no crossing."""
+    est = FFRLSEstimator(n=2, lambda_ff=0.98)
+    est.A_hat = np.diag([0.95, 0.5])
+    assert not est.eigenvalue_crossing_detected(threshold=0.02)
