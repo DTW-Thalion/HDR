@@ -181,7 +181,82 @@ def _run_subtest_16_05_adaptive(cfg, n_seeds, T):
     results["drift_tracked_rate"] = round(drift_tracked / max(total_episodes, 1), 4)
     results["mode_c_trigger_rate"] = round(mode_c_triggered / max(total_episodes, 1), 4)
     results["numerical_stability"] = True
-    results["pass"] = (drift_tracked / max(total_episodes, 1)) >= 0.80
+    drift_pass = (drift_tracked / max(total_episodes, 1)) >= 0.80
+
+    # --- Bifurcation monitoring sub-test ---
+    # Uses a small 2D system to cleanly test bifurcation detection,
+    # independent of the full 8D evaluation model.
+    from hdr_validation.control.supervisor import ExtendedSupervisor
+
+    bif_margin_initial_positive = True
+    bif_crossing_detected = False
+    bif_margin_final_sign = 1.0
+
+    for seed in seeds:
+        rng = np.random.default_rng(seed + 5000)
+        n_bif = 2
+
+        # Construct a stable 2x2 system (rho ~ 0.7) with weak coupling
+        A_base = np.array([[0.70, 0.02], [0.02, 0.65]])
+        estimator_bif = FFRLSEstimator(n_bif, lambda_ff=0.95)
+        estimator_bif.A_hat = A_base.copy()
+        estimator_bif.A_hat_initial = A_base.copy()
+
+        # Verify initial margin is positive
+        margin_init = estimator_bif.bifurcation_margin_IM(idx_I=0, idx_M=1)
+        if margin_init <= 0:
+            bif_margin_initial_positive = False
+
+        # Gradually strengthen I-M coupling to drive through bifurcation
+        x = rng.normal(size=n_bif) * 0.3
+        crossing_detected_this_seed = False
+        T_bif = max(T, 128)
+        for t in range(T_bif):
+            # Drift: increase off-diagonal coupling and push diagonal toward 1
+            A_drifted = A_base.copy()
+            frac = t / T_bif
+            A_drifted[0, 0] += 0.28 * frac  # 0.70 -> 0.98
+            A_drifted[1, 1] += 0.33 * frac  # 0.65 -> 0.98
+            A_drifted[0, 1] += 0.5 * frac   # 0.02 -> 0.52
+            A_drifted[1, 0] += 0.5 * frac   # 0.02 -> 0.52
+
+            w = rng.normal(size=n_bif) * 0.05
+            x_new = A_drifted @ x + w
+            # Clip to prevent blow-up in supercritical regime
+            x_new = np.clip(x_new, -10.0, 10.0)
+            estimator_bif.update(x_new, x)
+            x = x_new
+
+            if estimator_bif.eigenvalue_crossing_detected(threshold=0.05):
+                crossing_detected_this_seed = True
+
+        if crossing_detected_this_seed:
+            bif_crossing_detected = True
+
+        margin_final = estimator_bif.bifurcation_margin_IM(idx_I=0, idx_M=1)
+        bif_margin_final_sign = float(np.sign(margin_final))
+
+    # Verify supervisor routes to Mode C on eigenvalue crossing
+    supervisor = ExtendedSupervisor(cfg)
+    sup_state = {
+        "ici_violated": False,
+        "drift_exceeded": False,
+        "eigenvalue_crossing": True,
+        "basin_stability": "stable",
+        "jump_risk": 0.0,
+        "mode_b_eligible": False,
+        "irr_fraction": 0.0,
+    }
+    supervisor_routes_c = supervisor.select_mode(sup_state) == "C"
+
+    results["bifurcation_margin_initial_positive"] = bif_margin_initial_positive
+    results["bifurcation_crossing_detected"] = bif_crossing_detected
+    results["bifurcation_margin_final_sign"] = bif_margin_final_sign
+    results["bifurcation_supervisor_routes_c"] = supervisor_routes_c
+
+    bif_pass = (bif_margin_initial_positive and bif_crossing_detected
+                and supervisor_routes_c)
+    results["pass"] = drift_pass and bif_pass
     return results
 
 

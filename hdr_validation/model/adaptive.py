@@ -83,6 +83,54 @@ class FFRLSEstimator:
         """
         return float(np.sqrt(np.trace(self.P_rls) / self.n**2))
 
+    def eigenvalue_crossing_detected(self, threshold: float = 0.02) -> bool:
+        """Check if any eigenvalue of A_hat has crossed or is near the unit circle.
+
+        Returns True if min_i | |lambda_i(A_hat)| - 1.0 | < threshold,
+        indicating a bifurcation-proximal regime.
+
+        This implements the supervisor trigger from eq. (17) in the paper:
+        "or rho(A_hat_k(t)) crosses 1".
+        """
+        eigvals = np.linalg.eigvals(self.A_hat)
+        moduli = np.abs(eigvals)
+        min_distance = float(np.min(np.abs(moduli - 1.0)))
+        return min_distance < threshold
+
+    def bifurcation_margin_IM(
+        self,
+        idx_I: int = 0,
+        idx_M: int = 1,
+    ) -> float:
+        """Compute the I-M bifurcation margin beta(t) from current A_hat.
+
+        For the 2x2 I-M submatrix of A_hat (discrete-time):
+            A_sub = [[A_II, A_IM], [A_MI, A_MM]]
+
+        The continuous-time parameters are recovered via:
+            1/tau_i approx (1 - A_ii) / dt
+            J_ij approx A_ij / dt    (for i != j)
+
+        The bifurcation margin (eq. 23 in the paper) is:
+            beta = (1/tau_I)(1/tau_M) - J_IM * J_MI
+                 = det(-D + J) for the I-M block
+
+        In discrete-time terms (without requiring dt):
+            det(I - A_sub) = (1 - A_II)(1 - A_MM) - A_IM * A_MI
+
+        This equals dt^2 * beta for the Euler discretisation A = I + dt*A_tilde,
+        so its sign is the same as beta's sign.  Positive means subcritical
+        (healthy basin stable); negative means supercritical (saddle-node
+        bifurcation has occurred).
+
+        Returns the discrete-time bifurcation margin det(I - A_sub).
+        """
+        A_II = self.A_hat[idx_I, idx_I]
+        A_MM = self.A_hat[idx_M, idx_M]
+        A_IM = self.A_hat[idx_I, idx_M]
+        A_MI = self.A_hat[idx_M, idx_I]
+        return float((1.0 - A_II) * (1.0 - A_MM) - A_IM * A_MI)
+
     def adaptive_delta_A(self, gamma_margin: float = 2.0) -> float:
         """Adaptive mismatch bound: ||A_hat - A_initial||_2 + gamma * sigma_rls.
 

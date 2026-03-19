@@ -1,7 +1,7 @@
 """
 Extended Supervisor
 ==============================
-Implements the 8-branch supervisor logic from Table 2 in v7.0.
+Implements the 9-branch supervisor logic from Table 2/3 in v7.0.
 """
 from __future__ import annotations
 
@@ -9,10 +9,11 @@ import numpy as np
 
 
 class ExtendedSupervisor:
-    """Implements the 8-branch supervisor logic from Table 2 in v7.0:
+    """Implements the 9-branch supervisor logic from Table 2/3 in v7.0:
 
     1. ICI violated -> Mode C (identification)
     2. Parameter drift exceeds ISS margin -> Mode C (re-identification)
+    2b. Eigenvalue of A_hat crosses unit circle -> Mode C (basin-count re-identification)
     3. Unstable basin (z_t in K_u) -> Mode B (escape)
     4. Jump-risk threshold exceeded -> Mode B (prophylactic)
     5. All Mode B criteria met (stable maladaptive) -> Mode B (escape)
@@ -70,6 +71,10 @@ class ExtendedSupervisor:
 
         # Branch 2: Drift exceeded -> Mode C (re-identification)
         if state.get("drift_exceeded", False):
+            return "C"
+
+        # Branch 2b: Eigenvalue crossing unit circle -> Mode C (basin-count re-ID)
+        if state.get("eigenvalue_crossing", False):
             return "C"
 
         # Branch 3: Unstable basin -> Mode B (escape)
