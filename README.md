@@ -20,7 +20,7 @@ HDR/
 ├── extended_512_runner.py       # Extended profile (T=512)
 ├── validation_runner.py         # Validation profile runner
 ├── highpower_runner.py          # Benchmark A (20 seeds × 30 ep/seed)
-├── test_*.py                    # 30 pytest test files
+├── test_*.py                    # 31 pytest test files (307 tests)
 ├── config.json                  # Master configuration
 └── paper_defaults.json          # Reference parameter values from paper
 ```
@@ -49,7 +49,7 @@ This runs four phases:
 | 1 | Extended profile, stages 01–03c + 05–07 | 3–14 |
 | 2 | Highpower benchmark (20 seeds × 30 ep/seed) | 1–2 |
 | 3 | Stages 08–16 at production scale | 9, 13, 15–32 |
-| 4 | Full pytest suite (30 files) | 15–32 |
+| 4 | Full pytest suite (31 files, 307 tests) | 15–32 |
 
 ### Per-profile runs
 
@@ -80,7 +80,7 @@ Outputs to `results/stage_04/highpower/`.
 ### Running tests
 
 ```bash
-pytest                          # All 30 test files
+pytest                          # All 31 test files
 pytest test_ici.py -v           # Specific test file
 ```
 
