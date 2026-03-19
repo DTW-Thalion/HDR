@@ -1,6 +1,6 @@
 # HDR v7.3 Claim Validation Matrix
 
-**Last updated:** 2026-03-18
+**Last updated:** 2026-03-19
 
 > **Automated validation:** Run `python check_claims.py --verbose` to verify all
 > claim criteria against test results and stage artifacts. See `manuscript_claims.json`
@@ -20,7 +20,7 @@ in a single run (extended stages 01–07, highpower stage 04, stages 08–16, fu
 | High-power runner (20 seeds × 30 ep/seed)     | 2      | See below |
 | Cluster bootstrap (100 seeds × 30 ep/seed)    | 2      | See below |
 | Stages 08–16 (profile-independent)            | varies | All pass |
-| Pytest suite (30 files)                       | 295    | 293 pass, 2 skip |
+| Pytest suite (31 files)                       | 307    | 305 pass, 2 skip |
 
 ---
 
@@ -354,7 +354,7 @@ are validated by stage scripts 12–15. All pass across all four profiles.
 | 23    | FF-RLS drift tracking                       | test\_adaptive + Stage 16.05                  | Pass  | Pass     | Pass     | Pass       |
 | 24    | Multi-rate delay augmentation               | test\_multirate + Stage 16.08                 | Pass  | Pass     | Pass     | Pass       |
 | 25    | MI-MPC binary constraint                    | test\_mimpc + Stage 16.07                     | Pass  | Pass     | Pass     | Pass       |
-| 26    | Extended supervisor 8-branch logic          | test\_supervisor                              | Pass  | Pass     | Pass     | Pass       |
+| 26    | Extended supervisor 9-branch logic          | test\_supervisor                              | Pass  | Pass     | Pass     | Pass       |
 | 27    | Particle filter ESS consistency             | test\_particle + Stage 13                     | Pass  | Pass     | Pass     | Pass       |
 | 28    | Hierarchical coupling MAP convergence       | test\_identification + Stage 12               | Pass  | Pass     | Pass     | Pass       |
 | 29    | B\_k sample complexity                      | test\_identification + Stage 12               | Pass  | Pass     | Pass     | Pass       |
@@ -394,10 +394,10 @@ are validated by stage scripts 12–15. All pass across all four profiles.
 | 20 | Cumulative exposure is monotonically non-decreasing with zero violations | `xi_max = 100.0` (maximum exposure), `n_cum_exp = 1` (exposure dimension). Stage 16.09 verifies monotonicity = 1.0, zero violations, and toxicity correlation > 0.2. |
 | 21 | Sigmoid coupling function is correct; stability preserved | Stage 16.10 verifies sigmoid values at ±∞ boundaries, stability under coupling, and sign-reversal observation. |
 | 22 | Expanded system remains stable; original axes unperturbed within 15% | `n_expansion = 2` (additional axes). `delta_J_max = 0.05` (max coupling from new axes). Stage 16.11 verifies expanded spectral radius < 1.0 and original-axis perturbation ≤ 0.15. |
-| 23 | FF-RLS tracks drift; Mode C triggered when drift detected | `lambda_ff = 0.98` (forgetting factor). `drift_rate = 0.002`. Stage 16.05 verifies drift tracking rate ≥ 0.80 and Mode C trigger on detection. |
+| 23 | FF-RLS tracks drift; Mode C triggered when drift detected | `lambda_ff = 0.98` (forgetting factor). `drift_rate = 0.002`. Stage 16.05 verifies drift tracking rate ≥ 0.80, Mode C trigger on detection, bifurcation margin sign transition (positive → negative), eigenvalue crossing detection, and supervisor routing to Mode C on crossing. |
 | 24 | Multi-rate observer handles delayed/masked observations | `delay_steps = 10`. Stage 16.08 verifies masking correctness, covariance monotonicity, and observation-epoch improvement. |
 | 25 | MI-MPC binary variables are integral; one-time constraints satisfied | Stage 16.07 verifies binary integrality = 1.0, constraint satisfaction, and feasibility = 1.0 across all seeds. |
-| 26 | Extended supervisor selects correct mode across all 8 branches | test\_supervisor covers all 8 branch conditions (nominal, unstable, jump risk, drift, Mode C, Mode B eligible, absorbing, default). 10 tests, all pass. |
+| 26 | Extended supervisor selects correct mode across all 9 branches | test\_supervisor covers all 9 branch conditions (nominal, unstable, jump risk, drift, eigenvalue crossing, Mode C, Mode B eligible, absorbing, default). 14 tests, all pass. |
 | 27 | Particle filter ESS tracks expected rate; resampling triggers correctly | `n_particles = 100` (production), `n_scenarios = 5`. Stage 13 verifies ESS consistency across IMM, particle filter, and variational SLDS backends. |
 | 28 | Hierarchical coupling MAP estimate converges with increasing T\_p | `T_p_values = [0, 10, 50, 200]`, `n_patients = 10`. Stage 12 verifies MAP error decreases monotonically with T\_p. The four values span zero data (prior only) to large-sample (200 observations), demonstrating convergence. |
 | 29 | B\_k sample complexity matches theoretical rate | Stage 12 verifies that the estimation error scales as O(1/√T\_p) by checking that the error at T\_p=200 is less than the error at T\_p=10. |

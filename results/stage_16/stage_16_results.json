@@ -5,7 +5,7 @@
     "numerical_stability": true,
     "region_consistency_rate": 1.0,
     "pass": true,
-    "elapsed": 0.14
+    "elapsed": 0.09
   },
   "16.02": {
     "subtest": "16.02",
@@ -16,7 +16,7 @@
     "absorbing_detected": true,
     "drift_nonneg": true,
     "pass": true,
-    "elapsed": 0.01
+    "elapsed": 0.0
   },
   "16.03": {
     "subtest": "16.03",
@@ -38,8 +38,8 @@
     "gershgorin_holds": true,
     "per_site_imm_converged": true,
     "cross_site_response": 0.4216,
-    "pass": "True",
-    "elapsed": 0.01
+    "pass": true,
+    "elapsed": 0.0
   },
   "16.05": {
     "subtest": "16.05",
@@ -52,7 +52,7 @@
     "bifurcation_margin_final_sign": -1.0,
     "bifurcation_supervisor_routes_c": true,
     "pass": true,
-    "elapsed": 0.03
+    "elapsed": 0.01
   },
   "16.06": {
     "subtest": "16.06",
@@ -75,7 +75,7 @@
     "onetime_constraint_satisfied": true,
     "feasibility_rate": 1.0,
     "pass": true,
-    "elapsed": 0.02
+    "elapsed": 0.01
   },
   "16.08": {
     "subtest": "16.08",
@@ -98,7 +98,7 @@
     "exposure_violations": 0,
     "toxicity_correlation": 1.0,
     "pass": true,
-    "elapsed": 0.13
+    "elapsed": 0.08
   },
   "16.10": {
     "subtest": "16.10",
@@ -109,7 +109,7 @@
     "stability_preserved": true,
     "sign_reversal_observed": true,
     "pass": true,
-    "elapsed": 0.02
+    "elapsed": 0.01
   },
   "16.11": {
     "subtest": "16.11",
@@ -121,14 +121,14 @@
     "original_unperturbed": true,
     "new_axis_responsive": true,
     "pass": true,
-    "elapsed": 0.01
+    "elapsed": 0.0
   },
   "16.12": {
     "subtest": "16.12",
     "name": "PD profile (no extensions)",
     "backward_compatible": true,
     "pass": true,
-    "elapsed": 0.07
+    "elapsed": 0.04
   },
   "16.13": {
     "subtest": "16.13",
@@ -139,7 +139,7 @@
     "coupling_correct": true,
     "interaction_bounded": true,
     "pass": true,
-    "elapsed": 0.01
+    "elapsed": 0.0
   },
   "16.14": {
     "subtest": "16.14",
@@ -150,7 +150,7 @@
     "jump_near_ceiling_safe": true,
     "multisite_supervisor_correct": true,
     "pass": true,
-    "elapsed": 0.01
+    "elapsed": 0.0
   },
   "16.15": {
     "subtest": "16.15",
@@ -160,7 +160,7 @@
     "individual_invariants_pass": true,
     "reconvergence_within_bound": true,
     "pass": true,
-    "elapsed": 0.01
+    "elapsed": 0.0
   },
   "16.16": {
     "subtest": "16.16",
@@ -181,11 +181,11 @@
     "expansion_invariants_pass": true,
     "cost_ratio": 1.0085,
     "pass": true,
-    "elapsed": 0.07
+    "elapsed": 0.04
   },
   "provenance": {
     "hdr_version": "7.4.0",
-    "generated_at": "2026-03-19T15:35:36.904394Z",
-    "git_commit": "1ab8b09"
+    "generated_at": "2026-03-19T15:59:16.199022Z",
+    "git_commit": "6eba174"
   }
 }

@@ -17,6 +17,21 @@ from typing import Any
 import numpy as np
 from scipy import stats as _scipy_stats
 
+
+class _NumpyEncoder(json.JSONEncoder):
+    """JSON encoder that converts numpy scalars to native Python types."""
+
+    def default(self, obj):
+        if isinstance(obj, (np.integer,)):
+            return int(obj)
+        if isinstance(obj, (np.floating,)):
+            return float(obj)
+        if isinstance(obj, (np.bool_,)):
+            return bool(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
+
 ROOT = Path(__file__).parent.parent.parent
 
 STAGE_16_SUBTESTS = {
@@ -489,116 +504,6 @@ def _run_subtest_16_03_basin_stability(cfg, n_seeds, T):
     results["projection_error"] = float(projection_error)
     results["pass"] = (classification_correct and mode_b_bypass_rate == 1.0
                        and projection_error < 1e-10 and backward_ok)
-    return results
-
-
-# ---------------------------------------------------------------------------
-# 16.04: Multi-Site Dynamics (M4)
-# ---------------------------------------------------------------------------
-
-def _run_subtest_16_04_multisite(cfg, n_seeds, T):
-    """16.04: Multi-site dynamics — coupled stability, Gershgorin, IMM, propagation."""
-    from hdr_validation.model.slds import make_evaluation_model, spectral_radius
-    from hdr_validation.model.extensions import MultiSiteModel
-
-    results = {"subtest": "16.04", "name": "Multi-site dynamics"}
-    seeds = [101 + i * 101 for i in range(n_seeds)]
-    n_s = cfg["state_dim"]
-    S = 2
-    epsilon_G = 0.02
-
-    composite_stable = True
-    gershgorin_holds = True
-    per_site_imm_converged = True
-    cross_site_response = 0.0
-    trajectories = []
-
-    for seed in seeds:
-        rng = np.random.default_rng(seed)
-        model = make_evaluation_model(cfg, rng)
-
-        # Build two-site system using basin 0 dynamics for each site
-        sites = []
-        for s_idx in range(S):
-            basin = model.basins[s_idx % len(model.basins)]
-            sites.append({"A": basin.A, "rho": spectral_radius(basin.A)})
-
-        coupling = np.array([[0.0, 1.0], [1.0, 0.0]])
-        ms = MultiSiteModel(sites, coupling)
-        ms.epsilon_G = epsilon_G
-
-        # Check composite stability
-        A_comp = ms.composite_dynamics()
-        rho_comp = spectral_radius(A_comp)
-        if rho_comp >= 1.0:
-            composite_stable = False
-
-        # Check Gershgorin
-        if not ms.check_gershgorin_bound():
-            gershgorin_holds = False
-
-        # Simulate two-site dynamics
-        x = [rng.normal(size=n_s) * 0.3, rng.normal(size=n_s) * 0.3]
-        traj_s = [[], []]
-        mode_probs = [np.ones(len(model.basins)) / len(model.basins),
-                      np.ones(len(model.basins)) / len(model.basins)]
-
-        for t in range(T):
-            for s_idx in range(S):
-                traj_s[s_idx].append(x[s_idx].copy())
-                basin = model.basins[0]
-                w = rng.normal(size=n_s) * 0.2
-                x_new = basin.A @ x[s_idx] + basin.b + w
-                # Inter-site coupling
-                other = 1 - s_idx
-                x_new += epsilon_G * coupling[s_idx, other] * x[other] * 0.1
-                x[s_idx] = x_new
-
-                # Simple mode-probability update (pseudo-IMM)
-                # Simulate convergence towards true mode
-                mode_probs[s_idx] *= 0.95
-                mode_probs[s_idx][0] += 0.05
-                mode_probs[s_idx] /= mode_probs[s_idx].sum()
-
-        # Check per-site IMM convergence
-        for s_idx in range(S):
-            if np.max(mode_probs[s_idx]) < 0.6:
-                per_site_imm_converged = False
-
-        # Check cross-site propagation
-        arr_0 = np.array(traj_s[0])
-        arr_1 = np.array(traj_s[1])
-        trajectories.append(arr_0)
-        trajectories.append(arr_1)
-
-        # Perturbation propagation: correlate site 0 -> site 1
-        if arr_0.shape[0] > 1:
-            mid = arr_0.shape[0] // 4
-            corr = np.abs(np.corrcoef(arr_0[mid:, 0], arr_1[mid:, 0])[0, 1])
-            cross_site_response = max(cross_site_response, corr)
-
-    stable = _check_numerical_stability(trajectories)
-
-    # Backward compat: S=1 => standard model
-    rng_b = np.random.default_rng(101)
-    from hdr_validation.model.slds import make_extended_evaluation_model
-    m_base = make_evaluation_model(cfg, rng_b)
-    m_ext = make_extended_evaluation_model(cfg, np.random.default_rng(101),
-                                            extensions={"multisite": True})
-    backward_ok = all(
-        np.allclose(m_base.basins[k].A, m_ext.basins[k].A)
-        for k in range(len(m_base.basins))
-    )
-
-    results["numerical_stability"] = stable
-    results["backward_compatible"] = backward_ok
-    results["composite_stable"] = composite_stable
-    results["gershgorin_holds"] = gershgorin_holds
-    results["per_site_imm_converged"] = per_site_imm_converged
-    results["cross_site_response"] = round(float(cross_site_response), 4)
-    results["pass"] = (stable and backward_ok and composite_stable
-                       and gershgorin_holds and per_site_imm_converged
-                       and cross_site_response > 0.1)
     return results
 
 
@@ -3364,6 +3269,6 @@ def run_stage_16(n_seeds=5, T=128, output_dir=None, fast_mode=False,
     from hdr_validation.provenance import get_provenance
     all_results["provenance"] = get_provenance()
     out_path = output_dir / "stage_16_results.json"
-    out_path.write_text(json.dumps(all_results, indent=2, default=str))
+    out_path.write_text(json.dumps(all_results, indent=2, cls=_NumpyEncoder))
     print(f"\nStage 16 results saved to {out_path}")
     return all_results
