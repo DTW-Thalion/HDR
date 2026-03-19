@@ -52,7 +52,7 @@ described above.
 1. The latent state is standardized and centered so that the nominal target box is near zero.
 2. Control dimension is set equal to state dimension (`m = 8`) to keep intervention channels interpretable and lightweight.
 3. Observation dimension is `16`, with two channels per latent axis and heterogeneous schedules.
-4. Coherence is evaluated from a PLV-like summary of selected oscillatory axes rather than from a full predictive coherence state model.
+4. Coherence is operationalised as the damping ratio ζ = |Re(λ₁)|/|λ₁| of the least-stable eigenvalue of the estimated basin dynamics matrix (Remark B.1). The coherence penalty and gradient functions take this scalar ζ as input and are operationalisation-agnostic.
 5. Mode B control-dependent transition bias is implemented as a bounded perturbation of discrete transition tendencies and early-exit hazard, not as a mechanistic intervention model.
 
 ## Identification assumptions

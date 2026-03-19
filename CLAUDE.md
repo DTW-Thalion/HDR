@@ -107,6 +107,7 @@ from hdr_validation.model.target_set import build_target_set, TargetSet
 from hdr_validation.model.hsmm import DwellModel
 from hdr_validation.model.extensions import BasinClassifier, JumpDiffusion, PWACoupling
 from hdr_validation.model.adaptive import FFRLSEstimator, DriftDetector
+from hdr_validation.model.coherence import damping_ratio, coherence_penalty, coherence_grad
 from hdr_validation.model.saturation import michaelis_menten, apply_saturation
 from hdr_validation.control.tube_mpc import compute_mRPI_zonotope, solve_tube_mpc
 from hdr_validation.identification.hierarchical import HierarchicalCouplingEstimator
@@ -444,7 +445,7 @@ See `CLAIM_CRITERIA.md` for full criterion definitions and `CLAIM_MATRIX.md` for
 4. **Deterministic seeds**: All randomness uses `np.random.default_rng(seed)`.
 5. **Mode A**: Uses Riccati recursion + box projection by default; tube-MPC with mRPI terminal set available via `tube_mpc.py` (v7.1).
 6. **EM updates are restricted**: Only `C_k`, `R_k`, and selected `A_k`, `B_k` via weighted regression.
-7. **Coherence**: Evaluated from PLV-like summary of oscillatory axes, not full predictive coherence model.
+7. **Coherence**: The coherence measure κ̂_t is operationalised as the damping ratio ζ = |Re(λ₁)|/|λ₁| of the least-stable eigenvalue (Remark B.1). Values near 1 indicate overdamped (healthy); declining values indicate underdamped (degraded). The `coherence_penalty` and `coherence_grad` functions take a scalar κ̂ and are operationalisation-agnostic.
 8. **Control grid**: 30-minute steps (`dt_minutes=30`, `steps_per_day=48`).
 
 ---
