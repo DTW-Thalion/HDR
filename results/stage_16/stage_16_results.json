@@ -5,7 +5,7 @@
     "numerical_stability": true,
     "region_consistency_rate": 1.0,
     "pass": true,
-    "elapsed": 0.06
+    "elapsed": 0.14
   },
   "16.02": {
     "subtest": "16.02",
@@ -16,7 +16,7 @@
     "absorbing_detected": true,
     "drift_nonneg": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.03": {
     "subtest": "16.03",
@@ -39,7 +39,7 @@
     "per_site_imm_converged": true,
     "cross_site_response": 0.4216,
     "pass": "True",
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.05": {
     "subtest": "16.05",
@@ -47,8 +47,12 @@
     "drift_tracked_rate": 1.0,
     "mode_c_trigger_rate": 1.0,
     "numerical_stability": true,
+    "bifurcation_margin_initial_positive": true,
+    "bifurcation_crossing_detected": true,
+    "bifurcation_margin_final_sign": -1.0,
+    "bifurcation_supervisor_routes_c": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.03
   },
   "16.06": {
     "subtest": "16.06",
@@ -60,7 +64,7 @@
     "jump_magnitude_ks_p": 0.5,
     "prophylactic_trigger_rate": 1.0,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.07": {
     "subtest": "16.07",
@@ -71,7 +75,7 @@
     "onetime_constraint_satisfied": true,
     "feasibility_rate": 1.0,
     "pass": true,
-    "elapsed": 0.01
+    "elapsed": 0.02
   },
   "16.08": {
     "subtest": "16.08",
@@ -83,7 +87,7 @@
     "observation_epoch_improvement": true,
     "mode_accuracy_above_threshold": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.09": {
     "subtest": "16.09",
@@ -94,7 +98,7 @@
     "exposure_violations": 0,
     "toxicity_correlation": 1.0,
     "pass": true,
-    "elapsed": 0.05
+    "elapsed": 0.13
   },
   "16.10": {
     "subtest": "16.10",
@@ -105,7 +109,7 @@
     "stability_preserved": true,
     "sign_reversal_observed": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.02
   },
   "16.11": {
     "subtest": "16.11",
@@ -117,14 +121,14 @@
     "original_unperturbed": true,
     "new_axis_responsive": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.12": {
     "subtest": "16.12",
     "name": "PD profile (no extensions)",
     "backward_compatible": true,
     "pass": true,
-    "elapsed": 0.02
+    "elapsed": 0.07
   },
   "16.13": {
     "subtest": "16.13",
@@ -135,7 +139,7 @@
     "coupling_correct": true,
     "interaction_bounded": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.14": {
     "subtest": "16.14",
@@ -146,7 +150,7 @@
     "jump_near_ceiling_safe": true,
     "multisite_supervisor_correct": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.15": {
     "subtest": "16.15",
@@ -156,7 +160,7 @@
     "individual_invariants_pass": true,
     "reconvergence_within_bound": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.16": {
     "subtest": "16.16",
@@ -177,11 +181,11 @@
     "expansion_invariants_pass": true,
     "cost_ratio": 1.0085,
     "pass": true,
-    "elapsed": 0.03
+    "elapsed": 0.07
   },
   "provenance": {
     "hdr_version": "7.4.0",
-    "generated_at": "2026-03-17T15:59:22.087643Z",
-    "git_commit": "81d18c4"
+    "generated_at": "2026-03-19T15:35:36.904394Z",
+    "git_commit": "1ab8b09"
   }
 }
