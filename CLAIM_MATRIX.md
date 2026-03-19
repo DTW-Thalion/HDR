@@ -228,7 +228,8 @@ criterion in both smoke and standard runs, unless explicitly flagged otherwise."
 **Stage:** 06 (structural), 08 and 08b (ablation)
 **Criterion:** Penalty finite, ≥ 0, lower outside target; monotone in w3.
 **Parameters and rationale:**
-- Stage 06 sweeps `kappa_hat` over \[0.3, 1.0\] in 20 steps and `w3` over {0.05, 0.1, 0.2, 0.3, 0.5} to verify structural properties: non-negativity, finiteness, monotonicity, and the property that the penalty is larger outside the target set \[kappa\_lo, kappa\_hi\] = \[0.55, 0.75\].
+- The coherence measure κ̂\_t is operationalised as the damping ratio ζ = |Re(λ₁)|/|λ₁| of the least-stable eigenvalue (Remark B.1, Draft 2), replacing the spectral gap |λ₁| − |λ₂|. The damping ratio captures oscillatory dynamics (ζ declining from 0.99 at age 30 to 0.63 at age 80 in the ontology simulation), whereas the spectral gap was identically zero for complex-conjugate slow eigenvalue pairs.
+- Stage 06 sweeps `kappa_hat` over \[0.3, 1.0\] in 20 steps and `w3` over {0.05, 0.1, 0.2, 0.3, 0.5} to verify structural properties: non-negativity, finiteness, monotonicity, and the property that the penalty is larger outside the target set \[kappa\_lo, kappa\_hi\] = \[0.55, 0.75\]. These properties are operationalisation-agnostic (they depend only on the scalar κ̂ value).
 - Stages 08/08b validate the coherence component through ablation: the `mpc_plus_coherence` variant (w2=0, w3=0.3) is compared against `mpc_only` (w2=0, w3=0). The difference isolates the coherence marginal gain. Stage 08b uses an asymmetric J coupling matrix (row-norm ratio ≥ 5) to make the coherence contribution measurable (see §Ablation Study).
 
 ### Claim 10 — Identifiability improvement
