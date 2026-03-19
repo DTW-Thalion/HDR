@@ -21,3 +21,6 @@ include = ["hdr_validation*"]
 [tool.pytest.ini_options]
 testpaths = ["."]
 python_files = ["test_*.py"]
+markers = [
+    "slow: marks tests as slow-running (deselect with '-m \"not slow\"')",
+]

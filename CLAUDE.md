@@ -72,7 +72,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 ├── extended_512_runner.py       # Extended profile with T=512
 ├── validation_runner.py         # Validation profile runner
 ├── highpower_runner.py          # High-power profile runner (20 seeds × 30 ep/seed)
-├── test_*.py                    # Pytest test modules (31 files, 307 tests)
+├── test_*.py                    # Pytest test modules (31 files, 313 tests)
 ├── run_all.py                   # Orchestration script (stages 01–16, --full-validation)
 ├── plotting.py                  # Visualization utilities
 ├── analyse_highpower.py         # High-power run analysis
@@ -136,7 +136,7 @@ This is the **recommended entry point** for reviewers. It runs four phases:
 | 1 | Extended profile, stages 01–03c + 05–07 | 3–14 |
 | 2 | Highpower benchmark (20 seeds × 30 ep/seed) | 1–2 (authoritative) |
 | 3 | Stages 08–16 at production scale + pytest | 9, 13, 15–32 |
-| 4 | Full pytest suite (307 tests, 31 files) | 15–32 (unit test layer) |
+| 4 | Full pytest suite (313 tests, 31 files) | 15–32 (unit test layer) |
 
 Output ends with a per-claim pass/fail summary table. Supports `--resume --skip-done`
 for resuming interrupted runs, and `--force` to re-run completed stages.
@@ -244,7 +244,24 @@ pytest
 # Run specific test file
 pytest test_ici.py -v
 pytest test_mpc.py test_committor.py -v
+
+# Run tests filtered by profile (cumulative tiers)
+pytest --profile smoke          # 94 tests  — core + stage integration
+pytest --profile standard       # 188 tests — smoke + ICI/Mode-C/coherence
+pytest --profile extended       # 313 tests — standard + v7.0/v7.1 extensions
+pytest --profile validation     # 313 tests — all tests
 ```
+
+### Profile test counts
+
+| Profile    | Tests | Files | What it adds                                      |
+|------------|-------|-------|---------------------------------------------------|
+| smoke      | 94    | 12    | Core fast tests + stage integration tests          |
+| standard   | 188   | 18    | + ICI, Mode C, Fisher, coherence, committor-jump   |
+| extended   | 313   | 31    | + extensions, adaptive, identification, supervisor |
+| validation | 313   | 31    | All tests (same as extended)                       |
+
+Profile filtering is configured in `conftest.py` via the `--profile` CLI option.
 
 ### Test conventions
 
