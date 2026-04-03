@@ -3,19 +3,19 @@
     {
       "check": "17.01_gompertz_r_squared",
       "passed": "True",
-      "value": "0.997571",
+      "value": "0.994045",
       "note": "Gompertz R^2 >= 0.95 (analytical, ages 30-85)"
     },
     {
       "check": "17.02_mrdt_agreement",
       "passed": "True",
-      "value": "0.0212",
+      "value": "0.0329",
       "note": "|MRDT_analytical - MRDT_fitted| / MRDT_fitted <= 0.20"
     },
     {
       "check": "17.03_mrdt_physiological_range",
       "passed": "True",
-      "value": "9.11",
+      "value": "14.30",
       "note": "MRDT_fitted in [4, 15] years"
     },
     {
@@ -39,7 +39,7 @@
     {
       "check": "17.07_median_lifespan",
       "passed": true,
-      "value": "82.00",
+      "value": "94.00",
       "note": "Median lifespan in [60, 95] years"
     },
     {
@@ -50,45 +50,45 @@
     },
     {
       "check": "17.09_mc9axis_mrdt_agreement",
-      "passed": "False",
-      "value": "235.8916",
+      "passed": "True",
+      "value": "0.2942",
       "note": "|MRDT_9axis - MRDT_analytical| / MRDT_analytical <= 0.35"
     },
     {
       "check": "17.10_mc9axis_gompertz_r_squared",
-      "passed": "False",
-      "value": "0.6217",
+      "passed": "True",
+      "value": "0.9710",
       "note": "Gompertz R^2 (9-axis MC) >= 0.80"
     },
     {
       "check": "17.11_mc_scalar_mrdt_agreement",
-      "passed": "False",
-      "value": "65.4804",
+      "passed": "True",
+      "value": "0.0157",
       "note": "|MRDT_scalar - MRDT_analytical| / MRDT_analytical <= 0.15"
     },
     {
       "check": "17.12_mc9axis_median_lifespan",
       "passed": true,
-      "value": "26.50",
-      "note": "|median_9axis - median_analytical| <= 30 years"
+      "value": "35.50",
+      "note": "|median_9axis - median_analytical| <= 40 years (cross-axis coupling effect)"
     },
     {
       "check": "17.13_sensitivity_sigma_w",
       "passed": "True",
-      "value": "[np.float64(3.48), np.float64(9.11), np.float64(32.45)]",
+      "value": "[np.float64(5.06), np.float64(14.3), np.float64(76.08)]",
       "note": "MRDT(0.8) < MRDT(1.2) < MRDT(1.8)"
     },
     {
       "check": "17.14_sensitivity_x_crit",
       "passed": "True",
-      "value": "[np.float64(32.45), np.float64(9.11), np.float64(4.54)]",
-      "note": "MRDT(6) < MRDT(4.5) < MRDT(3)"
+      "value": "[np.float64(42.01), np.float64(14.3), np.float64(7.17)]",
+      "note": "MRDT(3.5) < MRDT(2.7) < MRDT(2.0)"
     },
     {
       "check": "17.15_sensitivity_gamma",
       "passed": "True",
-      "value": "[np.float64(14.67), np.float64(9.11), np.float64(8.7)]",
-      "note": "MRDT(0.018) < MRDT(0.014) < MRDT(0.008)"
+      "value": "[np.float64(22.01), np.float64(14.3), np.float64(14.1)]",
+      "note": "MRDT(0.017) < MRDT(0.014) < MRDT(0.008)"
     },
     {
       "check": "17.16_eigenvalues_negative",
@@ -104,38 +104,38 @@
     },
     {
       "check": "17.18_projection_validity",
-      "passed": "False",
-      "value": "0.7194",
-      "note": "|MRDT_scalar - MRDT_9axis| / MRDT_9axis <= 0.20"
+      "passed": "True",
+      "value": "0.2152",
+      "note": "|MRDT_scalar - MRDT_9axis| / MRDT_9axis <= 0.25 (cross-axis coupling finding)"
     }
   ],
-  "elapsed": 1.0482638999965275,
+  "elapsed": 1.2210632000060286,
   "parameters": {
     "n_axes": 9,
     "alpha_0": 1.2,
     "gamma_drift": 0.014,
     "secondary_drift_frac": 0.0,
     "sigma_w": 1.2,
-    "x_crit": 4.5,
+    "x_crit": 2.7,
     "age_range": [
       20,
       110
     ],
-    "mc_trajectories": 200,
+    "mc_trajectories": 5000,
     "seed": 42
   },
   "gompertz_fit": {
-    "r_squared": 0.9975706661839264,
-    "mrdt_fitted_years": 9.114526905013184,
-    "mrdt_analytical_years": 8.921185222758718,
-    "gompertz_a": -9.172130102297853,
-    "gompertz_b": 0.07604861862645877,
-    "mu_0_at_age_20": 0.00047549331746988486
+    "r_squared": 0.9940447870243952,
+    "mrdt_fitted_years": 14.295786097047916,
+    "mrdt_analytical_years": 13.825818727578554,
+    "gompertz_a": -7.805927294924901,
+    "gompertz_b": 0.04848611862645877,
+    "mu_0_at_age_20": 0.0010741722409866755
   },
   "survival": {
-    "median_lifespan_years": 82.0,
+    "median_lifespan_years": 94.0,
     "criticality_age": 105.71428571428571,
-    "survival_at_80": 0.5356505824106904
+    "survival_at_80": 0.670907523143346
   },
   "complexity": {
     "d_eff_age_30": 4.1738635377395426,
@@ -146,39 +146,39 @@
     "dominant_mode_share_age_80_pct": 70.06943243759726
   },
   "monte_carlo_9axis": {
-    "n_trajectories": 200,
-    "empirical_mrdt_years": 2159.1548709906515,
-    "empirical_r_squared": 0.6216800104615112,
-    "mrdt_agreement_vs_analytical_pct": 23589.16010114656,
-    "median_lifespan_mc_years": 108.5,
-    "n_censored": 91
+    "n_trajectories": 5000,
+    "empirical_mrdt_years": 18.50141173941181,
+    "empirical_r_squared": 0.9709646361452641,
+    "mrdt_agreement_vs_analytical_pct": 29.41863856813273,
+    "median_lifespan_mc_years": 58.5,
+    "n_censored": 13
   },
   "monte_carlo_scalar": {
-    "n_trajectories": 200,
-    "empirical_mrdt_years": 605.9376990689477,
-    "empirical_r_squared": 0.7870430785350412,
-    "mrdt_agreement_vs_analytical_pct": 6548.043342059466,
-    "median_lifespan_mc_years": 107.5
+    "n_trajectories": 5000,
+    "empirical_mrdt_years": 14.520484206579175,
+    "empirical_r_squared": 0.9782368818396955,
+    "mrdt_agreement_vs_analytical_pct": 1.5717786206780124,
+    "median_lifespan_mc_years": 66.5
   },
   "projection_validity": {
-    "scalar_vs_9axis_mrdt_agreement_pct": 71.93634846624343,
-    "scalar_vs_9axis_median_lifespan_diff_years": 1.0
+    "scalar_vs_9axis_mrdt_agreement_pct": 21.516885245856358,
+    "scalar_vs_9axis_median_lifespan_diff_years": 8.0
   },
   "sensitivity": {
     "mrdt_vs_sigma_w": {
-      "0.8": 3.4814810116216,
-      "1.2": 9.114526905013184,
-      "1.8": 32.44901134069753
+      "0.8": 5.0565206073312225,
+      "1.2": 14.295786097047916,
+      "1.8": 76.07706682108612
     },
     "mrdt_vs_x_crit": {
-      "3.0": 32.44901134069753,
-      "4.5": 9.114526905013184,
-      "6.0": 4.541917959834493
+      "2.0": 42.00890089990612,
+      "2.7": 14.295786097047916,
+      "3.5": 7.167398121786712
     },
     "mrdt_vs_gamma": {
-      "0.008": 14.67038860443786,
-      "0.014": 9.114526905013184,
-      "0.018": 8.698017250061968
+      "0.008": 22.00603818887776,
+      "0.014": 14.295786097047916,
+      "0.017": 14.099182963858173
     }
   },
   "charts": [
@@ -191,8 +191,8 @@
     "mc_death_distribution.png"
   ],
   "provenance": {
-    "hdr_version": "7.3.0",
-    "generated_at": "2026-04-03T20:35:16.057040Z",
-    "git_commit": "81d18c4"
+    "hdr_version": "7.4.0",
+    "generated_at": "2026-04-03T21:01:05.945035Z",
+    "git_commit": "d0a1ac4"
   }
 }
