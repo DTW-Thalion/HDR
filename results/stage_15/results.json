@@ -3,26 +3,106 @@
     {
       "check": "rmse_monotonic_in_sigma",
       "passed": true,
-      "value": "['0.232', '0.327', '0.632', '1.192', '2.306', '4.531']",
-      "note": "RMSE should increase with proxy noise"
+      "value": "['0.231', '0.328', '0.610', '1.173', '2.252', '4.638']",
+      "note": "Pseudoinverse RMSE should increase with proxy noise"
     },
     {
       "check": "rmse_ratio_at_sigma_05",
       "passed": false,
-      "value": "5.14",
-      "note": "Should be < 2x direct observation RMSE"
+      "value": "5.08",
+      "note": "Pseudoinverse: should be < 2x direct RMSE"
     },
     {
       "check": "no_catastrophic_failure_sigma_2",
       "passed": true,
-      "value": "4.531",
-      "note": "RMSE should remain bounded"
+      "value": "4.638",
+      "note": "Pseudoinverse RMSE should remain bounded"
+    },
+    {
+      "check": "rmse_ratio_at_sigma_05_kalman",
+      "passed": true,
+      "value": "1.95",
+      "note": "Kalman filter: should be < 2x direct RMSE at sigma=0.5"
+    },
+    {
+      "check": "kalman_improvement_over_pinv",
+      "passed": true,
+      "value": "['0.792', '0.703', '0.488', '0.304', '0.212', '0.119']",
+      "note": "Kalman RMSE / pinv RMSE should be <= 1.05 for all sigma > 0"
     }
   ],
-  "elapsed": 0.036776900000404567,
+  "elapsed": 0.07824120001168922,
+  "sigma_values": [
+    0.0,
+    0.1,
+    0.25,
+    0.5,
+    1.0,
+    2.0
+  ],
+  "rmse_pinv": [
+    0.23078511633508586,
+    0.3275080476520202,
+    0.6095470270357678,
+    1.1732608835086884,
+    2.2517520324786786,
+    4.637863554814935
+  ],
+  "rmse_kalman": [
+    0.18285532952485847,
+    0.23037687307672766,
+    0.29762499452722235,
+    0.357170359525404,
+    0.47643926492653393,
+    0.5512613508447748
+  ],
+  "comparison": {
+    "0.0": {
+      "pinv_rmse": 0.23078511633508586,
+      "kalman_rmse": 0.18285532952485847,
+      "pinv_ratio": 1.0,
+      "kalman_ratio": 1.0,
+      "kalman_vs_pinv": 0.7923185534172998
+    },
+    "0.1": {
+      "pinv_rmse": 0.3275080476520202,
+      "kalman_rmse": 0.23037687307672766,
+      "pinv_ratio": 1.4191038523320478,
+      "kalman_ratio": 1.2598860185008105,
+      "kalman_vs_pinv": 0.7034235486069792
+    },
+    "0.25": {
+      "pinv_rmse": 0.6095470270357678,
+      "kalman_rmse": 0.29762499452722235,
+      "pinv_ratio": 2.641188637792148,
+      "kalman_ratio": 1.6276528297019714,
+      "kalman_vs_pinv": 0.4882724077493662
+    },
+    "0.5": {
+      "pinv_rmse": 1.1732608835086884,
+      "kalman_rmse": 0.357170359525404,
+      "pinv_ratio": 5.08378054070517,
+      "kalman_ratio": 1.9532947738165218,
+      "kalman_vs_pinv": 0.3044253537689506
+    },
+    "1.0": {
+      "pinv_rmse": 2.2517520324786786,
+      "kalman_rmse": 0.47643926492653393,
+      "pinv_ratio": 9.756920499194031,
+      "kalman_ratio": 2.605553068453298,
+      "kalman_vs_pinv": 0.2115860263716872
+    },
+    "2.0": {
+      "pinv_rmse": 4.637863554814935,
+      "kalman_rmse": 0.5512613508447748,
+      "pinv_ratio": 20.096025378348234,
+      "kalman_ratio": 3.0147404085907867,
+      "kalman_vs_pinv": 0.11886105408867981
+    }
+  },
   "provenance": {
     "hdr_version": "7.4.0",
-    "generated_at": "2026-03-17T15:49:00.840880Z",
-    "git_commit": "81d18c4"
+    "generated_at": "2026-04-03T23:46:59.646769Z",
+    "git_commit": "a9e81be"
   }
 }
