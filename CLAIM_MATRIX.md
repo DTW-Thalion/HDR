@@ -1,6 +1,6 @@
-# HDR v7.3 Claim Validation Matrix
+# HDR v7.5 Claim Validation Matrix
 
-**Last updated:** 2026-03-19
+**Last updated:** 2026-04-03
 
 > **Automated validation:** Run `python check_claims.py --verbose` to verify all
 > claim criteria against test results and stage artifacts. See `manuscript_claims.json`
@@ -8,8 +8,8 @@
 
 ## Test Summary
 
-**Recommended entry point:** `python run_all.py --full-validation` — validates all 32 claims
-in a single run (extended stages 01–07, highpower stage 04, stages 08–16, full pytest suite).
+**Recommended entry point:** `python run_all.py --full-validation` — validates all 34 claims
+in a single run (extended stages 01–07, highpower stage 04, stages 08–17, full pytest suite).
 
 | Run configuration                             | Checks | Result   |
 |-----------------------------------------------|--------|----------|
@@ -19,8 +19,8 @@ in a single run (extended stages 01–07, highpower stage 04, stages 08–16, fu
 | Validation runner (3 seeds × 12 episodes)     | 95     | All pass |
 | High-power runner (20 seeds × 30 ep/seed)     | 2      | See below |
 | Cluster bootstrap (100 seeds × 30 ep/seed)    | 2      | See below |
-| Stages 08–16 (profile-independent)            | varies | All pass |
-| Pytest suite (31 files)                       | 307    | 305 pass, 2 skip |
+| Stages 08–17 (profile-independent)            | varies | All pass |
+| Pytest suite (31 files)                       | 312    | 310 pass, 2 skip |
 
 ---
 
@@ -335,12 +335,13 @@ which masks the smaller coherence and calibration contributions.
 
 ---
 
-## Claims 15–32 (v7.0/v7.1 — Unit tests + Stages 12–16)
+## Claims 15–34 (v7.0/v7.1/v7.5 — Unit tests + Stages 12–17)
 
-These claims are validated by the v7.0/v7.1 unit tests and stage scripts. Claims 15–26
+These claims are validated by the v7.0/v7.1/v7.5 unit tests and stage scripts. Claims 15–26
 are validated via dedicated unit tests (test\_extensions.py, test\_adaptive.py, test\_multirate.py,
 test\_mimpc.py, test\_supervisor.py) and integration through Stage 16 (v7.1). Claims 27–32
-are validated by stage scripts 12–15. All pass across all four profiles.
+are validated by stage scripts 12–15. Claims 33–34 are validated by Stage 17 (v7.5).
+All pass across all four profiles.
 
 | Claim | Description                                 | Validated by                                  | Smoke | Standard | Extended | Validation |
 |-------|---------------------------------------------|-----------------------------------------------|-------|----------|----------|------------|
@@ -362,6 +363,8 @@ are validated by stage scripts 12–15. All pass across all four profiles.
 | 30    | Basin boundary convergence                  | test\_identification + Stage 12               | Pass  | Pass     | Pass     | Pass       |
 | 31    | Population-prior treatment planning         | test\_identification + Stage 14               | Pass  | Pass     | Pass     | Pass       |
 | 32    | Proxy-composite estimation quality          | test\_identification + Stage 15               | Pass  | Pass     | Pass     | Pass       |
+| 33    | Emergent Gompertz mortality law             | test\_stage\_17 + Stage 17                    | Pass  | Pass     | Pass     | Pass       |
+| 34    | Lipsitz–Goldberger complexity collapse      | test\_stage\_17 + Stage 17                    | Pass  | Pass     | Pass     | Pass       |
 
 ### Known limitations
 
@@ -405,6 +408,8 @@ are validated by stage scripts 12–15. All pass across all four profiles.
 | 30 | Basin boundary estimates converge (Prop 11.7) | Stage 12 check `boundary_convergence_with_N`: generates synthetic trajectories at N ∈ {20, 50, 200} sample sizes, estimates the committor via Nadaraya-Watson kernel regression (bandwidth=1.0), and verifies MSE at test points decreases with N. True committor is a distance-ratio sigmoid between basin-0 (origin) and basin-1 (offset=4.0) centres in 2D. Criterion: MSE(N\_max) < MSE(N\_min). |
 | 31 | Population-prior plan improves over uniform baseline | `n_patients = 20`. Stage 14 verifies that the population-prior treatment plan achieves lower cost than the uniform-prior baseline. |
 | 32 | Proxy-composite estimate error bounded | `n_scenarios = 5`. Stage 15 verifies that the proxy-composite estimation error is bounded and decreases with sample size. |
+| 33 | Gompertz mortality law emerges from HDR eigenvalue drift | `alpha_0 = 1.20`, `gamma = 0.014`, `sigma_w = 1.2`, `x_crit = 4.5`. Stage 17 verifies: analytical Gompertz R² ≥ 0.95 over ages 30–85, MRDT ∈ [4, 15] years, 9-axis MC MRDT within 35% of analytical, scalar MC within 15%, median lifespan ∈ [60, 95], sensitivity monotonicity (3 parameters × 3 values). |
+| 34 | Lipsitz–Goldberger complexity collapse | Same parameters as Claim 33. Stage 17 verifies: D\_eff(80)/D\_eff(30) ≤ 0.50 (participation ratio collapse), dominant mode share p₁(80) ≥ 60%, D\_eff monotonically non-increasing, all eigenvalues strictly negative, criticality age > 100. |
 
 ---
 

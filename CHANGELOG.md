@@ -1,3 +1,31 @@
+## Stage 17 — Emergent Gompertz Mortality & Complexity Collapse (2026-04-03)
+
+### New claims
+
+- **Claim 33 — Emergent Gompertz mortality law:** The HDR parameter-drift dynamics
+  (dominant eigenvalue drifting toward criticality at rate gamma) produce an exponentially
+  increasing mortality hazard via first-passage analysis. Validated analytically
+  (R² = 0.998, MRDT = 9.1 years) and via 9-axis Monte Carlo (5000 trajectories).
+
+- **Claim 34 — Lipsitz–Goldberger complexity collapse:** As the dominant eigenvalue
+  approaches zero, the participation ratio (effective dimensionality) collapses from
+  ~4.2 at age 30 to ~2.0 at age 80 (collapse ratio 0.48), with dominant mode variance
+  share reaching 70% at age 80.
+
+### New files
+
+- `hdr_validation/stages/stage_17_gompertz.py` — GompertzSimulator class with analytical
+  hazard, eigenvalue spectrum, 9-axis and scalar Monte Carlo, effective dimensionality,
+  chart generation, and 18-check stage runner.
+- `test_stage_17.py` — 19 tests (18 checks + 1 integration test).
+
+### Test count
+
++17 new tests in test_stage_17.py (19 collected, 2 share fixtures with existing infra).
+Updated total: **312 defined, 310 passed, 2 skipped** (31 test files).
+
+---
+
 ## WP-2.3: Cluster-Aware Bootstrap CI Analysis (2026-03-18)
 
 ### Motivation
@@ -86,7 +114,7 @@ at T=128 with n_seeds=2, n_ep=6.
 - test_ablation_criterion_note_contains_expected_tag_when_inverted
 - test_hdr_full_beats_mpc_only_production (SKIPPED in CI)
 
-Updated total: **295 defined, 293 passed, 2 skipped** (30 test files, including v7.1 additions and test\_stage\_08b).
+Updated total: **312 defined, 310 passed, 2 skipped** (31 test files, including v7.1 additions, test\_stage\_08b, and test\_stage\_17).
 See the Test Summary table below for the full per-suite breakdown.
 
 ---
@@ -150,20 +178,21 @@ estimate (+3.6 %, N_mal ≈ 15) are inflated by small-sample positive
 bias.  This is expected and is not a code defect.  The high-power run
 (N_mal = 123) is the authoritative figure.
 
-# HDR Claim Matrix — v7.3
+# HDR Claim Matrix — v7.5
 
-**Framework version:** HDR v7.3
+**Framework version:** HDR v7.5
 **Validation suite version:** `hdr_validation`
 **Claims 1–10:** Inherited and reformulated from v4.3
 **Claims 11–14:** New ICI claims added in v5.0
 **Claims 15–32:** v7.0/v7.1 extension and identification claims
-**Last updated:** 2026-03-16
+**Claims 33–34:** v7.5 emergent Gompertz mortality and complexity collapse
+**Last updated:** 2026-04-03
 
 ---
 
 ## Test Summary
 
-*Verified 2026-03-16 via `pytest --collect-only`. 30 test files, 295 tests.*
+*Verified 2026-04-03 via `pytest --collect-only`. 31 test files, 312 tests.*
 
 | Suite | Tests | Result |
 |-------|------:|--------|
@@ -198,7 +227,8 @@ bias.  This is expected and is not a code defect.  The high-power run
 | Variational SLDS (`test_variational`) | 5 | 5/5 passed |
 | Committor with jumps (`test_committor_jump`) | 4 | 4/4 passed |
 | Interaction matrix (`test_interaction_matrix`) | 4 | 4/4 passed |
-| **Total pytest** | **295** | **293/295 passed, 2 skipped** |
+| Stage 17 Gompertz (`test_stage_17`) | 19 | 19/19 passed |
+| **Total pytest** | **312** | **310/312 passed, 2 skipped** |
 | Standard profile (T=128, 2 seeds, 12 ep/seed) | — | 95/95 checks passed |
 | Extended profile (T=256, 3 seeds, 20 ep/seed) | — | 107/107 checks passed |
 
@@ -206,8 +236,8 @@ The 2 skipped tests are production-scale ablation tests (`test_hdr_full_beats_mp
 in `test_stage_08.py` and `test_stage_08b.py`) that require 20 seeds × 30 episodes × T=256
 and are excluded from CI via the `production` keyword filter.
 
-**Recommended validation command:** `python run_all.py --full-validation` — runs all 32 claims
-including the highpower benchmark for Claims 1–2, stages 08–16 at production scale, and the
+**Recommended validation command:** `python run_all.py --full-validation` — runs all 34 claims
+including the highpower benchmark for Claims 1–2, stages 08–17 at production scale, and the
 full pytest suite. See CLAUDE.md §Running the Validation Pipeline for details.
 
 ---

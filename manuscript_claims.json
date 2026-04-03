@@ -1,14 +1,14 @@
 {
     "_comment": "Machine-readable manuscript claims. Validated by check_claims.py.",
-    "hdr_version": "7.3.0",
+    "hdr_version": "7.5.0",
     "claims": {
         "pytest_total_defined": {
-            "expected": 295,
+            "expected": 312,
             "source": "pytest --collect-only",
             "manuscript_ref": "Table 13"
         },
         "pytest_total_passing": {
-            "expected": 293,
+            "expected": 310,
             "source": "pytest -k 'not production'",
             "manuscript_ref": "Table 13"
         },
@@ -18,7 +18,7 @@
             "manuscript_ref": "Table 13"
         },
         "pytest_test_files": {
-            "expected": 30,
+            "expected": 31,
             "source": "pytest --collect-only",
             "manuscript_ref": "Table 13"
         },
@@ -74,6 +74,34 @@
             "key": "icc",
             "note": "Intraclass correlation coefficient (one-way random effects, seed as grouping factor)",
             "manuscript_ref": "WP-2.3 cluster bootstrap analysis"
+        },
+        "stage_17_gompertz_r_squared": {
+            "expected_ge": 0.95,
+            "artifact": "results/stage_17/results.json",
+            "key": "gompertz_fit.r_squared",
+            "manuscript_ref": "Claim 33"
+        },
+        "stage_17_mrdt_fitted": {
+            "expected_ge": 4.0,
+            "artifact": "results/stage_17/results.json",
+            "key": "gompertz_fit.mrdt_fitted_years",
+            "manuscript_ref": "Claim 33"
+        },
+        "stage_17_complexity_collapse": {
+            "expected_le": 0.50,
+            "artifact": "results/stage_17/results.json",
+            "key": "complexity.collapse_ratio_80_vs_30",
+            "manuscript_ref": "Claim 34"
+        },
+        "test_stage_17_count": {
+            "expected": 19,
+            "source": "pytest --collect-only test_stage_17.py",
+            "manuscript_ref": "Table 13, row test_stage_17"
+        },
+        "stage_17_checks": {
+            "expected": 18,
+            "note": "17.01 through 17.18 all implemented",
+            "manuscript_ref": "Section 8.1"
         }
     }
 }

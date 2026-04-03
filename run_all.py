@@ -12,7 +12,7 @@ Usage:
     python run_all.py --stages 01 03b 03c          # selected stages, all profiles
     python run_all.py --resume --skip-done         # skip already-completed stages
     python run_all.py --stages 08 08b --run-tests  # run stages then pytest tests
-    python run_all.py --full-validation            # all 32 claims, highpower for 1-2
+    python run_all.py --full-validation            # all 34 claims, highpower for 1-2
 """
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ MANIFEST_PATH = ROOT / "run_all_manifest.json"
 
 # ── Stage metadata ─────────────────────────────────────────────────────────────
 
-STAGE_SEQUENCE = ["01", "02", "03", "03b", "03c", "04", "05", "06", "07", "08", "08b", "09", "10", "11", "12", "13", "14", "15", "16"]
+STAGE_SEQUENCE = ["01", "02", "03", "03b", "03c", "04", "05", "06", "07", "08", "08b", "09", "10", "11", "12", "13", "14", "15", "16", "17"]
 
 STAGE_LABELS = {
     "01":  "Stage 01 — Mathematical Checks",
@@ -54,6 +54,7 @@ STAGE_LABELS = {
     "14":  "Stage 14 — Population Planning",
     "15":  "Stage 15 — Proxy Composite",
     "16":  "Stage 16 — Extension Integration",
+    "17":  "Stage 17 — Gompertz Mortality & Complexity Collapse",
 }
 
 # Stages that must run before a given stage (dependency order)
@@ -79,6 +80,7 @@ STAGE_TEST_FILES: dict[str, str] = {
     "10":  "test_stage_10.py",
     "11":  "test_stage_11.py",
     "16":  "test_stage_16.py",
+    "17":  "test_stage_17.py",
 }
 
 # Claim-to-stage mapping (for --full-validation summary)
@@ -92,6 +94,7 @@ CLAIM_STAGES: dict[int, list[str]] = {
     23: ["16"], 24: ["16"], 25: ["16"], 26: ["16"],
     27: ["13"], 28: ["12"], 29: ["12"], 30: ["12"],
     31: ["14"], 32: ["15"],
+    33: ["17"], 34: ["17"],
 }
 
 # ── Manifest (checkpoint) ──────────────────────────────────────────────────────
@@ -206,6 +209,13 @@ def _call_stage_16(fast: bool = False) -> None:
     run_stage_16(n_seeds=n_seeds, T=T, fast_mode=fast)
 
 
+def _call_stage_17(fast: bool = False) -> None:
+    """Run Stage 17 emergent Gompertz mortality & complexity collapse."""
+    from hdr_validation.stages.stage_17_gompertz import run_stage_17
+    n_traj = 500 if fast else 5000
+    run_stage_17(n_trajectories=n_traj, seed=42, fast_mode=fast)
+
+
 def _call_stage_11(fast: bool = False) -> None:
     """Run Stage 11 Riccati invariant set verification."""
     from hdr_validation.stages.stage_11_invariant_set import run_stage_11
@@ -255,6 +265,8 @@ def call_stage(mod: Any, stage_id: str, state: dict) -> None:
         _call_stage_15(fast=fast)
     elif stage_id == "16":
         _call_stage_16(fast=fast)
+    elif stage_id == "17":
+        _call_stage_17(fast=fast)
     else:
         raise ValueError(f"Unknown stage: {stage_id!r}")
 
@@ -337,7 +349,7 @@ def run_profile(
     stage_results: dict[str, list[dict]] = {}
 
     # Stages that are profile-independent (have their own simulation logic)
-    INDEPENDENT_STAGES = {"08", "08b", "09", "10", "11", "12", "13", "14", "15", "16"}
+    INDEPENDENT_STAGES = {"08", "08b", "09", "10", "11", "12", "13", "14", "15", "16", "17"}
 
     for stage_id in full_sequence:
         label = STAGE_LABELS[stage_id]
@@ -448,13 +460,13 @@ def run_full_validation(
     skip_done: bool = False,
     manifest: dict | None = None,
 ) -> int:
-    """Run the complete validation covering all 32 claims.
+    """Run the complete validation covering all 34 claims.
 
     Execution plan:
       1. Extended profile for stages 01-03c, 05-07 (Claims 3-14)
       2. Highpower benchmark for stage 04 (Claims 1-2, authoritative)
-      3. Stages 08-16 at production parameters (Claims 9, 13, 15-32)
-      4. Full pytest suite for unit-test-validated claims (15-32)
+      3. Stages 08-16 at production parameters (Claims 9, 13, 15-34)
+      4. Full pytest suite for unit-test-validated claims (15-34)
 
     Returns number of failures.
     """
@@ -465,7 +477,7 @@ def run_full_validation(
     t_total = time.perf_counter()
 
     print("\n" + "=" * 62)
-    print("  FULL VALIDATION MODE — All 32 Claims")
+    print("  FULL VALIDATION MODE — All 34 Claims")
     print("=" * 62)
 
     # ── Phase 1: Extended profile, stages 01-03c + 05-07 (Claims 3-14) ────
@@ -543,16 +555,16 @@ def run_full_validation(
 
     all_results["highpower"] = {"04": hp_results}
 
-    # ── Phase 3: Stages 08-16, production parameters (Claims 9, 13, 15-32) ─
+    # ── Phase 3: Stages 08-16, production parameters (Claims 9, 13, 15-34) ─
     print("\n" + "#" * 62)
-    print("  Phase 3: Profile-independent stages 08-16")
-    print("  (Claims 9, 13, 15-32: ablation, baselines, v7.0/v7.1)")
+    print("  Phase 3: Profile-independent stages 08-17")
+    print("  (Claims 9, 13, 15-34: ablation, baselines, v7.0/v7.1/v7.5)")
     print("#" * 62)
 
     # Use a dummy extended profile for the independent stages — they only
     # need the module loaded so call_stage can dispatch to the _call_stage_*
-    # functions. The stages 08-16 don't use the profile module.
-    phase3_stages = ["08", "08b", "09", "10", "11", "12", "13", "14", "15", "16"]
+    # functions. The stages 08-17 don't use the profile module.
+    phase3_stages = ["08", "08b", "09", "10", "11", "12", "13", "14", "15", "16", "17"]
     phase3_results = run_profile(
         profile="extended",
         stages_to_run=phase3_stages,
@@ -569,7 +581,7 @@ def run_full_validation(
     # ── Phase 4: Full unit test suite ──────────────────────────────────────
     print("\n" + "#" * 62)
     print("  Phase 4: Full pytest suite")
-    print("  (Unit-test coverage for Claims 15-32)")
+    print("  (Unit-test coverage for Claims 15-34, including Stage 17)")
     print("#" * 62)
 
     unit_test_records = _run_all_unit_tests()
@@ -600,7 +612,7 @@ def _print_full_validation_summary(
     total_pass = total_fail = 0
     claim_statuses: list[tuple[int, bool, str]] = []
 
-    for claim_id in range(1, 33):
+    for claim_id in range(1, 35):
         stages = CLAIM_STAGES[claim_id]
         claim_checks: list[dict] = []
         for s in stages:
@@ -651,7 +663,7 @@ def _print_full_validation_summary(
     print(f"  Elapsed: {elapsed:.1f}s")
 
     if total_fail == 0:
-        print("\n  ALL 32 CLAIMS VALIDATED")
+        print("\n  ALL 34 CLAIMS VALIDATED")
     else:
         print(f"\n  {total_fail} CLAIM(S) FAILED — see details above")
         # Print failed claims
@@ -732,7 +744,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--fast", action="store_true",
-        help="Run stages 08-16 with reduced parameters for smoke testing",
+        help="Run stages 08-17 with reduced parameters for smoke testing",
     )
     parser.add_argument(
         "--run-tests", action="store_true",
@@ -740,10 +752,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--full-validation", action="store_true",
-        help="Run complete validation of all 32 claims: extended profile for "
+        help="Run complete validation of all 34 claims: extended profile for "
              "stages 01-07 (Claims 3-14), highpower benchmark for stage 04 "
-             "(Claims 1-2), stages 08-16 at production scale (Claims 9, 13, "
-             "15-32), and full pytest suite",
+             "(Claims 1-2), stages 08-17 at production scale (Claims 9, 13, "
+             "15-34), and full pytest suite",
     )
     return parser.parse_args()
 
@@ -755,7 +767,7 @@ def main() -> None:
     if args.full_validation:
         manifest = load_manifest() if (args.resume or args.skip_done) else {}
         print("HDR Validation Suite — FULL VALIDATION MODE")
-        print("  Covers all 32 claims with authoritative highpower statistics")
+        print("  Covers all 34 claims with authoritative highpower statistics")
         n_fail = run_full_validation(
             force=args.force,
             skip_done=args.skip_done,

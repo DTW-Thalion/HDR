@@ -53,7 +53,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │   │   ├── population_planning.py # Population-prior treatment planning
 │   │   ├── tau_estimation.py    # Tau burden estimation
 │   │   └── risk_information.py  # Risk-information frontier
-│   └── stages/                  # Stage scripts for stages 08–16
+│   └── stages/                  # Stage scripts for stages 08–17
 │       ├── stage_08_ablation.py
 │       ├── stage_08b_ablation.py # Multi-axis asymmetric ablation (coherence + calibration marginal gains)
 │       ├── stage_09_baselines.py
@@ -63,17 +63,18 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │       ├── stage_13_inference_backbone.py  # v7.0
 │       ├── stage_14_population_planning.py  # v7.0
 │       ├── stage_15_proxy_composite.py  # v7.0
-│       └── stage_16_extensions.py  # v7.1 — model-failure extension integration
+│       ├── stage_16_extensions.py  # v7.1 — model-failure extension integration
+│       └── stage_17_gompertz.py  # v7.5 — emergent Gompertz mortality & complexity collapse
 ├── results/                     # Experiment outputs (auto-generated)
-│   └── stage_04/ … stage_16/    # Per-stage result artifacts (incl. stage_08b)
+│   └── stage_04/ … stage_17/    # Per-stage result artifacts (incl. stage_08b)
 ├── smoke_runner.py              # Smoke profile runner (stage functions + SMOKE_CONFIG)
 ├── standard_runner.py           # Standard profile runner
 ├── extended_runner.py           # Extended profile runner
 ├── extended_512_runner.py       # Extended profile with T=512
 ├── validation_runner.py         # Validation profile runner
 ├── highpower_runner.py          # High-power profile runner (20 seeds × 30 ep/seed)
-├── test_*.py                    # Pytest test modules (31 files, 313 tests)
-├── run_all.py                   # Orchestration script (stages 01–16, --full-validation)
+├── test_*.py                    # Pytest test modules (31 files, 312 tests)
+├── run_all.py                   # Orchestration script (stages 01–17, --full-validation)
 ├── plotting.py                  # Visualization utilities
 ├── analyse_highpower.py         # High-power run analysis
 ├── analyse_mismatch.py          # Model mismatch analysis
@@ -117,16 +118,16 @@ from hdr_validation.packaging import zip_paths
 from hdr_validation.specification import observation_schedule, generate_observation
 ```
 
-Stage logic for stages 01–07 lives in the profile runner modules (`smoke_runner.py`, `standard_runner.py`, etc.). Stages 08–16 (including 08b) are in `hdr_validation/stages/`.
+Stage logic for stages 01–07 lives in the profile runner modules (`smoke_runner.py`, `standard_runner.py`, etc.). Stages 08–17 (including 08b) are in `hdr_validation/stages/`.
 
 ---
 
 ## Running the Validation Pipeline
 
-### Recommended: full validation (all 32 claims)
+### Recommended: full validation (all 34 claims)
 
 ```bash
-python run_all.py --full-validation        # Complete validation of all 32 claims
+python run_all.py --full-validation        # Complete validation of all 34 claims
 ```
 
 This is the **recommended entry point** for reviewers. It runs four phases:
@@ -135,8 +136,8 @@ This is the **recommended entry point** for reviewers. It runs four phases:
 |-------|-----------|----------------|
 | 1 | Extended profile, stages 01–03c + 05–07 | 3–14 |
 | 2 | Highpower benchmark (20 seeds × 30 ep/seed) | 1–2 (authoritative) |
-| 3 | Stages 08–16 at production scale + pytest | 9, 13, 15–32 |
-| 4 | Full pytest suite (313 tests, 31 files) | 15–32 (unit test layer) |
+| 3 | Stages 08–17 at production scale + pytest | 9, 13, 15–34 |
+| 4 | Full pytest suite (312 tests, 31 files) | 15–34 (unit test layer) |
 
 Output ends with a per-claim pass/fail summary table. Supports `--resume --skip-done`
 for resuming interrupted runs, and `--force` to re-run completed stages.
@@ -182,6 +183,7 @@ python run_all.py --stages 08 08b --run-tests                # Run stages then p
 | 14   | `stage_14_population_planning.py` | Population planning (v7.0)         |
 | 15   | `stage_15_proxy_composite.py` | Proxy composite estimation (v7.0)    |
 | 16   | `stage_16_extensions.py` | Model-failure extension integration (v7.1) |
+| 17   | `stage_17_gompertz.py` | Emergent Gompertz mortality & complexity collapse (v7.5) |
 
 ---
 
@@ -284,7 +286,7 @@ def test_mpc_returns_bounded_control():
 
 ### Test files
 
-31 test files at the repo root (`test_*.py`) cover all 32 claims. See `CLAIM_MATRIX.md`
+31 test files at the repo root (`test_*.py`) cover all 34 claims. See `CLAIM_MATRIX.md`
 for the per-claim test file mapping. Run `python check_claims.py --verbose` for automated
 validation of claim criteria against test results and stage artifacts.
 
@@ -419,7 +421,7 @@ results/stage_03b/smoke/ici_diagnostic/
 └── plots/            # Optional visualizations
 ```
 
-Stages 08–16 (profile-independent stages) output flat JSON files directly:
+Stages 08–17 (profile-independent stages) output flat JSON files directly:
 
 ```
 results/stage_08/
@@ -431,7 +433,7 @@ results/stage_08/
 
 ## Claim Validation
 
-The suite validates 32 claims across v5.0, v7.0, and v7.1:
+The suite validates 34 claims across v5.0, v7.0, v7.1, and v7.5:
 
 - **Claims 1–4**: ICI correctness, Mode A improvement, τ̃ correlation, chance-constraint calibration
 - **Claims 5–6**: ISS scaling, stability under drift
@@ -443,12 +445,13 @@ The suite validates 32 claims across v5.0, v7.0, and v7.1:
 - **Claims 23–26** (v7.0): FF-RLS drift tracking, multi-rate observation, MI-MPC binary constraints, extended supervisor
 - **Claims 27–28** (v7.0): Particle filter consistency, hierarchical coupling convergence
 - **Claims 29–32** (v7.0): B_k sample complexity, basin boundary convergence, population planning, proxy-composite estimation
+- **Claims 33–34** (v7.5): Emergent Gompertz mortality law, Lipsitz–Goldberger complexity collapse
 
-Claims 1–14 are evaluated by stages 01–11; Claims 15–32 by stages 12–16.
+Claims 1–14 are evaluated by stages 01–11; Claims 15–32 by stages 12–16; Claims 33–34 by stage 17.
 A claim is marked `Supported` only when it passes its criterion in the appropriate profile.
 Claims 1–2 require the highpower runner (20 seeds × 30 ep/seed) for authoritative validation.
 
-**To validate all 32 claims in a single run:** `python run_all.py --full-validation`
+**To validate all 34 claims in a single run:** `python run_all.py --full-validation`
 
 See `CLAIM_CRITERIA.md` for full criterion definitions and `CLAIM_MATRIX.md` for current status.
 
