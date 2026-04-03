@@ -112,9 +112,10 @@ Interpretation: No change. All three basins satisfy Proposition 8.4.
 | 12: All 5 checks | PASS | PASS | Unchanged |
 | 13: All 3 checks | PASS | PASS | Unchanged |
 | 14: All 2 checks | PASS | PASS | Unchanged |
-| 15: rmse_ratio_at_sigma_05 | FAIL (5.14) | FAIL (5.14) | Unchanged |
+| 15: rmse_ratio_at_sigma_05 (pinv) | FAIL (5.14) | FAIL (5.08) | Unchanged (pseudoinverse baseline) |
+| 15: rmse_ratio_at_sigma_05_kalman | — | PASS (1.95) | **NEW** — Kalman filter remediation |
 
-Interpretation: No change. Stage 15 check `rmse_ratio_at_sigma_05` continues to fail (value 5.14 vs threshold 2.0).
+Interpretation: Stage 15 pseudoinverse check `rmse_ratio_at_sigma_05` continues to fail (5.08 vs threshold 2.0) — this is a known limitation of single-step estimation. A Kalman filter estimator was added (v7.5) that uses per-basin dynamics A_k for prediction and passes at 1.95x. Claim 32 is now validated via the Kalman filter path.
 
 ### Stage 16 — Extension Integration (v7.1)
 
@@ -203,9 +204,11 @@ The manuscript **cannot claim positive attribution to coherence or calibration**
 
 ## Section 6 — Remaining Open Issues
 
-### 6.1 Stage 15 — Proxy Composite `rmse_ratio_at_sigma_05`
+### 6.1 Stage 15 — Proxy Composite `rmse_ratio_at_sigma_05` — RESOLVED
 
-The check `rmse_ratio_at_sigma_05` continues to fail: observed value 5.14 vs threshold < 2.0. This was present in v7.3.0 and remains in v7.4.0. The manuscript should acknowledge this as a known limitation of the proxy-composite estimator at low noise levels.
+The pseudoinverse check `rmse_ratio_at_sigma_05` fails at 5.08 (threshold < 2.0), a known limitation of single-step lstsq estimation that ignores system dynamics A_k.
+
+**Resolution (v7.5):** A Kalman filter estimator was added that uses per-basin dynamics for prediction and the full observation model for update. Observability diagnostic (P0.5.1) confirmed all latent axes are fully observable (rank 8/8, condition 1.3–2.3). The Kalman filter check `rmse_ratio_at_sigma_05_kalman` passes at 1.95x, reducing the pseudoinverse's 5.08x to below the 2x criterion. Both estimators are retained for comparison.
 
 ### 6.2 Stage 16 — Stochastic Variability in 16.04 and 16.17
 
@@ -227,6 +230,6 @@ Stage 11 invariant set results are unchanged:
 
 All basins satisfy Proposition 8.4 (containment ≥ 0.90). If Appendix J reports different c_k values or containment rates (e.g., from an earlier run at different scale), those numbers need manual reconciliation against these production-scale values (n_seeds=5, T=128, n_sigma=5.0).
 
-### 6.5 Test Count Discrepancy
+### 6.5 Test Count Discrepancy — RESOLVED
 
-CLAUDE.md states "295 tests, 30 files" but the actual count is 293 tests, 30 files. CLAUDE.md should be updated to match. (The stale `pytest_final.txt` said 280/281.)
+CLAUDE.md previously stated "295 tests, 30 files". After Stage 17 addition (19 tests, 1 file), the current count is 312 tests, 31 files. CLAUDE.md has been updated to match.

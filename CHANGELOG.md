@@ -1,3 +1,43 @@
+## Stage 15 Remediation — Kalman Filter for Proxy-Composite Estimation (2026-04-03)
+
+### Problem
+
+Pseudoinverse estimator (`np.linalg.lstsq`) failed the <2x RMSE ratio criterion at
+sigma_proxy=0.5 (5.08x). Root cause: lstsq treats each timestep independently, ignoring
+the system dynamics A_k that propagate state information across time.
+
+### Observability diagnostic (P0.5.1)
+
+All three basins are fully observable (rank 8/8) with condition numbers 1.3–2.3.
+All latent axes (E, mito, P) have strong observability — Gramian diagonal entries 1.5–5.9.
+Saved to `results/stage_15_observability_diagnostic.json`.
+
+### Kalman filter implementation (P0.5.2–P0.5.3)
+
+Added Kalman filter path using per-basin A_k for prediction and full C_k for update.
+Process noise Q = 0.01*I (matching simulation's scale=0.1), observation noise
+R = (0.01 + sigma^2)*I. Diffuse initialisation P_0 = 10*I.
+
+### Results
+
+| sigma | RMSE (pinv) | Ratio (pinv) | RMSE (KF) | Ratio (KF) | KF/pinv |
+|-------|-------------|-------------|-----------|------------|---------|
+| 0.00  | 0.231       | 1.00x       | 0.183     | 1.00x      | 0.79x   |
+| 0.10  | 0.328       | 1.42x       | 0.230     | 1.26x      | 0.70x   |
+| 0.25  | 0.610       | 2.64x       | 0.298     | 1.63x      | 0.49x   |
+| 0.50  | 1.173       | 5.08x       | 0.357     | 1.95x      | 0.30x   |
+| 1.00  | 2.252       | 9.76x       | 0.476     | 2.61x      | 0.21x   |
+| 2.00  | 4.638       | 20.10x      | 0.551     | 3.01x      | 0.12x   |
+
+Decision gate P0.5.4: **PASS** — Kalman ratio 1.95x < 2.0 at sigma=0.5.
+
+### Files modified
+
+- `hdr_validation/stages/stage_15_proxy_composite.py` — added Kalman filter estimator path
+- `observability_diagnostic.py` — standalone observability diagnostic script
+
+---
+
 ## Stage 17 — Emergent Gompertz Mortality & Complexity Collapse (2026-04-03)
 
 ### New claims
