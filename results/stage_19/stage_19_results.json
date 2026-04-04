@@ -1,0 +1,98 @@
+{
+  "checks": [
+    {
+      "check": "wrong_k_ici_responsive",
+      "passed": true,
+      "value": "2.65%",
+      "note": "ICI trigger > 1% under wrong basin cardinality"
+    },
+    {
+      "check": "nonlinear_ici_active",
+      "passed": true,
+      "value": "[4.25, 3.43, 1.35]",
+      "note": "ICI triggers > 0.5% at some nonlinear perturbation level"
+    },
+    {
+      "check": "burst_ici_responsive",
+      "passed": true,
+      "value": "[14.24, 38.54, 54.38]",
+      "note": "ICI trigger rate increases with burst frequency"
+    },
+    {
+      "check": "ici_nondegradation",
+      "passed": true,
+      "value": "min=-0.634%",
+      "note": "ICI delta >= -2% in all stress scenarios"
+    }
+  ],
+  "scenarios": {
+    "19a: Wrong K": {
+      "label": "19a: Wrong K",
+      "mismatch_type": "K=2 vs K=3",
+      "ici_trigger_pct": 2.65,
+      "mode_error_pct": 38.8,
+      "ici_delta_pct": 0.054,
+      "n_episodes": 18
+    },
+    "19b: NL e=0.05": {
+      "label": "19b: NL e=0.05",
+      "mismatch_type": "tanh(x)*0.05",
+      "ici_trigger_pct": 4.25,
+      "mode_error_pct": 0.56,
+      "ici_delta_pct": 0.739,
+      "n_episodes": 18
+    },
+    "19b: NL e=0.1": {
+      "label": "19b: NL e=0.1",
+      "mismatch_type": "tanh(x)*0.1",
+      "ici_trigger_pct": 3.43,
+      "mode_error_pct": 0.43,
+      "ici_delta_pct": 0.927,
+      "n_episodes": 18
+    },
+    "19b: NL e=0.2": {
+      "label": "19b: NL e=0.2",
+      "mismatch_type": "tanh(x)*0.2",
+      "ici_trigger_pct": 1.35,
+      "mode_error_pct": 0.35,
+      "ici_delta_pct": -0.634,
+      "n_episodes": 18
+    },
+    "19c: Burst r=0.02": {
+      "label": "19c: Burst r=0.02",
+      "mismatch_type": "burst_rate=0.02",
+      "ici_trigger_pct": 14.24,
+      "mode_error_pct": 1.78,
+      "ici_delta_pct": 0.475,
+      "n_episodes": 18
+    },
+    "19c: Burst r=0.1": {
+      "label": "19c: Burst r=0.1",
+      "mismatch_type": "burst_rate=0.1",
+      "ici_trigger_pct": 38.54,
+      "mode_error_pct": 2.91,
+      "ici_delta_pct": 1.419,
+      "n_episodes": 18
+    },
+    "19c: Burst r=0.2": {
+      "label": "19c: Burst r=0.2",
+      "mismatch_type": "burst_rate=0.2",
+      "ici_trigger_pct": 54.38,
+      "mode_error_pct": 8.64,
+      "ici_delta_pct": 1.727,
+      "n_episodes": 18
+    }
+  },
+  "elapsed": 10.3788840000052,
+  "parameters": {
+    "n_seeds": 3,
+    "n_ep_per_seed": 6,
+    "T": 128,
+    "sigma_proxy": 0.5
+  },
+  "provenance": {
+    "hdr_version": "7.4.0",
+    "generated_at": "2026-04-04T06:17:00.503142Z",
+    "git_commit": "40c0c16"
+  }
+}

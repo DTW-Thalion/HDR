@@ -1,3 +1,29 @@
+## Stage 19 — Out-of-Family Stress Tests (2026-04-04)
+
+Tests the ICI under model-class mismatch: wrong basin cardinality (K=2 vs K=3),
+nonlinear plant perturbation (epsilon sweep), and bursty observation failures.
+
+| Scenario | ICI trig% | Mode err% | ICI delta% |
+|---|---|---|---|
+| 19a: Wrong K (K=2 vs 3) | 2.7% | 38.8% | +0.05% |
+| 19b: NL eps=0.05 | 4.3% | 0.6% | +0.74% |
+| 19b: NL eps=0.10 | 3.4% | 0.4% | +0.93% |
+| 19b: NL eps=0.20 | 1.4% | 0.4% | -0.63% |
+| 19c: Burst r=0.02 | 14.2% | 1.8% | +0.48% |
+| 19c: Burst r=0.10 | 38.5% | 2.9% | +1.42% |
+| 19c: Burst r=0.20 | 54.4% | 8.6% | +1.73% |
+
+Key findings: The ICI detects wrong-K structural mismatch (triggers 2.7% even
+with 38.8% mode error). Bursty dropout triggers strongest ICI response (54% at
+burst\_rate=0.20), with monotonically increasing trigger rate. Nonlinear
+perturbation shows ICI active at all epsilon levels but non-monotonic (mild NL
+improves mode discrimination). ICI delta positive in 6/7 scenarios.
+
+Also fixed: `make_evaluation_model(K=2)` produced 4x4 transition matrix (wrong).
+Now correctly generates KxK transition for any K.
+
+---
+
 ## Stage 18 Ablation — 4-Way Partially Observed (±ICI × ±τ̃) (2026-04-04)
 
 Isolates whether the ICI or recovery surrogate τ̃ is the dominant source of

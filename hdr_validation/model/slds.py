@@ -138,7 +138,7 @@ def make_evaluation_model(config: dict[str, Any], rng: np.random.Generator, K: i
             DwellModel("zipf", {"a": 1.8}, max_len=config["max_dwell_len"]),
             DwellModel("poisson", {"mean": 5.0}, max_len=config["max_dwell_len"]),
         ]
-    else:
+    elif K == 4:
         transition = np.array([
             [0.83, 0.03, 0.11, 0.03],
             [0.03, 0.84, 0.07, 0.06],
@@ -150,6 +150,19 @@ def make_evaluation_model(config: dict[str, Any], rng: np.random.Generator, K: i
             DwellModel("zipf", {"a": 1.8}, max_len=config["max_dwell_len"]),
             DwellModel("poisson", {"mean": 5.0}, max_len=config["max_dwell_len"]),
             DwellModel("lognormal", {"mu": 2.4, "sigma": 0.55}, max_len=config["max_dwell_len"]),
+        ]
+    else:
+        # Generic K: uniform transition with self-loop bias, Poisson dwells
+        transition = np.full((K, K), 0.05 / max(K - 1, 1))
+        np.fill_diagonal(transition, 0.95)
+        transition /= transition.sum(axis=1, keepdims=True)
+        dwell_params = [("poisson", {"mean": 10.0}), ("zipf", {"a": 1.8}),
+                        ("poisson", {"mean": 5.0})]
+        dwell_models = [
+            DwellModel(dwell_params[k % len(dwell_params)][0],
+                       dwell_params[k % len(dwell_params)][1],
+                       max_len=config["max_dwell_len"])
+            for k in range(K)
         ]
     # v7.0: classify basin stability and set stability_class
     for basin in basins:
