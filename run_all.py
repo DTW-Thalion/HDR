@@ -32,7 +32,7 @@ MANIFEST_PATH = ROOT / "run_all_manifest.json"
 
 # ── Stage metadata ─────────────────────────────────────────────────────────────
 
-STAGE_SEQUENCE = ["01", "02", "03", "03b", "03c", "04", "05", "06", "07", "08", "08b", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "18b", "19"]
+STAGE_SEQUENCE = ["01", "02", "03", "03b", "03c", "04", "05", "06", "07", "08", "08b", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "18b", "19", "20"]
 
 STAGE_LABELS = {
     "01":  "Stage 01 — Mathematical Checks",
@@ -58,6 +58,7 @@ STAGE_LABELS = {
     "18":  "Stage 18 — Closed-Loop ICI Benchmark",
     "18b": "Stage 18b — Sensor-Degradation Sweep",
     "19":  "Stage 19 — Out-of-Family Stress Tests",
+    "20":  "Stage 20 — Structured vs Unstructured Identification",
 }
 
 # Stages that must run before a given stage (dependency order)
@@ -86,6 +87,7 @@ STAGE_TEST_FILES: dict[str, str] = {
     "17":  "test_stage_17.py",
     "18":  "test_stage_18.py",
     "18b": "test_stage_18b.py",
+    "20":  "test_stage_20.py",
 }
 
 # Claim-to-stage mapping (for --full-validation summary)
@@ -249,6 +251,14 @@ def _call_stage_19(fast: bool = False) -> None:
     run_stage_19(n_seeds=n_seeds, n_ep=n_ep, T=T, fast_mode=fast)
 
 
+def _call_stage_20(fast: bool = False) -> None:
+    """Run Stage 20 structured vs unstructured identification."""
+    from hdr_validation.stages.stage_20_identification import run_stage_20
+    n_trials = 10 if fast else 50
+    T_values = [20, 50, 100, 200, 500] if fast else [20, 50, 100, 200, 500, 1000, 2000]
+    run_stage_20(T_values=T_values, n_trials=n_trials, seed=42, fast_mode=fast)
+
+
 def _call_stage_11(fast: bool = False) -> None:
     """Run Stage 11 Riccati invariant set verification."""
     from hdr_validation.stages.stage_11_invariant_set import run_stage_11
@@ -306,6 +316,8 @@ def call_stage(mod: Any, stage_id: str, state: dict) -> None:
         _call_stage_18b(fast=fast)
     elif stage_id == "19":
         _call_stage_19(fast=fast)
+    elif stage_id == "20":
+        _call_stage_20(fast=fast)
     else:
         raise ValueError(f"Unknown stage: {stage_id!r}")
 
@@ -388,7 +400,7 @@ def run_profile(
     stage_results: dict[str, list[dict]] = {}
 
     # Stages that are profile-independent (have their own simulation logic)
-    INDEPENDENT_STAGES = {"08", "08b", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "18b", "19"}
+    INDEPENDENT_STAGES = {"08", "08b", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "18b", "19", "20"}
 
     for stage_id in full_sequence:
         label = STAGE_LABELS[stage_id]

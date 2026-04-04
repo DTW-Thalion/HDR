@@ -1,3 +1,41 @@
+## Stage 20 — Structured vs Unstructured Identification (2026-04-04)
+
+Demonstrates that the mechanistic decomposition A = I + dt(-D + J) with known
+sparsity pattern (23 non-zero entries) and sign constraints yields better sample
+efficiency than direct identification of the full 8x8 A\_k matrix (64 params).
+
+Sweeps T in {20, 50, 100, 200, 500, 1000, 2000} with 50 trials per sample size.
+
+| T | Struct err | Unstruct err | Ratio | Sign recovery |
+|---|---|---|---|---|
+| 20 | 0.936 | 2.161 | 2.3x | 85% |
+| 100 | 0.458 | 0.767 | 1.7x | 94% |
+| 500 | 0.216 | 0.330 | 1.5x | 99% |
+| 2000 | 0.118 | 0.168 | 1.4x | 100% |
+
+Pass/fail criteria (all pass):
+- C1: Structured error < unstructured at T <= 200
+- C2: Sign recovery >= 90% at T >= 200
+- C3: Mean spectral-radius error lower (structured) over T <= 200
+- C4: Crossover exists at large T (unstructured catches up)
+
+Key finding: **At T=100 (approx. 2 years of monthly sampling), the structured
+parameterisation reduces identification error by 1.7x** compared to unstructured,
+with 94% coupling detection rate.
+
+### Files
+
+- `hdr_validation/stages/stage_20_identification.py` — stage implementation
+- `test_stage_20.py` — 13 pytest tests
+- `results/stage_20/identification_comparison.json` — full sweep data
+
+### run\_all.py integration
+
+- Added to `STAGE_SEQUENCE`, `STAGE_LABELS`, `STAGE_TEST_FILES`, `INDEPENDENT_STAGES`
+- `_call_stage_20()` dispatcher with fast/production modes
+
+---
+
 ## Stage 19 — Out-of-Family Stress Tests (2026-04-04)
 
 Tests the ICI under model-class mismatch: wrong basin cardinality (K=2 vs K=3),

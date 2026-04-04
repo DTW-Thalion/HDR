@@ -1,6 +1,6 @@
 # HDR v7.5 Claim Validation Matrix
 
-**Last updated:** 2026-04-03
+**Last updated:** 2026-04-04
 
 > **Automated validation:** Run `python check_claims.py --verbose` to verify all
 > claim criteria against test results and stage artifacts. See `manuscript_claims.json`
@@ -9,7 +9,7 @@
 ## Test Summary
 
 **Recommended entry point:** `python run_all.py --full-validation` — validates all 36 claims
-in a single run (extended stages 01–07, highpower stage 04, stages 08–18, full pytest suite).
+in a single run (extended stages 01–07, highpower stage 04, stages 08–20, full pytest suite).
 
 | Run configuration                             | Checks | Result   |
 |-----------------------------------------------|--------|----------|
@@ -19,7 +19,7 @@ in a single run (extended stages 01–07, highpower stage 04, stages 08–18, fu
 | Validation runner (3 seeds × 12 episodes)     | 95     | All pass |
 | High-power runner (20 seeds × 30 ep/seed)     | 2      | See below |
 | Cluster bootstrap (100 seeds × 30 ep/seed)    | 2      | See below |
-| Stages 08–18 (profile-independent)            | varies | All pass |
+| Stages 08–20 (profile-independent)            | varies | All pass |
 | Pytest suite (34 files)                       | 349    | 347 pass, 2 skip |
 
 ---
@@ -414,6 +414,18 @@ All pass across all four profiles.
 | 34 | Lipsitz–Goldberger complexity collapse | Same parameters as Claim 33. Stage 17 verifies: D\_eff(80)/D\_eff(30) ≤ 0.50 (participation ratio collapse), dominant mode share p₁(80) ≥ 60%, D\_eff monotonically non-increasing, all eigenvalues strictly negative, criticality age > 100. |
 | 35 | ICI gating safe under partial observability | `sigma_proxy=2.0`, 20 seeds × 30 episodes × 256 steps. Stage 18 runs 4 conditions (HDR+ICI, HDR-ICI, pooled LQR, oracle HDR) with shared noise. Claim: HDR+ICI gain vs HDR-ICI ≥ -1% on maladaptive episodes (ICI does not degrade performance). Finding: IMM mode error rate ~1% under sigma=2.0, so ICI triggers infrequently (0.5%) and value-add is near zero (+0.02%). The ICI mechanism is safe to deploy. |
 | 36 | Estimation gap documented under partial obs | Same Stage 18 configuration. Oracle HDR (true states+mode) achieves +37.6% gain vs pooled LQR; estimation-based HDR achieves -3.9%. The 41.5% gap quantifies the total cost of state and mode estimation under heavy proxy noise. This is a diagnostic finding, not a limitation — it bounds the potential gain from improved estimation. |
+
+---
+
+## Supplementary Stages (no formal claims)
+
+### Stage 19 — Out-of-Family Stress Tests
+
+Tests ICI robustness under model-class mismatch (wrong K, nonlinear perturbation, bursty dropout). ICI delta positive in 6/7 scenarios. See CHANGELOG.md for full results.
+
+### Stage 20 — Structured vs Unstructured Identification
+
+Demonstrates sample efficiency of A = I + dt(-D + J) decomposition (31 params) vs full A\_k (64 params). At T=100, structured reduces identification error by 1.7x with 94% coupling detection rate. All 4 pass/fail criteria satisfied. Results in `results/stage_20/identification_comparison.json`.
 
 ---
 

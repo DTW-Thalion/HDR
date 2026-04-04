@@ -53,7 +53,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │   │   ├── population_planning.py # Population-prior treatment planning
 │   │   ├── tau_estimation.py    # Tau burden estimation
 │   │   └── risk_information.py  # Risk-information frontier
-│   └── stages/                  # Stage scripts for stages 08–18
+│   └── stages/                  # Stage scripts for stages 08–20
 │       ├── stage_08_ablation.py
 │       ├── stage_08b_ablation.py # Multi-axis asymmetric ablation (coherence + calibration marginal gains)
 │       ├── stage_09_baselines.py
@@ -65,9 +65,11 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 │       ├── stage_15_proxy_composite.py  # v7.0
 │       ├── stage_16_extensions.py  # v7.1 — model-failure extension integration
 │       ├── stage_17_gompertz.py  # v7.5 — emergent Gompertz mortality & complexity collapse
-│       └── stage_18_closed_loop_ici.py  # v7.5 — partially observed closed-loop ICI benchmark
+│       ├── stage_18_closed_loop_ici.py  # v7.5 — partially observed closed-loop ICI benchmark
+│       ├── stage_19_stress_tests.py  # v7.5 — out-of-family stress tests (ICI mismatch detection)
+│       └── stage_20_identification.py  # v7.5 — structured vs unstructured A_k identification
 ├── results/                     # Experiment outputs (auto-generated)
-│   └── stage_04/ … stage_17/    # Per-stage result artifacts (incl. stage_08b)
+│   └── stage_04/ … stage_20/    # Per-stage result artifacts (incl. stage_08b)
 ├── smoke_runner.py              # Smoke profile runner (stage functions + SMOKE_CONFIG)
 ├── standard_runner.py           # Standard profile runner
 ├── extended_runner.py           # Extended profile runner
@@ -75,7 +77,7 @@ HDR models a latent physiological state (e.g., neuroendocrine system) with K dis
 ├── validation_runner.py         # Validation profile runner
 ├── highpower_runner.py          # High-power profile runner (20 seeds × 30 ep/seed)
 ├── test_*.py                    # Pytest test modules (34 files, 349 tests)
-├── run_all.py                   # Orchestration script (stages 01–17, --full-validation)
+├── run_all.py                   # Orchestration script (stages 01–20, --full-validation)
 ├── plotting.py                  # Visualization utilities
 ├── analyse_highpower.py         # High-power run analysis
 ├── analyse_mismatch.py          # Model mismatch analysis
@@ -119,7 +121,7 @@ from hdr_validation.packaging import zip_paths
 from hdr_validation.specification import observation_schedule, generate_observation
 ```
 
-Stage logic for stages 01–07 lives in the profile runner modules (`smoke_runner.py`, `standard_runner.py`, etc.). Stages 08–18 (including 08b) are in `hdr_validation/stages/`.
+Stage logic for stages 01–07 lives in the profile runner modules (`smoke_runner.py`, `standard_runner.py`, etc.). Stages 08–20 (including 08b, 18b) are in `hdr_validation/stages/`.
 
 ---
 
@@ -137,7 +139,7 @@ This is the **recommended entry point** for reviewers. It runs four phases:
 |-------|-----------|----------------|
 | 1 | Extended profile, stages 01–03c + 05–07 | 3–14 |
 | 2 | Highpower benchmark (20 seeds × 30 ep/seed) | 1–2 (authoritative) |
-| 3 | Stages 08–18 at production scale + pytest | 9, 13, 15–36 |
+| 3 | Stages 08–20 at production scale + pytest | 9, 13, 15–36 |
 | 4 | Full pytest suite (312 tests, 31 files) | 15–36 (unit test layer) |
 
 Output ends with a per-claim pass/fail summary table. Supports `--resume --skip-done`
@@ -186,6 +188,8 @@ python run_all.py --stages 08 08b --run-tests                # Run stages then p
 | 16   | `stage_16_extensions.py` | Model-failure extension integration (v7.1) |
 | 17   | `stage_17_gompertz.py` | Emergent Gompertz mortality & complexity collapse (v7.5) |
 | 18   | `stage_18_closed_loop_ici.py` | Partially observed closed-loop ICI benchmark (v7.5) |
+| 19   | `stage_19_stress_tests.py` | Out-of-family stress tests (v7.5) |
+| 20   | `stage_20_identification.py` | Structured vs unstructured identification (v7.5) |
 
 ---
 
@@ -450,11 +454,12 @@ The suite validates 36 claims across v5.0, v7.0, v7.1, and v7.5:
 - **Claims 33–34** (v7.5): Emergent Gompertz mortality law, Lipsitz–Goldberger complexity collapse
 - **Claims 35–36** (v7.5): ICI gating under partial observability, estimation-gap documentation
 
-Claims 1–14 are evaluated by stages 01–11; Claims 15–32 by stages 12–16; Claims 33–34 by stage 17; Claims 35–36 by stage 18.
+Claims 1–14 are evaluated by stages 01–11; Claims 15–32 by stages 12–16; Claims 33–34 by stage 17; Claims 35–36 by stage 18. Stage 19 provides stress tests under model-class mismatch. Stage 20 validates sample efficiency of the structured A = -D + J parameterisation.
 A claim is marked `Supported` only when it passes its criterion in the appropriate profile.
 Claims 1–2 require the highpower runner (20 seeds × 30 ep/seed) for authoritative validation.
 
 **To validate all 36 claims in a single run:** `python run_all.py --full-validation`
+Stage 20 is included in the Phase 3 stage sweep and validates the structured identification advantage.
 
 See `CLAIM_CRITERIA.md` for full criterion definitions and `CLAIM_MATRIX.md` for current status.
 

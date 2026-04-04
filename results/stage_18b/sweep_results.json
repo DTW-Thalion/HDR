@@ -31,7 +31,7 @@
       "note": "ICI delta >= -0.5% across dropout sweep"
     }
   ],
-  "elapsed": 3.1293161999929,
+  "elapsed": 3.3268425000132993,
   "sigma_sweep": [
     {
       "sigma_proxy": 0.0,
@@ -167,7 +167,7 @@
   },
   "provenance": {
     "hdr_version": "7.4.0",
-    "generated_at": "2026-04-04T03:55:57.550501Z",
-    "git_commit": "cadd2b1"
+    "generated_at": "2026-04-04T06:18:11.592288Z",
+    "git_commit": "40c0c16"
   }
 }
