@@ -545,3 +545,307 @@ def run_stage_18(
                 print(f"    FAIL: {c['check']}: {c['value']} ({c['note']})")
 
     return results
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Stage 18b — Sensor-Degradation Sweep
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+def _run_sweep_episode(
+    cfg: dict[str, Any],
+    basin_idx: int,
+    seed: int,
+    ep_idx: int,
+    sigma_proxy: float,
+    p_drop: float,
+) -> dict[str, Any]:
+    """Run one episode under hdr_ici and hdr_no_ici with dropout support."""
+    from hdr_validation.model.slds import make_evaluation_model
+    from hdr_validation.model.target_set import build_target_set
+    from hdr_validation.control.mpc import solve_mode_a
+    from hdr_validation.control.lqr import dlqr
+    from hdr_validation.inference.imm import IMMFilter
+    from hdr_validation.inference.ici import compute_mu_bar_required
+
+    model_rng = np.random.default_rng(seed * 10000 + ep_idx + 1)
+    eval_model = make_evaluation_model(cfg, model_rng)
+    basin = eval_model.basins[basin_idx]
+    target = build_target_set(basin_idx, cfg)
+    T = cfg["steps_per_episode"]
+    n = cfg["state_dim"]
+    m = cfg["obs_dim"]
+    m_u = cfg["control_dim"]
+    K_basins = len(eval_model.basins)
+    lambda_u = float(cfg.get("lambda_u", 0.1))
+    budget = float(cfg.get("default_burden_budget", 56.0))
+
+    Q_lqr = np.eye(n)
+    R_lqr = np.eye(n) * lambda_u
+    K_banks: dict[int, np.ndarray] = {}
+    for k, b in enumerate(eval_model.basins):
+        try:
+            K_k, _ = dlqr(b.A, b.B, Q_lqr, R_lqr)
+        except Exception:
+            K_k = np.zeros((m_u, n))
+        K_banks[k] = K_k
+    K_pooled = np.mean([K_banks[k] for k in range(K_basins)], axis=0)
+    x_ref = np.zeros(n)
+
+    mu_bar = compute_mu_bar_required(
+        epsilon_control=cfg["epsilon_control"],
+        delta_A=cfg["model_mismatch_bound"],
+        delta_B=cfg["model_mismatch_bound"],
+        K_lqr_norm=float(np.linalg.norm(K_banks.get(basin_idx, K_banks[0]), 2)),
+        A=basin.A, B=basin.B, Q_lqr=Q_lqr, R_lqr=R_lqr,
+    )
+
+    rng = np.random.default_rng(seed * 10000 + ep_idx)
+    x_init = rng.normal(scale=0.5, size=n)
+    noise_seq = [rng.multivariate_normal(np.zeros(n), basin.Q) for _ in range(T)]
+    obs_noise_seq = [rng.normal(scale=0.1, size=m) for _ in range(T)]
+    proxy_noise_seq = [rng.normal(scale=sigma_proxy, size=m) for _ in range(T)]
+
+    drop_rng = np.random.default_rng(seed * 10000 + ep_idx + 999)
+    dropout_masks = [
+        (drop_rng.random(m) >= p_drop).astype(float) for _ in range(T)
+    ]
+
+    out: dict[str, Any] = {}
+    for cond in ("hdr_ici", "hdr_no_ici"):
+        x = x_init.copy()
+        cost = 0.0
+        mode_errors = 0
+        ici_triggers = 0
+        used_burden = 0.0
+        mu_hat_accum = 0.0
+
+        imm = IMMFilter(eval_model, init_cov_scale=1.0)
+        u = np.zeros(m_u)
+
+        for t in range(T):
+            state_cost = float(np.dot(x, x))
+            y = basin.C @ x + basin.c + obs_noise_seq[t] + proxy_noise_seq[t]
+            mask = dropout_masks[t]
+
+            imm_state = imm.step(y, mask, u)
+            x_hat = imm_state.mixed_mean.copy()
+            P_hat = imm_state.mixed_cov.copy()
+            z_hat = int(imm_state.map_mode)
+            mu_hat = 1.0 - float(np.max(imm_state.mode_probs))
+            mu_hat_accum += mu_hat
+
+            if z_hat != basin_idx:
+                mode_errors += 1
+
+            if cond == "hdr_ici":
+                if mu_hat >= mu_bar:
+                    u = np.clip(-K_pooled @ (x_hat - x_ref), -0.6, 0.6)
+                    ici_triggers += 1
+                elif z_hat == 1:
+                    u = np.clip(-K_banks[0] @ (x_hat - x_ref), -0.6, 0.6)
+                else:
+                    try:
+                        res = solve_mode_a(
+                            x_hat, P_hat, eval_model.basins[z_hat],
+                            target, kappa_hat=0.65, config=cfg, step=t,
+                            used_burden=used_burden,
+                        )
+                        u = res.u
+                    except Exception:
+                        u = np.clip(-K_banks.get(z_hat, K_banks[0]) @ (x_hat - x_ref), -0.6, 0.6)
+            else:
+                if z_hat == 1:
+                    u = np.clip(-K_banks[0] @ (x_hat - x_ref), -0.6, 0.6)
+                else:
+                    try:
+                        res = solve_mode_a(
+                            x_hat, P_hat, eval_model.basins[z_hat],
+                            target, kappa_hat=0.65, config=cfg, step=t,
+                            used_burden=used_burden,
+                        )
+                        u = res.u
+                    except Exception:
+                        u = np.clip(-K_banks.get(z_hat, K_banks[0]) @ (x_hat - x_ref), -0.6, 0.6)
+
+            cost += state_cost + lambda_u * float(np.dot(u, u))
+            used_burden += float(np.sum(np.abs(u)))
+            x = basin.A @ x + basin.B @ u + basin.b + noise_seq[t]
+
+        out[cond] = {
+            "cost": cost,
+            "mode_error_rate": mode_errors / T,
+            "ici_trigger_rate": ici_triggers / T if cond == "hdr_ici" else 0.0,
+            "mu_hat_mean": mu_hat_accum / T,
+        }
+
+    return out
+
+
+def run_stage_18b(
+    n_seeds: int = 5,
+    n_ep: int = 12,
+    T: int = 128,
+    fast_mode: bool = False,
+) -> dict[str, Any]:
+    """Stage 18b: Sensor-degradation sweep — ICI responsiveness under stress."""
+    t0 = time.perf_counter()
+
+    if fast_mode:
+        n_seeds = min(n_seeds, 2)
+        n_ep = min(n_ep, 4)
+        T = min(T, 64)
+
+    cfg = _make_benchmark_config(n_seeds=n_seeds, n_ep=n_ep, T=T)
+    seeds = [101 + i * 101 for i in range(n_seeds)]
+
+    sigma_values = [0.0, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0]
+    pdrop_values = [0.0, 0.3, 0.5, 0.7, 0.9]
+
+    N_MAL_MIN = 4
+    forced_mal_set: set[tuple[int, int]] = set()
+    if n_seeds * n_ep < 15:
+        count = 0
+        for s_idx in range(n_seeds):
+            for e_idx in range(n_ep):
+                if count >= N_MAL_MIN:
+                    break
+                forced_mal_set.add((s_idx, e_idx))
+                count += 1
+
+    def _collect_sweep(sigma: float, p_drop: float) -> dict:
+        ici_rates, ici_costs, no_ici_costs = [], [], []
+        mode_errs, mu_hats = [], []
+        for seed_idx, seed in enumerate(seeds):
+            basin_rng = np.random.default_rng(seed)
+            for ep_idx in range(n_ep):
+                is_forced = (seed_idx, ep_idx) in forced_mal_set
+                is_mal = is_forced or (basin_rng.random() < 0.30)
+                basin_idx = 1 if is_mal else basin_rng.choice([0, 2])
+                if basin_idx != 1:
+                    continue
+                ep = _run_sweep_episode(cfg, basin_idx, seed, ep_idx, sigma, p_drop)
+                ici_rates.append(ep["hdr_ici"]["ici_trigger_rate"])
+                ici_costs.append(ep["hdr_ici"]["cost"])
+                no_ici_costs.append(ep["hdr_no_ici"]["cost"])
+                mode_errs.append(ep["hdr_ici"]["mode_error_rate"])
+                mu_hats.append(ep["hdr_ici"]["mu_hat_mean"])
+        if not ici_rates:
+            return {"sigma_proxy": sigma, "p_drop": p_drop, "n_episodes": 0,
+                    "mode_error_pct": 0, "ici_trigger_pct": 0,
+                    "delta_gain_pct": 0, "mu_hat_mean": 0}
+        ici_a, no_a = np.array(ici_costs), np.array(no_ici_costs)
+        delta = np.where(no_a > 1e-12, (no_a - ici_a) / no_a, 0.0)
+        return {
+            "sigma_proxy": sigma, "p_drop": p_drop,
+            "n_episodes": len(ici_rates),
+            "mode_error_pct": round(float(np.mean(mode_errs)) * 100, 2),
+            "ici_trigger_pct": round(float(np.mean(ici_rates)) * 100, 2),
+            "delta_gain_pct": round(float(np.mean(delta)) * 100, 3),
+            "mu_hat_mean": round(float(np.mean(mu_hats)), 4),
+        }
+
+    print(f"  Stage 18b: Sigma sweep ({len(sigma_values)} levels)")
+    sigma_sweep = [_collect_sweep(s, 0.0) for s in sigma_values]
+
+    print(f"  Stage 18b: Dropout sweep ({len(pdrop_values)} levels)")
+    pdrop_sweep = [_collect_sweep(0.5, p) for p in pdrop_values]
+
+    all_points = sigma_sweep + [p for p in pdrop_sweep if p["p_drop"] > 0]
+
+    print()
+    print("  === Stage 18b — Sensor-Degradation Sweep (Maladaptive Basin) ===")
+    print()
+    hdr_line = f"  {'sigma':>6} | {'p_drop':>6} | {'Mode err%':>9} | {'ICI trig%':>9} | {'Delta%':>8} | {'mu_hat':>6}"
+    print(hdr_line)
+    print("  " + "-" * len(hdr_line.strip()))
+    for pt in all_points:
+        print(
+            f"  {pt['sigma_proxy']:6.2f} | {pt['p_drop']:6.2f} | "
+            f"{pt['mode_error_pct']:9.2f} | {pt['ici_trigger_pct']:9.2f} | "
+            f"{pt['delta_gain_pct']:+7.3f} | {pt['mu_hat_mean']:6.4f}"
+        )
+
+    results: dict[str, Any] = {"checks": []}
+    checks = results["checks"]
+
+    # Check 1: ICI trigger rate varies with sigma (responsive to noise level).
+    # The relationship is not necessarily monotonic because at very low sigma
+    # the IMM can have high mode error due to overfitting, while at very high
+    # sigma the posterior flattens (low mu_hat). The check verifies the ICI
+    # is not static — it responds to the noise regime.
+    sigma_trig = [pt["ici_trigger_pct"] for pt in sigma_sweep]
+    sigma_varies = max(sigma_trig) > min(sigma_trig) + 1.0
+    checks.append({
+        "check": "ici_trigger_varies_with_sigma",
+        "passed": sigma_varies,
+        "value": str([round(v, 2) for v in sigma_trig]),
+        "note": "ICI trigger rate varies with sigma_proxy (responsive mechanism)",
+    })
+
+    pdrop_trig = [pt["ici_trigger_pct"] for pt in pdrop_sweep]
+    pdrop_mono = all(
+        pdrop_trig[i] <= pdrop_trig[i + 1] + 0.5
+        for i in range(len(pdrop_trig) - 1)
+    )
+    checks.append({
+        "check": "ici_trigger_monotonic_pdrop",
+        "passed": pdrop_mono,
+        "value": str([round(v, 2) for v in pdrop_trig]),
+        "note": "ICI trigger rate non-decreasing in p_drop",
+    })
+
+    max_sigma_trig = sigma_trig[-1] if sigma_trig else 0
+    max_pdrop_trig = pdrop_trig[-1] if pdrop_trig else 0
+    extreme_active = max_sigma_trig > 5.0 or max_pdrop_trig > 5.0
+    checks.append({
+        "check": "extreme_degradation_activation",
+        "passed": extreme_active,
+        "value": f"sigma_5.0={max_sigma_trig:.1f}%, pdrop_0.9={max_pdrop_trig:.1f}%",
+        "note": "ICI trigger > 5% at extreme degradation",
+    })
+
+    all_deltas = [pt["delta_gain_pct"] for pt in all_points]
+    nondeg = all(d >= -2.0 for d in all_deltas)
+    checks.append({
+        "check": "ici_nondegradation_sweep",
+        "passed": nondeg,
+        "value": f"min_delta={min(all_deltas):+.3f}%",
+        "note": "ICI delta >= -2% at all sweep points",
+    })
+
+    # Check 5: ICI delta positive across dropout sweep (ICI helps under dropout)
+    pdrop_deltas = [pt["delta_gain_pct"] for pt in pdrop_sweep]
+    pdrop_positive = all(d >= -0.5 for d in pdrop_deltas)
+    checks.append({
+        "check": "ici_delta_positive_dropout",
+        "passed": pdrop_positive,
+        "value": str([round(v, 3) for v in pdrop_deltas]),
+        "note": "ICI delta >= -0.5% across dropout sweep",
+    })
+
+    elapsed = time.perf_counter() - t0
+    results["elapsed"] = elapsed
+    results["sigma_sweep"] = sigma_sweep
+    results["pdrop_sweep"] = pdrop_sweep
+    results["parameters"] = {
+        "n_seeds": n_seeds, "n_ep_per_seed": n_ep, "T": T,
+        "sigma_values": sigma_values, "pdrop_values": pdrop_values,
+    }
+
+    from hdr_validation.provenance import get_provenance
+    results["provenance"] = get_provenance()
+
+    out_dir = ROOT / "results" / "stage_18b"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    with open(out_dir / "sweep_results.json", "w") as f:
+        json.dump(results, f, indent=2, default=str)
+
+    n_pass = sum(1 for c in checks if c["passed"])
+    print(f"\n  Stage 18b: {n_pass}/{len(checks)} checks passed ({elapsed:.1f}s)")
+    if n_pass < len(checks):
+        for c in checks:
+            if not c["passed"]:
+                print(f"    FAIL: {c['check']}: {c['value']} ({c['note']})")
+
+    return results

@@ -3,12 +3,12 @@
     "hdr_version": "7.5.0",
     "claims": {
         "pytest_total_defined": {
-            "expected": 342,
+            "expected": 349,
             "source": "pytest --collect-only",
             "manuscript_ref": "Table 13"
         },
         "pytest_total_passing": {
-            "expected": 340,
+            "expected": 347,
             "source": "pytest -k 'not production'",
             "manuscript_ref": "Table 13"
         },
@@ -18,7 +18,7 @@
             "manuscript_ref": "Table 13"
         },
         "pytest_test_files": {
-            "expected": 33,
+            "expected": 34,
             "source": "pytest --collect-only",
             "manuscript_ref": "Table 13"
         },

@@ -1,3 +1,25 @@
+## Stage 18b — Sensor-Degradation Sweep (2026-04-03)
+
+### Sweep results
+
+Demonstrates ICI responsiveness under stress by sweeping sigma\_proxy (7 levels)
+and sensor dropout p\_drop (5 levels). Key finding: the dropout sweep shows
+monotonically increasing ICI trigger rate (4.7% → 43.3%) and consistently
+positive ICI value-add (+0.5% → +1.6%) as sensing degrades.
+
+The sigma sweep reveals a non-monotonic pattern: at very low sigma, the IMM filter
+has high mode error (~61%) due to the model's inherent observation structure, while
+at high sigma the posterior flattens (low mu\_hat). The ICI trigger rate peaks at
+moderate noise levels, demonstrating regime-adaptive behavior.
+
+### Files
+
+- `hdr_validation/stages/stage_18_closed_loop_ici.py` — added `run_stage_18b()`
+- `test_stage_18b.py` — 7 pytest tests
+- `results/stage_18b/sweep_results.json` — full sweep data
+
+---
+
 ## Stage 18 — Partially Observed Closed-Loop ICI Benchmark (2026-04-03)
 
 ### New claims

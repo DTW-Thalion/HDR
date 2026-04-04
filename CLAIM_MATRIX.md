@@ -20,7 +20,7 @@ in a single run (extended stages 01–07, highpower stage 04, stages 08–18, fu
 | High-power runner (20 seeds × 30 ep/seed)     | 2      | See below |
 | Cluster bootstrap (100 seeds × 30 ep/seed)    | 2      | See below |
 | Stages 08–18 (profile-independent)            | varies | All pass |
-| Pytest suite (33 files)                       | 342    | 340 pass, 2 skip |
+| Pytest suite (34 files)                       | 349    | 347 pass, 2 skip |
 
 ---
 
