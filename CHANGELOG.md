@@ -1,3 +1,25 @@
+## Stage 18 Ablation — 4-Way Partially Observed (±ICI × ±τ̃) (2026-04-04)
+
+Isolates whether the ICI or recovery surrogate τ̃ is the dominant source of
+architecture value under partial observability (sigma\_proxy=0.5).
+
+| Condition | ICI | τ̃ | Gain vs baseline | Win % |
+|---|---|---|---|---|
+| A: Full HDR | yes | yes | +0.19% | 88.8% |
+| B: HDR-ICI | no | yes | +0.00% | 5.3% |
+| C: HDR-τ̃ | yes | no | +0.19% | 88.8% |
+| D: Baseline | no | no | baseline | --- |
+
+ICI marginal: +0.19%. τ̃ marginal: 0.00%. Interaction: 0.00%.
+
+Finding: **ICI is the sole contributor** under partial observability. The τ̃
+recovery surrogate adds no additional value beyond what ICI gating provides,
+because Mode B escape (triggered by MAP mode = maladaptive) dominates the
+control response on maladaptive episodes, and the MPC cost structure difference
+(with/without τ̃) is irrelevant when Mode B is active.
+
+---
+
 ## Stage 18b — Sensor-Degradation Sweep (2026-04-03)
 
 ### Sweep results

@@ -1,0 +1,68 @@
+{
+  "checks": [
+    {
+      "check": "full_hdr_geq_baseline",
+      "passed": true,
+      "value": "+0.0019",
+      "note": "Full HDR gain vs baseline >= -1%"
+    },
+    {
+      "check": "component_contributes",
+      "passed": true,
+      "value": "ici=+0.0019, tau=+0.0000",
+      "note": "At least one component marginal >= -0.5%"
+    },
+    {
+      "check": "combination_not_worse",
+      "passed": true,
+      "value": "A=+0.0019, max(B,C)=+0.0019",
+      "note": "Full HDR >= max(B,C) - 1%"
+    },
+    {
+      "check": "no_divergence",
+      "passed": true,
+      "value": "2.99",
+      "note": "Max state norm < 1e6"
+    }
+  ],
+  "elapsed": 252.13611069999752,
+  "n_maladaptive": 170,
+  "parameters": {
+    "n_seeds": 20,
+    "n_ep_per_seed": 30,
+    "T": 256,
+    "sigma_proxy": 0.5
+  },
+  "gains": {
+    "full_hdr": {
+      "mean": 0.0019,
+      "ci_lo": -0.0008,
+      "ci_hi": 0.0064
+    },
+    "hdr_no_ici": {
+      "mean": 0.0,
+      "ci_lo": -0.0,
+      "ci_hi": 0.0
+    },
+    "hdr_no_tau": {
+      "mean": 0.0019,
+      "ci_lo": -0.0008,
+      "ci_hi": 0.0064
+    },
+    "baseline": {
+      "mean": 0.0,
+      "ci_lo": 0.0,
+      "ci_hi": 0.0
+    }
+  },
+  "marginals": {
+    "ici_marginal": 0.0019,
+    "tau_marginal": 0.0,
+    "interaction": -0.0
+  },
+  "provenance": {
+    "hdr_version": "7.4.0",
+    "generated_at": "2026-04-04T06:07:50.848340Z",
+    "git_commit": "66568df"
+  }
+}

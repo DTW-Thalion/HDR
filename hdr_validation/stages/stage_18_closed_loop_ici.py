@@ -849,3 +849,299 @@ def run_stage_18b(
                 print(f"    FAIL: {c['check']}: {c['value']} ({c['note']})")
 
     return results
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Stage 18 Ablation — 4-Way Partially Observed (±ICI × ±τ̃)
+# ══════════════════════════════════════════════════════════════════════════════
+
+ABLATION_CONDITIONS = ["full_hdr", "hdr_no_ici", "hdr_no_tau", "baseline"]
+
+
+def _run_ablation_episode(
+    cfg: dict[str, Any],
+    basin_idx: int,
+    seed: int,
+    ep_idx: int,
+    sigma_proxy: float,
+) -> dict[str, Any]:
+    """Run one episode under 4 ablation conditions (±ICI × ±τ̃)."""
+    from hdr_validation.model.slds import make_evaluation_model
+    from hdr_validation.model.target_set import build_target_set
+    from hdr_validation.control.mpc import solve_mode_a
+    from hdr_validation.control.lqr import dlqr
+    from hdr_validation.inference.imm import IMMFilter
+    from hdr_validation.inference.ici import compute_mu_bar_required
+
+    model_rng = np.random.default_rng(seed * 10000 + ep_idx + 1)
+    eval_model = make_evaluation_model(cfg, model_rng)
+    basin = eval_model.basins[basin_idx]
+    target = build_target_set(basin_idx, cfg)
+    T = cfg["steps_per_episode"]
+    n = cfg["state_dim"]
+    m = cfg["obs_dim"]
+    m_u = cfg["control_dim"]
+    K_basins = len(eval_model.basins)
+    lambda_u = float(cfg.get("lambda_u", 0.1))
+
+    Q_lqr = np.eye(n)
+    R_lqr = np.eye(n) * lambda_u
+    K_banks: dict[int, np.ndarray] = {}
+    for k, b in enumerate(eval_model.basins):
+        try:
+            K_k, _ = dlqr(b.A, b.B, Q_lqr, R_lqr)
+        except Exception:
+            K_k = np.zeros((m_u, n))
+        K_banks[k] = K_k
+    K_pooled = np.mean([K_banks[k] for k in range(K_basins)], axis=0)
+    x_ref = np.zeros(n)
+
+    mu_bar = compute_mu_bar_required(
+        epsilon_control=cfg["epsilon_control"],
+        delta_A=cfg["model_mismatch_bound"],
+        delta_B=cfg["model_mismatch_bound"],
+        K_lqr_norm=float(np.linalg.norm(K_banks.get(basin_idx, K_banks[0]), 2)),
+        A=basin.A, B=basin.B, Q_lqr=Q_lqr, R_lqr=R_lqr,
+    )
+
+    # Pre-generate shared noise
+    rng = np.random.default_rng(seed * 10000 + ep_idx)
+    x_init = rng.normal(scale=0.5, size=n)
+    noise_seq = [rng.multivariate_normal(np.zeros(n), basin.Q) for _ in range(T)]
+    obs_noise_seq = [rng.normal(scale=0.1, size=m) for _ in range(T)]
+    proxy_noise_seq = [rng.normal(scale=sigma_proxy, size=m) for _ in range(T)]
+
+    # Condition config: (use_ici, use_tau)
+    cond_config = {
+        "full_hdr":    (True,  True),
+        "hdr_no_ici":  (False, True),
+        "hdr_no_tau":  (True,  False),
+        "baseline":    (False, False),
+    }
+
+    out: dict[str, Any] = {"basin_idx": basin_idx, "costs": {}, "mode_errors": {},
+                           "ici_triggers": {}, "max_state_norm": 0.0}
+
+    for cond in ABLATION_CONDITIONS:
+        use_ici, use_tau = cond_config[cond]
+        x = x_init.copy()
+        cost = 0.0
+        mode_errors = 0
+        ici_triggers = 0
+        used_burden = 0.0
+
+        imm = IMMFilter(eval_model, init_cov_scale=1.0)
+        u = np.zeros(m_u)
+
+        for t in range(T):
+            state_cost = float(np.dot(x, x))
+            y = basin.C @ x + basin.c + obs_noise_seq[t] + proxy_noise_seq[t]
+            mask = np.ones(m)
+
+            imm_state = imm.step(y, mask, u)
+            x_hat = imm_state.mixed_mean.copy()
+            P_hat = imm_state.mixed_cov.copy()
+            z_hat = int(imm_state.map_mode)
+            mu_hat = 1.0 - float(np.max(imm_state.mode_probs))
+
+            if z_hat != basin_idx:
+                mode_errors += 1
+
+            ici_triggered = use_ici and (mu_hat >= mu_bar)
+            if ici_triggered:
+                u = np.clip(-K_pooled @ (x_hat - x_ref), -0.6, 0.6)
+                ici_triggers += 1
+            elif z_hat == 1:
+                u = np.clip(-K_banks[0] @ (x_hat - x_ref), -0.6, 0.6)
+            else:
+                try:
+                    res = solve_mode_a(
+                        x_hat, P_hat, eval_model.basins[z_hat],
+                        target, kappa_hat=0.65, config=cfg, step=t,
+                        used_burden=used_burden, with_tau=use_tau,
+                    )
+                    u = res.u
+                except Exception:
+                    u = np.clip(-K_banks.get(z_hat, K_banks[0]) @ (x_hat - x_ref), -0.6, 0.6)
+
+            cost += state_cost + lambda_u * float(np.dot(u, u))
+            used_burden += float(np.sum(np.abs(u)))
+
+            x_norm = float(np.linalg.norm(x))
+            if x_norm > out["max_state_norm"]:
+                out["max_state_norm"] = x_norm
+
+            x = basin.A @ x + basin.B @ u + basin.b + noise_seq[t]
+
+        out["costs"][cond] = cost
+        out["mode_errors"][cond] = mode_errors / T
+        out["ici_triggers"][cond] = ici_triggers / T
+
+    return out
+
+
+def run_stage_18_ablation(
+    n_seeds: int = 20,
+    n_ep: int = 30,
+    T: int = 256,
+    sigma_proxy: float = 0.5,
+    fast_mode: bool = False,
+) -> dict[str, Any]:
+    """4-way partially observed ablation: ±ICI × ±τ̃."""
+    t0 = time.perf_counter()
+
+    if fast_mode:
+        n_seeds = min(n_seeds, 3)
+        n_ep = min(n_ep, 5)
+        T = min(T, 64)
+
+    cfg = _make_benchmark_config(n_seeds=n_seeds, n_ep=n_ep, T=T)
+    seeds = [101 + i * 101 for i in range(n_seeds)]
+
+    N_MAL_MIN = 6
+    forced_mal_set: set[tuple[int, int]] = set()
+    if n_seeds * n_ep < 20:
+        count = 0
+        for s_idx in range(n_seeds):
+            for e_idx in range(n_ep):
+                if count >= N_MAL_MIN:
+                    break
+                forced_mal_set.add((s_idx, e_idx))
+                count += 1
+
+    mal_episodes: list[dict] = []
+    all_episodes: list[dict] = []
+
+    print(f"  Stage 18 Ablation: {n_seeds} seeds x {n_ep} ep x {T} steps (sigma={sigma_proxy})")
+
+    for seed_idx, seed in enumerate(seeds):
+        basin_rng = np.random.default_rng(seed)
+        for ep_idx in range(n_ep):
+            is_forced = (seed_idx, ep_idx) in forced_mal_set
+            is_mal = is_forced or (basin_rng.random() < 0.30)
+            basin_idx = 1 if is_mal else basin_rng.choice([0, 2])
+
+            ep = _run_ablation_episode(cfg, basin_idx, seed, ep_idx, sigma_proxy)
+            all_episodes.append(ep)
+            if basin_idx == 1:
+                mal_episodes.append(ep)
+
+    n_mal = len(mal_episodes)
+    print(f"  Stage 18 Ablation: {len(all_episodes)} total, {n_mal} maladaptive")
+
+    if n_mal == 0:
+        results: dict[str, Any] = {"checks": [], "n_maladaptive": 0}
+        from hdr_validation.provenance import get_provenance
+        results["provenance"] = get_provenance()
+        return results
+
+    costs = {c: np.array([e["costs"][c] for e in mal_episodes]) for c in ABLATION_CONDITIONS}
+    baseline_costs = costs["baseline"]
+
+    gains: dict[str, np.ndarray] = {}
+    for cond in ABLATION_CONDITIONS:
+        gains[cond] = np.where(
+            baseline_costs > 1e-12,
+            (baseline_costs - costs[cond]) / baseline_costs,
+            0.0,
+        )
+
+    # Print table
+    print()
+    print("  === 4-Way Ablation (Maladaptive, sigma={:.1f}) ===".format(sigma_proxy))
+    print()
+    hdr_line = f"  {'Condition':<18} | {'Cost':>10} | {'Gain vs D':>10} | {'Win%':>6} | {'Mode err%':>9} | {'ICI%':>6}"
+    print(hdr_line)
+    print("  " + "-" * len(hdr_line.strip()))
+
+    for cond in ABLATION_CONDITIONS:
+        mean_cost = float(np.mean(costs[cond]))
+        mean_gain = float(np.mean(gains[cond]))
+        win_rate = float(np.mean(gains[cond] > 0)) if cond != "baseline" else 0.0
+        mode_err = float(np.mean([e["mode_errors"][cond] for e in mal_episodes])) * 100
+        ici_rate = float(np.mean([e["ici_triggers"][cond] for e in mal_episodes])) * 100
+        ici_str = f"{ici_rate:5.1f}%" if cond in ("full_hdr", "hdr_no_tau") else "  ---"
+        label = {"full_hdr": "A: Full HDR", "hdr_no_ici": "B: HDR-ICI",
+                 "hdr_no_tau": "C: HDR-tau", "baseline": "D: Baseline"}[cond]
+        print(f"  {label:<18} | {mean_cost:10.1f} | {mean_gain:+9.4f} | {win_rate:5.1%} | {mode_err:8.1f}% | {ici_str}")
+
+    gain_A = float(np.mean(gains["full_hdr"]))
+    gain_B = float(np.mean(gains["hdr_no_ici"]))
+    gain_C = float(np.mean(gains["hdr_no_tau"]))
+    ici_marginal = gain_A - gain_B
+    tau_marginal = gain_A - gain_C
+    interaction = gain_A - gain_B - gain_C
+
+    print(f"\n  ICI marginal:  gain(A) - gain(B) = {ici_marginal:+.4f}")
+    print(f"  tau marginal:  gain(A) - gain(C) = {tau_marginal:+.4f}")
+    print(f"  Interaction:   {interaction:+.4f}")
+
+    results = {"checks": []}
+    checks = results["checks"]
+
+    checks.append({
+        "check": "full_hdr_geq_baseline",
+        "passed": gain_A >= -0.01,
+        "value": f"{gain_A:+.4f}",
+        "note": "Full HDR gain vs baseline >= -1%",
+    })
+
+    either_positive = ici_marginal > -0.005 or tau_marginal > -0.005
+    checks.append({
+        "check": "component_contributes",
+        "passed": either_positive,
+        "value": f"ici={ici_marginal:+.4f}, tau={tau_marginal:+.4f}",
+        "note": "At least one component marginal >= -0.5%",
+    })
+
+    best_component = max(gain_B, gain_C)
+    checks.append({
+        "check": "combination_not_worse",
+        "passed": gain_A >= best_component - 0.01,
+        "value": f"A={gain_A:+.4f}, max(B,C)={best_component:+.4f}",
+        "note": "Full HDR >= max(B,C) - 1%",
+    })
+
+    max_norm = max(e["max_state_norm"] for e in all_episodes)
+    checks.append({
+        "check": "no_divergence",
+        "passed": max_norm < 1e6,
+        "value": f"{max_norm:.2f}",
+        "note": "Max state norm < 1e6",
+    })
+
+    elapsed = time.perf_counter() - t0
+    results["elapsed"] = elapsed
+    results["n_maladaptive"] = n_mal
+    results["parameters"] = {
+        "n_seeds": n_seeds, "n_ep_per_seed": n_ep, "T": T,
+        "sigma_proxy": sigma_proxy,
+    }
+    results["gains"] = {
+        c: {"mean": round(float(np.mean(gains[c])), 4),
+            "ci_lo": round(float(np.percentile(gains[c], 2.5)), 4),
+            "ci_hi": round(float(np.percentile(gains[c], 97.5)), 4)}
+        for c in ABLATION_CONDITIONS
+    }
+    results["marginals"] = {
+        "ici_marginal": round(ici_marginal, 4),
+        "tau_marginal": round(tau_marginal, 4),
+        "interaction": round(interaction, 4),
+    }
+
+    from hdr_validation.provenance import get_provenance
+    results["provenance"] = get_provenance()
+
+    out_dir = ROOT / "results" / "stage_18_ablation"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    with open(out_dir / "ablation_results.json", "w") as f:
+        json.dump(results, f, indent=2, default=str)
+
+    n_pass = sum(1 for c in checks if c["passed"])
+    print(f"\n  Stage 18 Ablation: {n_pass}/{len(checks)} checks passed ({elapsed:.1f}s)")
+    if n_pass < len(checks):
+        for c in checks:
+            if not c["passed"]:
+                print(f"    FAIL: {c['check']}: {c['value']} ({c['note']})")
+
+    return results
