@@ -3,12 +3,12 @@
     "hdr_version": "7.5.0",
     "claims": {
         "pytest_total_defined": {
-            "expected": 312,
+            "expected": 342,
             "source": "pytest --collect-only",
             "manuscript_ref": "Table 13"
         },
         "pytest_total_passing": {
-            "expected": 310,
+            "expected": 340,
             "source": "pytest -k 'not production'",
             "manuscript_ref": "Table 13"
         },
@@ -18,7 +18,7 @@
             "manuscript_ref": "Table 13"
         },
         "pytest_test_files": {
-            "expected": 31,
+            "expected": 33,
             "source": "pytest --collect-only",
             "manuscript_ref": "Table 13"
         },
@@ -102,6 +102,16 @@
             "expected": 18,
             "note": "17.01 through 17.18 all implemented",
             "manuscript_ref": "Section 8.1"
+        },
+        "test_stage_18_count": {
+            "expected": 10,
+            "source": "pytest --collect-only test_stage_18.py",
+            "manuscript_ref": "Table 13, row test_stage_18"
+        },
+        "stage_18_checks": {
+            "expected": 7,
+            "note": "7 checks: ICI non-degradation, pooled bounded, oracle ceiling, trigger rate, mode error, estimation gap, no divergence",
+            "manuscript_ref": "Section 8.2"
         }
     }
 }

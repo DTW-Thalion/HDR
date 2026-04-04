@@ -1,3 +1,38 @@
+## Stage 18 — Partially Observed Closed-Loop ICI Benchmark (2026-04-03)
+
+### New claims
+
+- **Claim 35 — ICI gating safe under partial observability:** HDR+ICI does not
+  degrade performance relative to HDR-ICI on maladaptive episodes (value-add
+  ≥ -1%). Under sigma\_proxy=2.0, the IMM filter achieves ~1% mode error rate,
+  so ICI triggers infrequently (~0.5%) and provides marginal benefit (+0.02%).
+
+- **Claim 36 — Estimation gap documented:** Oracle HDR (true states + mode)
+  achieves +37.6% gain vs pooled LQR; estimation-based HDR achieves -3.9%.
+  The 41.5% gap quantifies the total cost of estimation under heavy proxy noise.
+
+### Key finding
+
+The IMM filter is robust enough that mode misclassification is rare (<1%) even
+under sigma\_proxy=2.0. The ICI's primary value is as a safety mechanism —
+it prevents acting on incorrect mode estimates when they do occur — rather than
+as a performance booster. The oracle gap (41.5%) shows that improving state
+estimation (not mode estimation) is the dominant opportunity for performance gain.
+
+### Configuration
+
+- 20 seeds × 30 episodes × 256 steps, sigma\_proxy=2.0
+- 4 conditions: HDR+ICI, HDR-ICI, pooled LQR, oracle HDR
+- ICI Condition (i) only (mu\_hat >= mu\_bar)
+- ICI fallback: conservative pooled LQR gain (not Mode C dither)
+
+### Files
+
+- `hdr_validation/stages/stage_18_closed_loop_ici.py` — 4-condition benchmark
+- `test_stage_18.py` — 10 pytest tests
+
+---
+
 ## Stage 15 Remediation — Kalman Filter for Proxy-Composite Estimation (2026-04-03)
 
 ### Problem

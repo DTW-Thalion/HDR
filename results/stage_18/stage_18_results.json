@@ -1,0 +1,148 @@
+{
+  "checks": [
+    {
+      "check": "claim_35_ici_nondegradation",
+      "passed": true,
+      "value": "-0.0000",
+      "note": "HDR+ICI gain vs HDR-ICI >= -1% (ICI is safe to deploy)"
+    },
+    {
+      "check": "claim_36_ici_vs_pooled_bounded",
+      "passed": true,
+      "value": "-0.0207",
+      "note": "HDR+ICI degradation vs pooled LQR bounded (> -15%)"
+    },
+    {
+      "check": "oracle_ceiling_valid",
+      "passed": true,
+      "value": "oracle=92.1, pooled=138.6",
+      "note": "Oracle HDR cost should be <= pooled LQR cost (sanity)"
+    },
+    {
+      "check": "ici_trigger_rate_nonzero",
+      "passed": true,
+      "value": "0.0026",
+      "note": "ICI trigger rate > 0 (mechanism exercised)"
+    },
+    {
+      "check": "mode_error_bounded",
+      "passed": true,
+      "value": "0.0026",
+      "note": "Mode error rate < 0.50"
+    },
+    {
+      "check": "estimation_gap_documented",
+      "passed": true,
+      "value": "+0.3429",
+      "note": "Oracle gain - HDR+ICI gain > 0 (estimation has a cost)"
+    },
+    {
+      "check": "no_divergence",
+      "passed": true,
+      "value": "2.89",
+      "note": "Max state norm < 1e6 across all conditions"
+    }
+  ],
+  "elapsed": 2.141394999998738,
+  "parameters": {
+    "n_seeds": 2,
+    "n_ep_per_seed": 3,
+    "T": 64,
+    "sigma_proxy": 2.0
+  },
+  "summary_all": {
+    "hdr_ici": {
+      "mean_cost": 142.15449464678434,
+      "mean_gain_vs_pooled": -0.0207,
+      "gain_ci_lo": -0.054,
+      "gain_ci_hi": 0.0075,
+      "win_rate_vs_pooled": 0.1667,
+      "mode_error_rate": 0.0026
+    },
+    "hdr_no_ici": {
+      "mean_cost": 142.1542119514078,
+      "mean_gain_vs_pooled": -0.0207,
+      "gain_ci_lo": -0.054,
+      "gain_ci_hi": 0.0075,
+      "win_rate_vs_pooled": 0.1667,
+      "mode_error_rate": 0.0026
+    },
+    "pooled_lqr": {
+      "mean_cost": 138.63751996500733,
+      "mean_gain_vs_pooled": 0.0,
+      "gain_ci_lo": 0.0,
+      "gain_ci_hi": 0.0,
+      "win_rate_vs_pooled": 0.0,
+      "mode_error_rate": 0.0026
+    },
+    "oracle_hdr": {
+      "mean_cost": 92.12528024899353,
+      "mean_gain_vs_pooled": 0.3222,
+      "gain_ci_lo": 0.2464,
+      "gain_ci_hi": 0.3926,
+      "win_rate_vs_pooled": 1.0,
+      "mode_error_rate": 0.0
+    },
+    "ici_trigger_rate": 0.0026,
+    "ici_value_add": {
+      "mean_gain": -0.0,
+      "ci_lo": -0.0,
+      "ci_hi": 0.0,
+      "win_rate": 0.0
+    }
+  },
+  "summary_maladaptive": {
+    "hdr_ici": {
+      "mean_cost": 142.15449464678434,
+      "mean_gain_vs_pooled": -0.0207,
+      "gain_ci_lo": -0.054,
+      "gain_ci_hi": 0.0075,
+      "win_rate_vs_pooled": 0.1667,
+      "mode_error_rate": 0.0026
+    },
+    "hdr_no_ici": {
+      "mean_cost": 142.1542119514078,
+      "mean_gain_vs_pooled": -0.0207,
+      "gain_ci_lo": -0.054,
+      "gain_ci_hi": 0.0075,
+      "win_rate_vs_pooled": 0.1667,
+      "mode_error_rate": 0.0026
+    },
+    "pooled_lqr": {
+      "mean_cost": 138.63751996500733,
+      "mean_gain_vs_pooled": 0.0,
+      "gain_ci_lo": 0.0,
+      "gain_ci_hi": 0.0,
+      "win_rate_vs_pooled": 0.0,
+      "mode_error_rate": 0.0026
+    },
+    "oracle_hdr": {
+      "mean_cost": 92.12528024899353,
+      "mean_gain_vs_pooled": 0.3222,
+      "gain_ci_lo": 0.2464,
+      "gain_ci_hi": 0.3926,
+      "win_rate_vs_pooled": 1.0,
+      "mode_error_rate": 0.0
+    },
+    "ici_trigger_rate": 0.0026,
+    "ici_value_add": {
+      "mean_gain": -0.0,
+      "ci_lo": -0.0,
+      "ci_hi": 0.0,
+      "win_rate": 0.0
+    }
+  },
+  "summary_healthy": {},
+  "episode_counts": {
+    "total": 6,
+    "maladaptive": 6,
+    "healthy": 0
+  },
+  "results_are_valid": true,
+  "validity_note": "N_mal=6: valid",
+  "provenance": {
+    "hdr_version": "7.4.0",
+    "generated_at": "2026-04-04T03:38:24.831460Z",
+    "git_commit": "8d88b41"
+  }
+}
