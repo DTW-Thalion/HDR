@@ -1,0 +1,101 @@
+{
+  "checks": [
+    {
+      "check": "cpd_high_at_low_T",
+      "passed": true,
+      "value": "max_cpd=+25.6% at T_train < omega_min/2",
+      "note": "CPD > 10% when T_train << omega_min (premature deployment hurts)"
+    },
+    {
+      "check": "cpd_improves_with_data",
+      "passed": false,
+      "value": "cpd_first=+25.6%, cpd_last=+25.0%, drop=+0.6pp",
+      "note": "CPD decreases by >2pp from smallest to largest T_train"
+    },
+    {
+      "check": "ici_gate_transition_near_omega_min",
+      "passed": false,
+      "value": "no transition found (omega_min=95.9)",
+      "note": "ICI REFUSE->PASS: T_k_eff at transition within [0.5, 5.0]*omega_min"
+    },
+    {
+      "check": "ici_gated_never_worse",
+      "passed": true,
+      "value": "worst_excess=-0.0462",
+      "note": "ICI-gated cost \u2264 ungated cost (+ 2% tolerance) at all T_train"
+    },
+    {
+      "check": "substantial_cpd_at_smallest_T",
+      "passed": true,
+      "value": "cpd=+25.6% at T_train=20",
+      "note": "CPD > 15% at smallest T_train (premature deployment is costly)"
+    }
+  ],
+  "elapsed": 6.547254899982363,
+  "parameters": {
+    "T_train_values": [
+      20,
+      100,
+      500
+    ],
+    "n_episodes_per_seed": 10,
+    "n_seeds": 2,
+    "sigma_proxy": 0.5,
+    "seed": 42,
+    "steps_per_episode": 64
+  },
+  "sweep": [
+    {
+      "T_train": 20,
+      "ici_verdict": "REFUSE",
+      "gate_pass_fraction": 0.0,
+      "cpd_pct": 25.64,
+      "gated_rel_pct": 15.44,
+      "oracle_mean_cost": 40.61,
+      "gated_mean_cost": 46.88,
+      "ungated_mean_cost": 51.02,
+      "mode_error_pct": 83.52,
+      "diverge_pct": 0.0,
+      "omega_min_mean": 95.86,
+      "worst_T_k_eff_mean": 0.3,
+      "n_episodes": 20
+    },
+    {
+      "T_train": 100,
+      "ici_verdict": "REFUSE",
+      "gate_pass_fraction": 0.0,
+      "cpd_pct": 22.35,
+      "gated_rel_pct": 16.69,
+      "oracle_mean_cost": 51.8,
+      "gated_mean_cost": 60.45,
+      "ungated_mean_cost": 63.38,
+      "mode_error_pct": 50.23,
+      "diverge_pct": 0.0,
+      "omega_min_mean": 95.86,
+      "worst_T_k_eff_mean": 1.26,
+      "n_episodes": 20
+    },
+    {
+      "T_train": 500,
+      "ici_verdict": "REFUSE",
+      "gate_pass_fraction": 0.0,
+      "cpd_pct": 25.02,
+      "gated_rel_pct": 18.16,
+      "oracle_mean_cost": 48.4,
+      "gated_mean_cost": 57.18,
+      "ungated_mean_cost": 60.5,
+      "mode_error_pct": 64.3,
+      "diverge_pct": 0.0,
+      "omega_min_mean": 95.86,
+      "worst_T_k_eff_mean": 18.61,
+      "n_episodes": 20
+    }
+  ],
+  "omega_min_reference": 95.86,
+  "ici_gate_transition_T": null,
+  "provenance": {
+    "hdr_version": "7.4.0",
+    "generated_at": "2026-04-05T01:37:21.017454Z",
+    "git_commit": "9a18a1a"
+  }
+}

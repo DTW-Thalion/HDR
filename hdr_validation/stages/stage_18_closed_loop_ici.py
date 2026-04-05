@@ -1145,3 +1145,558 @@ def run_stage_18_ablation(
                 print(f"    FAIL: {c['check']}: {c['value']} ({c['note']})")
 
     return results
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Stage 18c — Cost of Premature Deployment
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# Demonstrates the ICI's real value: preventing unsafe deployment on
+# insufficient data.  Sweeps T_train (training-data size available for
+# basin-model identification) and compares:
+#
+#   1. Oracle     — controller uses true model parameters
+#   2. ICI-gated  — uses estimated models but obeys ICI gate;
+#                   falls back to pooled LQR when T_k^eff < ω_min
+#   3. Ungated    — uses estimated models unconditionally
+#
+# The headline metric is CPD (Cost of Premature Deployment):
+#   CPD(T_train) = (ungated_cost − oracle_cost) / oracle_cost × 100 %
+
+CPD_CONDITIONS = ["oracle", "ici_gated", "ungated"]
+
+
+def _estimate_basin_models(
+    eval_model: Any,
+    T_train: int,
+    rng: np.random.Generator,
+    dt: float = 0.5,
+) -> dict[str, Any]:
+    """Generate training data and estimate basin models from T_train obs.
+
+    Returns dict with:
+      A_hat_k, Q_hat_k per basin, T_k counts, rho_hat_k, ici_gate_pass.
+    """
+    from hdr_validation.stages.stage_20_identification import (
+        estimate_structured,
+        _build_mechanistic_prior,
+    )
+    from hdr_validation.inference.ici import compute_T_k_eff, compute_omega_min
+
+    K = len(eval_model.basins)
+    n = eval_model.basins[0].A.shape[0]
+
+    # ── Generate training trajectory from a uniformly-switching system ────
+    # Each step picks a basin at random (ensures all basins get data).
+    X_train = np.zeros((T_train + 1, n))
+    Z_train = np.zeros(T_train, dtype=int)
+    X_train[0] = rng.normal(scale=0.3, size=n)
+
+    for t in range(T_train):
+        k = int(rng.integers(0, K))
+        Z_train[t] = k
+        basin = eval_model.basins[k]
+        w = rng.multivariate_normal(np.zeros(n), basin.Q)
+        X_train[t + 1] = basin.A @ X_train[t] + w
+
+    # ── Per-basin state pairs ────────────────────────────────────────────
+    A_hats: dict[int, np.ndarray] = {}
+    Q_hats: dict[int, np.ndarray] = {}
+    rho_hats: dict[int, float] = {}
+    T_k_counts: dict[int, int] = {}
+
+    # Build a mechanistic prior (same structure as Stage 20)
+    prior_rng = np.random.default_rng(12345)
+    _, J_prior, J_mask, J_signs = _build_mechanistic_prior(n, prior_rng)
+
+    for k in range(K):
+        idx = np.where(Z_train == k)[0]
+        T_k = len(idx)
+        T_k_counts[k] = T_k
+
+        if T_k < n + 1:
+            # Not enough data — use heavily regularised identity
+            A_hats[k] = np.eye(n) * 0.9
+            Q_hats[k] = np.eye(n) * 0.5
+            rho_hats[k] = 0.9
+            continue
+
+        X_k = X_train[idx]
+        X_k_next = X_train[idx + 1]
+
+        # Structured estimation (mechanistic prior A = I + dt(-D + J))
+        J_mech_noisy = np.maximum(
+            J_prior + rng.normal(scale=0.05, size=J_prior.shape) * J_mask, 0.0,
+        )
+        J_mech_noisy[~J_mask] = 0.0
+        A_hat_k, _, _ = estimate_structured(
+            X_k, X_k_next, dt, J_mask, J_signs,
+            D_init=np.ones(n),
+            J_mech=J_mech_noisy,
+            lambda_reg=max(0.1, 5.0 * n / max(T_k, 1)),
+            max_iter=200,
+            lr=0.005,
+        )
+
+        # Clamp spectral radius for stability
+        rho_hat = float(np.max(np.abs(np.linalg.eigvals(A_hat_k))))
+        if rho_hat >= 1.0:
+            A_hat_k = A_hat_k * (0.98 / rho_hat)
+            rho_hat = 0.98
+
+        A_hats[k] = A_hat_k
+        rho_hats[k] = rho_hat
+
+        # Estimate process noise from residuals
+        residuals = X_k_next - (X_k @ A_hat_k.T)
+        Q_hat_k = (residuals.T @ residuals) / max(T_k - 1, 1)
+        Q_hat_k = Q_hat_k + np.eye(n) * 0.01  # regularise
+        Q_hats[k] = Q_hat_k
+
+    # ── ICI gate decision: T_k^eff vs ω_min ─────────────────────────────
+    pi_k = np.array([T_k_counts[k] / max(T_train, 1) for k in range(K)])
+    p_miss = 0.0  # synthetic training data, no missingness
+
+    T_k_eff = np.array([
+        compute_T_k_eff(T_train, float(pi_k[k]), p_miss, rho_hats.get(k, 0.9))
+        for k in range(K)
+    ])
+
+    # omega_min from estimated model (Heuristic Scaling, Prop H.12)
+    # For the deployment gate, what matters is whether we can resolve
+    # the n dominant modes of A_k, not all n_theta individual parameters.
+    # The structured prior constrains the remaining parameters, so the
+    # effective dimensionality for the deployment decision is n (state_dim).
+    omega_min = compute_omega_min(n, epsilon=0.50, delta=0.05)
+
+    worst_T_k_eff = float(np.min(T_k_eff))
+    ici_gate_pass = worst_T_k_eff >= omega_min
+
+    return {
+        "A_hats": A_hats,
+        "Q_hats": Q_hats,
+        "rho_hats": rho_hats,
+        "T_k_counts": T_k_counts,
+        "T_k_eff": T_k_eff,
+        "omega_min": omega_min,
+        "worst_T_k_eff": worst_T_k_eff,
+        "ici_gate_pass": ici_gate_pass,
+    }
+
+
+def _run_cpd_episode(
+    cfg: dict[str, Any],
+    basin_idx: int,
+    seed: int,
+    ep_idx: int,
+    est: dict[str, Any],
+    sigma_proxy: float,
+) -> dict[str, Any]:
+    """Run one episode under oracle, ici_gated, and ungated conditions.
+
+    The 'est' dict holds estimated basin models from _estimate_basin_models.
+    """
+    from hdr_validation.model.slds import make_evaluation_model
+    from hdr_validation.model.target_set import build_target_set
+    from hdr_validation.control.lqr import dlqr
+    from hdr_validation.inference.imm import IMMFilter
+
+    model_rng = np.random.default_rng(seed * 10000 + ep_idx + 1)
+    eval_model = make_evaluation_model(cfg, model_rng)
+    basin = eval_model.basins[basin_idx]
+    target = build_target_set(basin_idx, cfg)
+    T = cfg["steps_per_episode"]
+    n = cfg["state_dim"]
+    m = cfg["obs_dim"]
+    m_u = cfg["control_dim"]
+    K_basins = len(eval_model.basins)
+    lambda_u = float(cfg.get("lambda_u", 0.1))
+
+    # ── LQR gains from TRUE model (oracle) ───────────────────────────────
+    Q_lqr = np.eye(n)
+    R_lqr = np.eye(n) * lambda_u
+    K_true: dict[int, np.ndarray] = {}
+    for k, b in enumerate(eval_model.basins):
+        try:
+            K_k, _ = dlqr(b.A, b.B, Q_lqr, R_lqr)
+        except Exception:
+            K_k = np.zeros((m_u, n))
+        K_true[k] = K_k
+    K_pooled_true = np.mean([K_true[k] for k in range(K_basins)], axis=0)
+
+    # ── LQR gains from ESTIMATED model ───────────────────────────────────
+    A_hats = est["A_hats"]
+    K_est: dict[int, np.ndarray] = {}
+    for k in range(K_basins):
+        B_k = eval_model.basins[k].B  # assume B known
+        try:
+            K_k, _ = dlqr(A_hats[k], B_k, Q_lqr, R_lqr)
+        except Exception:
+            K_k = np.zeros((m_u, n))
+        K_est[k] = K_k
+    K_pooled_est = np.mean([K_est[k] for k in range(K_basins)], axis=0)
+
+    x_ref = np.zeros(n)
+
+    # ── Pre-generate shared noise ────────────────────────────────────────
+    rng = np.random.default_rng(seed * 10000 + ep_idx)
+    x_init = rng.normal(scale=0.5, size=n)
+    noise_seq = [rng.multivariate_normal(np.zeros(n), basin.Q) for _ in range(T)]
+    obs_noise_seq = [rng.normal(scale=0.1, size=m) for _ in range(T)]
+    proxy_noise_seq = [rng.normal(scale=sigma_proxy, size=m) for _ in range(T)]
+
+    ici_gate_pass = est["ici_gate_pass"]
+
+    out: dict[str, Any] = {"basin_idx": basin_idx, "costs": {},
+                           "mode_errors": {}, "max_state_norm": 0.0,
+                           "diverged": {}}
+
+    for cond in CPD_CONDITIONS:
+        x = x_init.copy()
+        cost = 0.0
+        mode_errors = 0
+        diverged = False
+
+        if cond != "oracle":
+            imm = IMMFilter(eval_model, init_cov_scale=1.0)
+        else:
+            imm = None
+
+        u = np.zeros(m_u)
+
+        for t in range(T):
+            state_cost = float(np.dot(x, x))
+
+            # Observation
+            y = basin.C @ x + basin.c + obs_noise_seq[t] + proxy_noise_seq[t]
+            mask = np.ones(m)
+
+            # ── Estimation ───────────────────────────────────────────
+            if cond == "oracle":
+                z_hat = basin_idx
+                x_hat = x.copy()
+            else:
+                imm_state = imm.step(y, mask, u)
+                x_hat = imm_state.mixed_mean.copy()
+                z_hat = int(imm_state.map_mode)
+                if z_hat != basin_idx:
+                    mode_errors += 1
+
+            # ── Control ──────────────────────────────────────────────
+            if cond == "oracle":
+                u = np.clip(-K_true[basin_idx] @ (x - x_ref), -0.6, 0.6)
+
+            elif cond == "ici_gated":
+                if ici_gate_pass:
+                    # ICI approves: use estimated-model gains
+                    u = np.clip(-K_est.get(z_hat, K_est[0]) @ (x_hat - x_ref), -0.6, 0.6)
+                else:
+                    # ICI refuses: fall back to safe pooled LQR (true model)
+                    u = np.clip(-K_pooled_true @ (x_hat - x_ref), -0.6, 0.6)
+
+            elif cond == "ungated":
+                # Deploy estimated-model gains unconditionally
+                u = np.clip(-K_est.get(z_hat, K_est[0]) @ (x_hat - x_ref), -0.6, 0.6)
+
+            cost += state_cost + lambda_u * float(np.dot(u, u))
+
+            x_norm = float(np.linalg.norm(x))
+            if x_norm > out["max_state_norm"]:
+                out["max_state_norm"] = x_norm
+            if x_norm > 1e4:
+                diverged = True
+
+            # State advance (true dynamics)
+            x = basin.A @ x + basin.B @ u + basin.b + noise_seq[t]
+
+        out["costs"][cond] = cost
+        out["mode_errors"][cond] = mode_errors / T
+        out["diverged"][cond] = diverged
+
+    return out
+
+
+def run_stage_18c(
+    T_train_values: list[int] | None = None,
+    n_episodes: int = 100,
+    n_seeds: int = 10,
+    sigma_proxy: float = 0.5,
+    seed: int = 42,
+    fast_mode: bool = False,
+) -> dict[str, Any]:
+    """Stage 18c: Cost of Premature Deployment.
+
+    Sweeps T_train (training data size) and compares oracle, ICI-gated,
+    and ungated controllers to quantify the cost of deploying on
+    insufficient data.
+
+    The headline metric is CPD = (ungated_cost - oracle_cost) / oracle_cost.
+    """
+    t0 = time.perf_counter()
+
+    if T_train_values is None:
+        if fast_mode:
+            T_train_values = [20, 50, 100, 500, 2000]
+        else:
+            T_train_values = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
+
+    if fast_mode:
+        n_episodes = min(n_episodes, 30)
+        n_seeds = min(n_seeds, 3)
+
+    cfg = _make_benchmark_config(n_seeds=1, n_ep=n_episodes, T=128)
+    if fast_mode:
+        cfg["steps_per_episode"] = 64
+    else:
+        cfg["steps_per_episode"] = 128
+
+    print(f"  Stage 18c: Cost of Premature Deployment")
+    print(f"    T_train sweep: {T_train_values}")
+    print(f"    {n_seeds} seeds x {n_episodes} episodes x {cfg['steps_per_episode']} steps")
+    print()
+
+    sweep_results: list[dict[str, Any]] = []
+
+    for T_train in T_train_values:
+        print(f"    T_train={T_train:5d}: ", end="", flush=True)
+
+        all_oracle_costs: list[float] = []
+        all_gated_costs: list[float] = []
+        all_ungated_costs: list[float] = []
+        all_mode_errors: list[float] = []
+        all_diverged: list[bool] = []
+        gate_verdicts: list[bool] = []
+        omega_mins: list[float] = []
+        worst_T_k_effs: list[float] = []
+
+        for seed_idx in range(n_seeds):
+            s = seed * 1000 + T_train + seed_idx
+
+            # Estimate basin models from T_train observations
+            est_rng = np.random.default_rng(s)
+            model_rng = np.random.default_rng(s + 1)
+            from hdr_validation.model.slds import make_evaluation_model
+            eval_model = make_evaluation_model(cfg, model_rng)
+
+            est = _estimate_basin_models(eval_model, T_train, est_rng)
+            gate_verdicts.append(est["ici_gate_pass"])
+            omega_mins.append(est["omega_min"])
+            worst_T_k_effs.append(est["worst_T_k_eff"])
+
+            for ep_idx in range(n_episodes):
+                basin_rng = np.random.default_rng(s * 100 + ep_idx)
+                basin_idx = 1 if basin_rng.random() < 0.30 else basin_rng.choice([0, 2])
+
+                ep = _run_cpd_episode(
+                    cfg, basin_idx, s, ep_idx, est, sigma_proxy,
+                )
+
+                all_oracle_costs.append(ep["costs"]["oracle"])
+                all_gated_costs.append(ep["costs"]["ici_gated"])
+                all_ungated_costs.append(ep["costs"]["ungated"])
+                all_mode_errors.append(ep["mode_errors"].get("ungated", 0))
+                all_diverged.append(ep["diverged"].get("ungated", False))
+
+        oracle_arr = np.array(all_oracle_costs)
+        gated_arr = np.array(all_gated_costs)
+        ungated_arr = np.array(all_ungated_costs)
+
+        oracle_mean = float(np.mean(oracle_arr))
+        gated_mean = float(np.mean(gated_arr))
+        ungated_mean = float(np.mean(ungated_arr))
+
+        cpd = (ungated_mean - oracle_mean) / max(oracle_mean, 1e-12) * 100
+        gated_rel = (gated_mean - oracle_mean) / max(oracle_mean, 1e-12) * 100
+
+        mode_err_pct = float(np.mean(all_mode_errors)) * 100
+        diverge_pct = float(np.mean(all_diverged)) * 100
+
+        gate_pass_frac = float(np.mean(gate_verdicts))
+        ici_verdict = "PASS" if gate_pass_frac > 0.5 else "REFUSE"
+
+        omega_min_mean = float(np.mean(omega_mins))
+        worst_eff_mean = float(np.mean(worst_T_k_effs))
+
+        point = {
+            "T_train": T_train,
+            "ici_verdict": ici_verdict,
+            "gate_pass_fraction": round(gate_pass_frac, 3),
+            "cpd_pct": round(cpd, 2),
+            "gated_rel_pct": round(gated_rel, 2),
+            "oracle_mean_cost": round(oracle_mean, 2),
+            "gated_mean_cost": round(gated_mean, 2),
+            "ungated_mean_cost": round(ungated_mean, 2),
+            "mode_error_pct": round(mode_err_pct, 2),
+            "diverge_pct": round(diverge_pct, 2),
+            "omega_min_mean": round(omega_min_mean, 2),
+            "worst_T_k_eff_mean": round(worst_eff_mean, 2),
+            "n_episodes": len(all_oracle_costs),
+        }
+        sweep_results.append(point)
+
+        print(f"CPD={cpd:+7.1f}%  gated={gated_rel:+6.1f}%  "
+              f"mode_err={mode_err_pct:4.1f}%  divg={diverge_pct:4.1f}%  "
+              f"ICI={ici_verdict}")
+
+    # ── Headline table ───────────────────────────────────────────────────
+    print()
+    print("  === Stage 18c -- Cost of Premature Deployment ===")
+    print()
+    hdr_line = (f"  {'T_train':>7} | {'ICI':>6} | {'CPD%':>7} | "
+                f"{'Gated%':>7} | {'Mode err%':>9} | {'Divg%':>6} | "
+                f"{'w_min':>7} | {'T_eff':>7}")
+    print(hdr_line)
+    print("  " + "-" * len(hdr_line.strip()))
+    for pt in sweep_results:
+        print(
+            f"  {pt['T_train']:7d} | {pt['ici_verdict']:>6s} | "
+            f"{pt['cpd_pct']:+6.1f}% | {pt['gated_rel_pct']:+6.1f}% | "
+            f"{pt['mode_error_pct']:8.1f}% | {pt['diverge_pct']:5.1f}% | "
+            f"{pt['omega_min_mean']:7.1f} | {pt['worst_T_k_eff_mean']:7.1f}"
+        )
+
+    # ── Identify ICI gate transition ─────────────────────────────────────
+    refuse_points = [p for p in sweep_results if p["ici_verdict"] == "REFUSE"]
+    pass_points = [p for p in sweep_results if p["ici_verdict"] == "PASS"]
+    if refuse_points and pass_points:
+        transition_T = min(p["T_train"] for p in pass_points)
+    else:
+        transition_T = None
+
+    omega_min_ref = sweep_results[0]["omega_min_mean"] if sweep_results else 0
+
+    if transition_T is not None:
+        print(f"\n  ICI gate transitions REFUSE -> PASS at T_train ~ {transition_T}")
+        print(f"  omega_min ~ {omega_min_ref:.1f}")
+
+    # ── Pass/fail checks ─────────────────────────────────────────────────
+    results: dict[str, Any] = {"checks": []}
+    checks = results["checks"]
+
+    # C1: CPD > 10% at T_train < ω_min/2 (premature deployment hurts)
+    low_T_points = [p for p in sweep_results
+                    if p["T_train"] < omega_min_ref / 2 and p["T_train"] > 0]
+    if low_T_points:
+        max_cpd_low = max(p["cpd_pct"] for p in low_T_points)
+        c1_pass = max_cpd_low > 10.0
+    else:
+        max_cpd_low = 0.0
+        c1_pass = False
+    checks.append({
+        "check": "cpd_high_at_low_T",
+        "passed": c1_pass,
+        "value": f"max_cpd={max_cpd_low:+.1f}% at T_train < omega_min/2",
+        "note": "CPD > 10% when T_train << omega_min (premature deployment hurts)",
+    })
+
+    # C2: CPD decreases from low to high T_train (model estimation improves).
+    # The residual CPD at large T_train includes irreducible IMM estimation
+    # overhead, so we check for *improvement*, not convergence to zero.
+    if len(sweep_results) >= 2:
+        cpd_first = sweep_results[0]["cpd_pct"]
+        cpd_last = sweep_results[-1]["cpd_pct"]
+        cpd_drop = cpd_first - cpd_last
+        c2_pass = cpd_drop > 2.0  # at least 2pp improvement
+        c2_value = (f"cpd_first={cpd_first:+.1f}%, cpd_last={cpd_last:+.1f}%, "
+                    f"drop={cpd_drop:+.1f}pp")
+    else:
+        c2_pass = False
+        c2_value = "insufficient data"
+    checks.append({
+        "check": "cpd_improves_with_data",
+        "passed": c2_pass,
+        "value": c2_value,
+        "note": "CPD decreases by >2pp from smallest to largest T_train",
+    })
+
+    # C3: ICI gate transition exists and worst T_k_eff at the
+    # transition point is near omega_min.  The gate operates in
+    # T_k_eff space, not T_train space, so the comparison is
+    # between worst_T_k_eff at the transition and omega_min.
+    if transition_T is not None and omega_min_ref > 0:
+        trans_pt = next(p for p in sweep_results if p["T_train"] == transition_T)
+        trans_eff = trans_pt["worst_T_k_eff_mean"]
+        ratio = trans_eff / omega_min_ref
+        c3_pass = 0.5 <= ratio <= 5.0
+        c3_value = (f"transition_T={transition_T}, "
+                    f"T_k_eff={trans_eff:.1f}, omega_min={omega_min_ref:.1f}, "
+                    f"ratio={ratio:.2f}")
+    else:
+        c3_pass = False
+        c3_value = f"no transition found (omega_min={omega_min_ref:.1f})"
+    checks.append({
+        "check": "ici_gate_transition_near_omega_min",
+        "passed": c3_pass,
+        "value": c3_value,
+        "note": "ICI REFUSE->PASS: T_k_eff at transition within [0.5, 5.0]*omega_min",
+    })
+
+    # C4: ICI-gated performance ≥ ungated at all T_train (never harmful)
+    gated_never_worse = all(
+        p["gated_mean_cost"] <= p["ungated_mean_cost"] * 1.02  # 2% tolerance
+        for p in sweep_results
+    )
+    worst_gated_excess = max(
+        (p["gated_mean_cost"] - p["ungated_mean_cost"])
+        / max(p["ungated_mean_cost"], 1e-12)
+        for p in sweep_results
+    ) if sweep_results else 0
+    checks.append({
+        "check": "ici_gated_never_worse",
+        "passed": gated_never_worse,
+        "value": f"worst_excess={worst_gated_excess:+.4f}",
+        "note": "ICI-gated cost ≤ ungated cost (+ 2% tolerance) at all T_train",
+    })
+
+    # C5: Substantial CPD at smallest T_train (premature deployment
+    # is demonstrably harmful).  With control clipping at [-0.6, 0.6],
+    # outright divergence is unlikely; the cost shows up as elevated CPD.
+    if sweep_results:
+        smallest_pt = sweep_results[0]
+        c5_pass = smallest_pt["cpd_pct"] > 15.0
+        c5_value = (f"cpd={smallest_pt['cpd_pct']:+.1f}% "
+                    f"at T_train={smallest_pt['T_train']}")
+    else:
+        c5_pass = False
+        c5_value = "no data"
+    checks.append({
+        "check": "substantial_cpd_at_smallest_T",
+        "passed": c5_pass,
+        "value": c5_value,
+        "note": "CPD > 15% at smallest T_train (premature deployment is costly)",
+    })
+
+    # ── Assemble output ──────────────────────────────────────────────────
+    elapsed = time.perf_counter() - t0
+
+    results["elapsed"] = elapsed
+    results["parameters"] = {
+        "T_train_values": T_train_values,
+        "n_episodes_per_seed": n_episodes,
+        "n_seeds": n_seeds,
+        "sigma_proxy": sigma_proxy,
+        "seed": seed,
+        "steps_per_episode": cfg["steps_per_episode"],
+    }
+    results["sweep"] = sweep_results
+    results["omega_min_reference"] = round(omega_min_ref, 2)
+    results["ici_gate_transition_T"] = transition_T
+
+    from hdr_validation.provenance import get_provenance
+    results["provenance"] = get_provenance()
+
+    out_dir = ROOT / "results" / "stage_18c"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "premature_deployment.json"
+    with open(out_path, "w") as f:
+        json.dump(results, f, indent=2, default=str)
+
+    n_pass = sum(1 for c in checks if c["passed"])
+    print(f"\n  Stage 18c: {n_pass}/{len(checks)} checks passed ({elapsed:.1f}s)")
+    if n_pass < len(checks):
+        for c in checks:
+            if not c["passed"]:
+                print(f"    FAIL: {c['check']}: {c['value']} ({c['note']})")
+    print(f"  Saved: {out_path}")
+
+    return results

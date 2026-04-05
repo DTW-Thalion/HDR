@@ -32,7 +32,7 @@ MANIFEST_PATH = ROOT / "run_all_manifest.json"
 
 # ── Stage metadata ─────────────────────────────────────────────────────────────
 
-STAGE_SEQUENCE = ["01", "02", "03", "03b", "03c", "04", "05", "06", "07", "08", "08b", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "18b", "19", "20"]
+STAGE_SEQUENCE = ["01", "02", "03", "03b", "03c", "04", "05", "06", "07", "08", "08b", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "18b", "18c", "19", "20"]
 
 STAGE_LABELS = {
     "01":  "Stage 01 — Mathematical Checks",
@@ -57,6 +57,7 @@ STAGE_LABELS = {
     "17":  "Stage 17 — Gompertz Mortality & Complexity Collapse",
     "18":  "Stage 18 — Closed-Loop ICI Benchmark",
     "18b": "Stage 18b — Sensor-Degradation Sweep",
+    "18c": "Stage 18c — Cost of Premature Deployment",
     "19":  "Stage 19 — Out-of-Family Stress Tests",
     "20":  "Stage 20 — Structured vs Unstructured Identification",
 }
@@ -87,6 +88,7 @@ STAGE_TEST_FILES: dict[str, str] = {
     "17":  "test_stage_17.py",
     "18":  "test_stage_18.py",
     "18b": "test_stage_18b.py",
+    "18c": "test_stage_18c.py",
     "20":  "test_stage_20.py",
 }
 
@@ -242,6 +244,14 @@ def _call_stage_18b(fast: bool = False) -> None:
     run_stage_18b(n_seeds=n_seeds, n_ep=n_ep, T=T, fast_mode=fast)
 
 
+def _call_stage_18c(fast: bool = False) -> None:
+    """Run Stage 18c cost of premature deployment."""
+    from hdr_validation.stages.stage_18_closed_loop_ici import run_stage_18c
+    n_seeds = 2 if fast else 10
+    n_ep = 20 if fast else 100
+    run_stage_18c(n_seeds=n_seeds, n_episodes=n_ep, fast_mode=fast)
+
+
 def _call_stage_19(fast: bool = False) -> None:
     """Run Stage 19 out-of-family stress tests."""
     from hdr_validation.stages.stage_19_stress_tests import run_stage_19
@@ -314,6 +324,8 @@ def call_stage(mod: Any, stage_id: str, state: dict) -> None:
         _call_stage_18(fast=fast)
     elif stage_id == "18b":
         _call_stage_18b(fast=fast)
+    elif stage_id == "18c":
+        _call_stage_18c(fast=fast)
     elif stage_id == "19":
         _call_stage_19(fast=fast)
     elif stage_id == "20":
