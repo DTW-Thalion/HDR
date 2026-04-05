@@ -3,99 +3,195 @@
     {
       "check": "cpd_high_at_low_T",
       "passed": true,
-      "value": "max_cpd=+25.6% at T_train < omega_min/2",
+      "value": "max_cpd=+26.8% at T_train < omega_min/2",
       "note": "CPD > 10% when T_train << omega_min (premature deployment hurts)"
     },
     {
       "check": "cpd_improves_with_data",
-      "passed": false,
-      "value": "cpd_first=+25.6%, cpd_last=+25.0%, drop=+0.6pp",
+      "passed": true,
+      "value": "cpd_first=+26.8%, cpd_last=+21.5%, drop=+5.2pp",
       "note": "CPD decreases by >2pp from smallest to largest T_train"
     },
     {
       "check": "ici_gate_transition_near_omega_min",
-      "passed": false,
-      "value": "no transition found (omega_min=95.9)",
+      "passed": true,
+      "value": "transition_T=5000, T_k_eff=204.8, omega_min=95.9, ratio=2.14",
       "note": "ICI REFUSE->PASS: T_k_eff at transition within [0.5, 5.0]*omega_min"
     },
     {
       "check": "ici_gated_never_worse",
       "passed": true,
-      "value": "worst_excess=-0.0462",
+      "value": "worst_excess=+0.0000",
       "note": "ICI-gated cost \u2264 ungated cost (+ 2% tolerance) at all T_train"
     },
     {
       "check": "substantial_cpd_at_smallest_T",
       "passed": true,
-      "value": "cpd=+25.6% at T_train=20",
+      "value": "cpd=+26.8% at T_train=10",
       "note": "CPD > 15% at smallest T_train (premature deployment is costly)"
     }
   ],
-  "elapsed": 6.547254899982363,
+  "elapsed": 281.00902599998517,
   "parameters": {
     "T_train_values": [
+      10,
       20,
+      50,
       100,
-      500
+      200,
+      500,
+      1000,
+      2000,
+      5000
     ],
-    "n_episodes_per_seed": 10,
-    "n_seeds": 2,
+    "n_episodes_per_seed": 50,
+    "n_seeds": 5,
     "sigma_proxy": 0.5,
     "seed": 42,
-    "steps_per_episode": 64
+    "steps_per_episode": 128
   },
   "sweep": [
+    {
+      "T_train": 10,
+      "ici_verdict": "REFUSE",
+      "gate_pass_fraction": 0.0,
+      "cpd_pct": 26.75,
+      "gated_rel_pct": 16.73,
+      "oracle_mean_cost": 87.33,
+      "gated_mean_cost": 101.94,
+      "ungated_mean_cost": 110.69,
+      "mode_error_pct": 70.06,
+      "diverge_pct": 0.0,
+      "omega_min_mean": 95.86,
+      "worst_T_k_eff_mean": 0.14,
+      "n_episodes": 250
+    },
     {
       "T_train": 20,
       "ici_verdict": "REFUSE",
       "gate_pass_fraction": 0.0,
-      "cpd_pct": 25.64,
-      "gated_rel_pct": 15.44,
-      "oracle_mean_cost": 40.61,
-      "gated_mean_cost": 46.88,
-      "ungated_mean_cost": 51.02,
-      "mode_error_pct": 83.52,
+      "cpd_pct": 25.7,
+      "gated_rel_pct": 16.38,
+      "oracle_mean_cost": 87.29,
+      "gated_mean_cost": 101.6,
+      "ungated_mean_cost": 109.73,
+      "mode_error_pct": 70.85,
       "diverge_pct": 0.0,
       "omega_min_mean": 95.86,
       "worst_T_k_eff_mean": 0.3,
-      "n_episodes": 20
+      "n_episodes": 250
+    },
+    {
+      "T_train": 50,
+      "ici_verdict": "REFUSE",
+      "gate_pass_fraction": 0.0,
+      "cpd_pct": 24.41,
+      "gated_rel_pct": 16.52,
+      "oracle_mean_cost": 85.16,
+      "gated_mean_cost": 99.23,
+      "ungated_mean_cost": 105.95,
+      "mode_error_pct": 72.13,
+      "diverge_pct": 0.0,
+      "omega_min_mean": 95.86,
+      "worst_T_k_eff_mean": 0.28,
+      "n_episodes": 250
     },
     {
       "T_train": 100,
       "ici_verdict": "REFUSE",
       "gate_pass_fraction": 0.0,
-      "cpd_pct": 22.35,
-      "gated_rel_pct": 16.69,
-      "oracle_mean_cost": 51.8,
-      "gated_mean_cost": 60.45,
-      "ungated_mean_cost": 63.38,
-      "mode_error_pct": 50.23,
+      "cpd_pct": 24.37,
+      "gated_rel_pct": 17.31,
+      "oracle_mean_cost": 85.84,
+      "gated_mean_cost": 100.7,
+      "ungated_mean_cost": 106.76,
+      "mode_error_pct": 72.02,
       "diverge_pct": 0.0,
       "omega_min_mean": 95.86,
-      "worst_T_k_eff_mean": 1.26,
-      "n_episodes": 20
+      "worst_T_k_eff_mean": 0.75,
+      "n_episodes": 250
+    },
+    {
+      "T_train": 200,
+      "ici_verdict": "REFUSE",
+      "gate_pass_fraction": 0.0,
+      "cpd_pct": 23.1,
+      "gated_rel_pct": 16.32,
+      "oracle_mean_cost": 86.6,
+      "gated_mean_cost": 100.73,
+      "ungated_mean_cost": 106.61,
+      "mode_error_pct": 70.82,
+      "diverge_pct": 0.0,
+      "omega_min_mean": 95.86,
+      "worst_T_k_eff_mean": 2.17,
+      "n_episodes": 250
     },
     {
       "T_train": 500,
       "ici_verdict": "REFUSE",
       "gate_pass_fraction": 0.0,
-      "cpd_pct": 25.02,
-      "gated_rel_pct": 18.16,
-      "oracle_mean_cost": 48.4,
-      "gated_mean_cost": 57.18,
-      "ungated_mean_cost": 60.5,
-      "mode_error_pct": 64.3,
+      "cpd_pct": 21.67,
+      "gated_rel_pct": 16.59,
+      "oracle_mean_cost": 88.93,
+      "gated_mean_cost": 103.68,
+      "ungated_mean_cost": 108.19,
+      "mode_error_pct": 68.97,
       "diverge_pct": 0.0,
       "omega_min_mean": 95.86,
-      "worst_T_k_eff_mean": 18.61,
-      "n_episodes": 20
+      "worst_T_k_eff_mean": 19.8,
+      "n_episodes": 250
+    },
+    {
+      "T_train": 1000,
+      "ici_verdict": "REFUSE",
+      "gate_pass_fraction": 0.0,
+      "cpd_pct": 21.96,
+      "gated_rel_pct": 16.54,
+      "oracle_mean_cost": 93.33,
+      "gated_mean_cost": 108.76,
+      "ungated_mean_cost": 113.82,
+      "mode_error_pct": 65.7,
+      "diverge_pct": 0.0,
+      "omega_min_mean": 95.86,
+      "worst_T_k_eff_mean": 30.66,
+      "n_episodes": 250
+    },
+    {
+      "T_train": 2000,
+      "ici_verdict": "REFUSE",
+      "gate_pass_fraction": 0.0,
+      "cpd_pct": 21.8,
+      "gated_rel_pct": 16.27,
+      "oracle_mean_cost": 85.73,
+      "gated_mean_cost": 99.68,
+      "ungated_mean_cost": 104.42,
+      "mode_error_pct": 71.78,
+      "diverge_pct": 0.0,
+      "omega_min_mean": 95.86,
+      "worst_T_k_eff_mean": 50.79,
+      "n_episodes": 250
+    },
+    {
+      "T_train": 5000,
+      "ici_verdict": "PASS",
+      "gate_pass_fraction": 1.0,
+      "cpd_pct": 21.53,
+      "gated_rel_pct": 21.53,
+      "oracle_mean_cost": 88.21,
+      "gated_mean_cost": 107.21,
+      "ungated_mean_cost": 107.21,
+      "mode_error_pct": 69.69,
+      "diverge_pct": 0.0,
+      "omega_min_mean": 95.86,
+      "worst_T_k_eff_mean": 204.79,
+      "n_episodes": 250
     }
   ],
   "omega_min_reference": 95.86,
-  "ici_gate_transition_T": null,
+  "ici_gate_transition_T": 5000,
   "provenance": {
     "hdr_version": "7.4.0",
-    "generated_at": "2026-04-05T01:37:21.017454Z",
-    "git_commit": "9a18a1a"
+    "generated_at": "2026-04-05T01:51:01.409821Z",
+    "git_commit": "27a2a3b"
   }
 }
