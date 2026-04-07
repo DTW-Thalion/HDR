@@ -12,7 +12,7 @@ def get_provenance() -> dict[str, Any]:
     """Return a provenance dict to embed in every result JSON."""
     prov: dict[str, Any] = {
         "hdr_version": HDR_VERSION,
-        "generated_at": datetime.datetime.utcnow().isoformat() + "Z",
+        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     }
     # Attempt git commit hash
     try:

@@ -35,7 +35,7 @@ def _fast_cfg(n_seeds=2, T=32):
 
 def test_stage16_pwa_numerical_stability():
     cfg = _fast_cfg(n_seeds=2, T=32)
-    return _run_subtest_16_04_multisite(cfg, n_seeds=2, T=32)
+    _run_subtest_16_04_multisite(cfg, n_seeds=2, T=32)
 
 
 @pytest.fixture(scope="module")

@@ -12,6 +12,9 @@ All stages report PASS / FAIL with supporting metrics.
 from __future__ import annotations
 
 import sys
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 import time
 import traceback
 from pathlib import Path
