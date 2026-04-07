@@ -119,7 +119,7 @@ def load_manifest() -> dict:
 
 
 def save_manifest(manifest: dict) -> None:
-    MANIFEST_PATH.write_text(json.dumps(manifest, indent=2))
+    MANIFEST_PATH.write_text(encoding="utf-8", data=json.dumps(manifest, indent=2))
 
 
 def manifest_key(profile: str, stage: str) -> str:

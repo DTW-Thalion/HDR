@@ -490,7 +490,7 @@ def run_stage_08b(
     from hdr_validation.provenance import get_provenance
     result_json["provenance"] = get_provenance()
     out_path = output_dir / "ablation_asymmetric_results.json"
-    out_path.write_text(json.dumps(result_json, indent=2))
+    out_path.write_text(encoding="utf-8", data=json.dumps(result_json, indent=2))
 
     # Print ASCII table
     print("\n  Stage 08b — Multi-Axis Asymmetric Ablation")

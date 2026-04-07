@@ -2,11 +2,11 @@
   "burden_adherence_hdr_nominal": 1.0,
   "circadian_adherence_hdr_nominal": 1.0,
   "gaussian_calibration_abs_error": 6.510416666666297e-05,
-  "hdr_vs_open_loop_gain_nominal": 0.00010144245138186676,
-  "hdr_vs_pooled_gain_nominal": -0.003039252844363091,
+  "hdr_vs_open_loop_gain_nominal": 0.00010144240706810716,
+  "hdr_vs_pooled_gain_nominal": -0.0030392528363122418,
   "heavy_tail_calibration_degradation": 0.07006510416666667,
   "mode_error_fit_r2": 0.9977277019851124,
-  "mode_error_fit_slope": 0.15031756323651635,
+  "mode_error_fit_slope": 0.15031756323651532,
   "n_episode_rows": 15360,
   "safety_delta_vs_pooled_nominal": -0.000911458333333337,
   "selected_policies": [
@@ -19,6 +19,6 @@
     "nominal",
     "model_mismatch"
   ],
-  "target_drift_fit_r2": 0.9967749817775134,
-  "target_drift_fit_slope": 3.4863108011260477
+  "target_drift_fit_r2": 0.9967749817775133,
+  "target_drift_fit_slope": 3.486310801126047
 }

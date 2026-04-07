@@ -52,8 +52,8 @@ CLUSTER_CONFIG: dict[str, Any] = make_config(
 def _atomic_write_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, indent=2, default=str))
-    tmp.rename(path)
+    tmp.write_text(encoding="utf-8", data=json.dumps(data, indent=2, default=str))
+    tmp.replace(path)
 
 
 # ── Bootstrap helpers ─────────────────────────────────────────────────────────
@@ -692,7 +692,7 @@ if __name__ == "__main__":
         # Task 6: Threshold claims audit
         audit_text = audit_threshold_claims(report)
         report_dir = ROOT / "results" / "stage_04"
-        (report_dir / "threshold_claims_audit.txt").write_text(audit_text)
+        (report_dir / "threshold_claims_audit.txt").write_text(encoding="utf-8", data=audit_text)
         print(f"\n  Wrote threshold_claims_audit.txt")
         print("\n" + audit_text)
 

@@ -36,7 +36,7 @@
   "validity_note": "N_mal=170: valid",
   "provenance": {
     "hdr_version": "7.4.0",
-    "generated_at": "2026-03-17T15:48:53.627044Z",
-    "git_commit": "81d18c4"
+    "generated_at": "2026-04-07T13:03:19.016039+00:00",
+    "git_commit": "849f1a5"
   }
 }

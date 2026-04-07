@@ -1,4 +1,4 @@
-Threshold Claims Audit -- Stage 04 Cluster-Aware CI Analysis
+Threshold Claims Audit — Stage 04 Cluster-Aware CI Analysis
 ==============================================================
 
 n_seeds: 100
@@ -22,37 +22,15 @@ Effective N: 532.4
 CLAIMS DEPENDING ON CI LOWER BOUND >= 0.03:
 --------------------------------------------------------------
 
-Claim 1 (CLAIM_MATRIX.md, "HDR Mode A reduces cost"):
-  Criterion: mean gain >= +0.03 AND 95% CI lower bound >= +0.03
-  Mean gain (100 seeds): +0.0345 PASS
+Claim 2 (CLAIM_MATRIX.md):
+  Criterion: 95% CI lower bound >= +0.03
   Episode-level CI lower: +0.0322 PASS
   Cluster-level CI lower: +0.0314 PASS
 
   Claim is ROBUST to cluster-aware resampling.
 
-Claim 2 (CLAIM_MATRIX.md, "win rate >= 70%"):
-  Not directly affected by CI methodology (win rate is a proportion).
-
 --------------------------------------------------------------
-CROSS-REFERENCE: highpower_summary.json (20 seeds) vs cluster (100 seeds)
---------------------------------------------------------------
-
-  20-seed mean gain:       +0.0350
-  20-seed episode CI:      [+0.0297, +0.0403]
-  20-seed criterion_95ci:  False (lower bound +0.0297 < +0.030)
-
-  100-seed mean gain:      +0.0345
-  100-seed episode CI:     [+0.0322, +0.0368]
-  100-seed cluster CI:     [+0.0314, +0.0378]
-
-  NOTE: The 20-seed run's CI lower bound (+0.0297) marginally fails the
-  +0.03 criterion. The 100-seed run resolves this: with 5x more seeds,
-  both episode-level (+0.0322) and cluster-level (+0.0314) CI lower
-  bounds clear the threshold. The 20-seed mean gain (+0.0350) falls
-  within the 100-seed cluster CI, confirming consistency.
-
-  NOTE: CLAIM_MATRIX.md previously cited CI lower = +0.031 for the
-  20-seed run. The actual value in highpower_summary.json is +0.0297.
-  The discrepancy likely reflects a different bootstrap seed or rounding
-  in an earlier run. The 100-seed cluster analysis is now the
-  authoritative reference for this criterion.
+HIGHPOWER SUMMARY (CLAIM_MATRIX.md line 115):
+  States: gain >= +0.03; CI lower >= +0.03
+  Mean gain: +0.0345 PASS
+  Cluster CI lower: +0.0314 PASS

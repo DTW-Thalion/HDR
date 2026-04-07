@@ -79,7 +79,7 @@
   "ablation_criterion_note": "hdr_full (-0.8454) >= mpc_only (-1.0086)",
   "provenance": {
     "hdr_version": "7.4.0",
-    "generated_at": "2026-03-17T15:48:14.486164Z",
-    "git_commit": "81d18c4"
+    "generated_at": "2026-04-07T13:02:41.776399+00:00",
+    "git_commit": "849f1a5"
   }
 }

@@ -75,8 +75,8 @@ HIGHPOWER_CONFIG: dict[str, Any] = {
 def _atomic_write_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, indent=2))
-    tmp.rename(path)
+    tmp.write_text(encoding="utf-8", data=json.dumps(data, indent=2))
+    tmp.replace(path)
 
 
 def percentile_stats(values: list[float]) -> dict:

@@ -470,7 +470,7 @@ def run_stage_11(
     from hdr_validation.provenance import get_provenance
     result_json["provenance"] = get_provenance()
     out_path = output_dir / "invariant_set_verification.json"
-    out_path.write_text(json.dumps(result_json, indent=2))
+    out_path.write_text(encoding="utf-8", data=json.dumps(result_json, indent=2))
 
     # Print summary
     print("\nRiccati Invariant Set Verification — Proposition 8.4")

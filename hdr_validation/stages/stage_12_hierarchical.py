@@ -189,7 +189,7 @@ def run_stage_12(
     results["provenance"] = get_provenance()
     out_dir = ROOT / "results" / "stage_12"
     out_dir.mkdir(parents=True, exist_ok=True)
-    with open(out_dir / "results.json", "w") as f:
+    with open(out_dir / "results.json", "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, default=str)
 
     n_pass = sum(1 for c in checks if c["passed"])

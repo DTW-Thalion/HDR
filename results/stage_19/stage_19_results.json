@@ -3,25 +3,25 @@
     {
       "check": "wrong_k_ici_responsive",
       "passed": true,
-      "value": "2.65%",
+      "value": "1.69%",
       "note": "ICI trigger > 1% under wrong basin cardinality"
     },
     {
       "check": "nonlinear_ici_active",
       "passed": true,
-      "value": "[4.25, 3.43, 1.35]",
+      "value": "[4.18, 3.18, 0.81]",
       "note": "ICI triggers > 0.5% at some nonlinear perturbation level"
     },
     {
       "check": "burst_ici_responsive",
       "passed": true,
-      "value": "[14.24, 38.54, 54.38]",
+      "value": "[16.79, 41.52, 57.11]",
       "note": "ICI trigger rate increases with burst frequency"
     },
     {
       "check": "ici_nondegradation",
       "passed": true,
-      "value": "min=-0.634%",
+      "value": "min=+0.019%",
       "note": "ICI delta >= -2% in all stress scenarios"
     }
   ],
@@ -29,70 +29,70 @@
     "19a: Wrong K": {
       "label": "19a: Wrong K",
       "mismatch_type": "K=2 vs K=3",
-      "ici_trigger_pct": 2.65,
-      "mode_error_pct": 38.8,
-      "ici_delta_pct": 0.054,
-      "n_episodes": 18
+      "ici_trigger_pct": 1.69,
+      "mode_error_pct": 30.09,
+      "ici_delta_pct": 0.019,
+      "n_episodes": 60
     },
     "19b: NL e=0.05": {
       "label": "19b: NL e=0.05",
       "mismatch_type": "tanh(x)*0.05",
-      "ici_trigger_pct": 4.25,
-      "mode_error_pct": 0.56,
-      "ici_delta_pct": 0.739,
-      "n_episodes": 18
+      "ici_trigger_pct": 4.18,
+      "mode_error_pct": 0.69,
+      "ici_delta_pct": 0.425,
+      "n_episodes": 60
     },
     "19b: NL e=0.1": {
       "label": "19b: NL e=0.1",
       "mismatch_type": "tanh(x)*0.1",
-      "ici_trigger_pct": 3.43,
-      "mode_error_pct": 0.43,
-      "ici_delta_pct": 0.927,
-      "n_episodes": 18
+      "ici_trigger_pct": 3.18,
+      "mode_error_pct": 0.47,
+      "ici_delta_pct": 0.668,
+      "n_episodes": 60
     },
     "19b: NL e=0.2": {
       "label": "19b: NL e=0.2",
       "mismatch_type": "tanh(x)*0.2",
-      "ici_trigger_pct": 1.35,
-      "mode_error_pct": 0.35,
-      "ici_delta_pct": -0.634,
-      "n_episodes": 18
+      "ici_trigger_pct": 0.81,
+      "mode_error_pct": 0.18,
+      "ici_delta_pct": 0.584,
+      "n_episodes": 60
     },
     "19c: Burst r=0.02": {
       "label": "19c: Burst r=0.02",
       "mismatch_type": "burst_rate=0.02",
-      "ici_trigger_pct": 14.24,
-      "mode_error_pct": 1.78,
-      "ici_delta_pct": 0.475,
-      "n_episodes": 18
+      "ici_trigger_pct": 16.79,
+      "mode_error_pct": 1.44,
+      "ici_delta_pct": 0.38,
+      "n_episodes": 60
     },
     "19c: Burst r=0.1": {
       "label": "19c: Burst r=0.1",
       "mismatch_type": "burst_rate=0.1",
-      "ici_trigger_pct": 38.54,
-      "mode_error_pct": 2.91,
-      "ici_delta_pct": 1.419,
-      "n_episodes": 18
+      "ici_trigger_pct": 41.52,
+      "mode_error_pct": 3.22,
+      "ici_delta_pct": 0.955,
+      "n_episodes": 60
     },
     "19c: Burst r=0.2": {
       "label": "19c: Burst r=0.2",
       "mismatch_type": "burst_rate=0.2",
-      "ici_trigger_pct": 54.38,
-      "mode_error_pct": 8.64,
-      "ici_delta_pct": 1.727,
-      "n_episodes": 18
+      "ici_trigger_pct": 57.11,
+      "mode_error_pct": 6.32,
+      "ici_delta_pct": 1.24,
+      "n_episodes": 60
     }
   },
-  "elapsed": 10.3788840000052,
+  "elapsed": 58.31907130000036,
   "parameters": {
-    "n_seeds": 3,
-    "n_ep_per_seed": 6,
-    "T": 128,
+    "n_seeds": 5,
+    "n_ep_per_seed": 12,
+    "T": 256,
     "sigma_proxy": 0.5
   },
   "provenance": {
     "hdr_version": "7.4.0",
-    "generated_at": "2026-04-04T06:17:00.503142Z",
-    "git_commit": "40c0c16"
+    "generated_at": "2026-04-07T13:44:32.552900+00:00",
+    "git_commit": "849f1a5"
   }
 }

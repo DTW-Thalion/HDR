@@ -131,14 +131,14 @@ def write_profile_json(profile: str, records: list[dict], elapsed: float,
         "stages": by_stage,
     }
     path = out_dir / f"{profile}_results.json"
-    path.write_text(json.dumps(doc, indent=2))
+    path.write_text(encoding="utf-8", data=json.dumps(doc, indent=2))
     return path
 
 
 def write_all_csv(all_records: dict[str, list[dict]], out_dir: Path) -> Path:
     path = out_dir / "all_results.csv"
     fieldnames = ["profile", "stage", "check", "passed", "value"]
-    with path.open("w", newline="") as f:
+    with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         for profile, records in all_records.items():
@@ -257,7 +257,7 @@ def write_summary_md(all_records: dict[str, list[dict]],
         lines.append("\n## Failed Checks\n\n_None — all checks passed across all profiles._")
 
     path = out_dir / "summary.md"
-    path.write_text("\n".join(lines) + "\n")
+    path.write_text(encoding="utf-8", data="\n".join(lines) + "\n")
     return path
 
 

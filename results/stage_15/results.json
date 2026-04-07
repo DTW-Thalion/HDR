@@ -31,7 +31,7 @@
       "note": "Kalman RMSE / pinv RMSE should be <= 1.05 for all sigma > 0"
     }
   ],
-  "elapsed": 0.07824120001168922,
+  "elapsed": 0.08197789999940142,
   "sigma_values": [
     0.0,
     0.1,
@@ -102,7 +102,7 @@
   },
   "provenance": {
     "hdr_version": "7.4.0",
-    "generated_at": "2026-04-03T23:46:59.646769Z",
-    "git_commit": "a9e81be"
+    "generated_at": "2026-04-07T13:28:22.556183+00:00",
+    "git_commit": "849f1a5"
   }
 }

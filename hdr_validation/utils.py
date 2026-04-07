@@ -18,7 +18,7 @@ def atomic_write_text(path: Path | str, text: str, encoding: str = "utf-8") -> P
     try:
         with os.fdopen(fd, "w", encoding=encoding) as f:
             f.write(text)
-        os.rename(tmp_name, path)
+        os.replace(tmp_name, path)
     except Exception:
         os.unlink(tmp_name)
         raise

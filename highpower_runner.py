@@ -47,8 +47,8 @@ sys.path.insert(0, str(ROOT))
 def _atomic_write_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, indent=2))
-    tmp.rename(path)
+    tmp.write_text(encoding="utf-8", data=json.dumps(data, indent=2))
+    tmp.replace(path)
 
 
 # ── Episode generation (mirrors extended_runner._generate_episode) ─────────────
@@ -702,7 +702,7 @@ def run_highpower_benchmark() -> None:
         "──────────────────────────────────────────────────────────────",
     ]
     table_text = "\n".join(table_lines)
-    (out_dir / "highpower_table.txt").write_text(table_text)
+    (out_dir / "highpower_table.txt").write_text(encoding="utf-8", data=table_text)
     print("  Wrote highpower_table.txt")
 
     # ── Manuscript LaTeX table ─────────────────────────────────────────────────
@@ -756,7 +756,7 @@ Criterion: CI lower bound $\geq +0.03$:
 \textbf{{{criterion_word}}}.}}
 \end{{table}}
 """
-    (out_dir / "manuscript_table.txt").write_text(manuscript_table)
+    (out_dir / "manuscript_table.txt").write_text(encoding="utf-8", data=manuscript_table)
     print("  Wrote manuscript_table.txt")
 
     # ── Manuscript language (Branch A or B) ───────────────────────────────────
@@ -853,7 +853,7 @@ Criterion: CI lower bound $\geq +0.03$:
             f"Recommended manuscript language (weaker-but-honest framing):\n{weaker_lang}\n"
         )
 
-    (out_dir / "manuscript_language.txt").write_text(manuscript_lang)
+    (out_dir / "manuscript_language.txt").write_text(encoding="utf-8", data=manuscript_lang)
     print("  Wrote manuscript_language.txt")
 
     return summary

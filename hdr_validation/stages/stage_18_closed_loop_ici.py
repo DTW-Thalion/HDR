@@ -534,7 +534,7 @@ def run_stage_18(
 
     out_dir = ROOT / "results" / "stage_18"
     out_dir.mkdir(parents=True, exist_ok=True)
-    with open(out_dir / "stage_18_results.json", "w") as f:
+    with open(out_dir / "stage_18_results.json", "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, default=str)
 
     n_pass = sum(1 for c in checks if c["passed"])
@@ -838,7 +838,7 @@ def run_stage_18b(
 
     out_dir = ROOT / "results" / "stage_18b"
     out_dir.mkdir(parents=True, exist_ok=True)
-    with open(out_dir / "sweep_results.json", "w") as f:
+    with open(out_dir / "sweep_results.json", "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, default=str)
 
     n_pass = sum(1 for c in checks if c["passed"])
@@ -1134,7 +1134,7 @@ def run_stage_18_ablation(
 
     out_dir = ROOT / "results" / "stage_18_ablation"
     out_dir.mkdir(parents=True, exist_ok=True)
-    with open(out_dir / "ablation_results.json", "w") as f:
+    with open(out_dir / "ablation_results.json", "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, default=str)
 
     n_pass = sum(1 for c in checks if c["passed"])
@@ -1688,7 +1688,7 @@ def run_stage_18c(
     out_dir = ROOT / "results" / "stage_18c"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "premature_deployment.json"
-    with open(out_path, "w") as f:
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, default=str)
 
     n_pass = sum(1 for c in checks if c["passed"])

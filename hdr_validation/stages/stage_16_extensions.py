@@ -3269,6 +3269,6 @@ def run_stage_16(n_seeds=5, T=128, output_dir=None, fast_mode=False,
     from hdr_validation.provenance import get_provenance
     all_results["provenance"] = get_provenance()
     out_path = output_dir / "stage_16_results.json"
-    out_path.write_text(json.dumps(all_results, indent=2, cls=_NumpyEncoder))
+    out_path.write_text(encoding="utf-8", data=json.dumps(all_results, indent=2, cls=_NumpyEncoder))
     print(f"\nStage 16 results saved to {out_path}")
     return all_results

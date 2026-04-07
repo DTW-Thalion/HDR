@@ -5,7 +5,7 @@
     "numerical_stability": true,
     "region_consistency_rate": 1.0,
     "pass": true,
-    "elapsed": 0.06
+    "elapsed": 2.27
   },
   "16.02": {
     "subtest": "16.02",
@@ -16,7 +16,7 @@
     "absorbing_detected": true,
     "drift_nonneg": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.05
   },
   "16.03": {
     "subtest": "16.03",
@@ -37,9 +37,9 @@
     "composite_stable": true,
     "gershgorin_holds": true,
     "per_site_imm_converged": true,
-    "cross_site_response": 0.4216,
+    "cross_site_response": 0.3057,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.02
   },
   "16.05": {
     "subtest": "16.05",
@@ -52,7 +52,7 @@
     "bifurcation_margin_final_sign": -1.0,
     "bifurcation_supervisor_routes_c": true,
     "pass": true,
-    "elapsed": 0.01
+    "elapsed": 0.19
   },
   "16.06": {
     "subtest": "16.06",
@@ -61,10 +61,10 @@
     "backward_compatible": true,
     "jump_rate_in_ci": true,
     "committor_shift_proportional": true,
-    "jump_magnitude_ks_p": 0.5,
+    "jump_magnitude_ks_p": 0.7909,
     "prophylactic_trigger_rate": 1.0,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.1
   },
   "16.07": {
     "subtest": "16.07",
@@ -75,7 +75,7 @@
     "onetime_constraint_satisfied": true,
     "feasibility_rate": 1.0,
     "pass": true,
-    "elapsed": 0.01
+    "elapsed": 0.24
   },
   "16.08": {
     "subtest": "16.08",
@@ -87,7 +87,7 @@
     "observation_epoch_improvement": true,
     "mode_accuracy_above_threshold": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.12
   },
   "16.09": {
     "subtest": "16.09",
@@ -98,7 +98,7 @@
     "exposure_violations": 0,
     "toxicity_correlation": 1.0,
     "pass": true,
-    "elapsed": 0.05
+    "elapsed": 2.18
   },
   "16.10": {
     "subtest": "16.10",
@@ -109,7 +109,7 @@
     "stability_preserved": true,
     "sign_reversal_observed": true,
     "pass": true,
-    "elapsed": 0.01
+    "elapsed": 0.17
   },
   "16.11": {
     "subtest": "16.11",
@@ -121,14 +121,14 @@
     "original_unperturbed": true,
     "new_axis_responsive": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.12": {
     "subtest": "16.12",
     "name": "PD profile (no extensions)",
     "backward_compatible": true,
     "pass": true,
-    "elapsed": 0.03
+    "elapsed": 0.16
   },
   "16.13": {
     "subtest": "16.13",
@@ -139,7 +139,7 @@
     "coupling_correct": true,
     "interaction_bounded": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.05
   },
   "16.14": {
     "subtest": "16.14",
@@ -150,7 +150,7 @@
     "jump_near_ceiling_safe": true,
     "multisite_supervisor_correct": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.03
   },
   "16.15": {
     "subtest": "16.15",
@@ -160,7 +160,7 @@
     "individual_invariants_pass": true,
     "reconvergence_within_bound": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.05
   },
   "16.16": {
     "subtest": "16.16",
@@ -171,7 +171,7 @@
     "threshold_irr_coupling": true,
     "region_stability_during_blackout": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.17": {
     "subtest": "16.17",
@@ -179,13 +179,13 @@
     "numerical_stability": true,
     "backward_compatible": true,
     "expansion_invariants_pass": true,
-    "cost_ratio": 1.0085,
+    "cost_ratio": 1.0291,
     "pass": true,
-    "elapsed": 0.03
+    "elapsed": 1.09
   },
   "provenance": {
     "hdr_version": "7.4.0",
-    "generated_at": "2026-04-07T12:36:03.454261+00:00",
-    "git_commit": "74bff3a"
+    "generated_at": "2026-04-07T13:28:29.320251+00:00",
+    "git_commit": "849f1a5"
   }
 }

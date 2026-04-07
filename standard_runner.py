@@ -1102,7 +1102,7 @@ def stage04_mode_a(episodes: list[dict]) -> None:
     out_dir = ROOT / "results" / "stage_04" / "standard"
     out_dir.mkdir(parents=True, exist_ok=True)
     cal_path = out_dir / "chance_calibration.json"
-    with open(cal_path, "w") as f:
+    with open(cal_path, "w", encoding="utf-8") as f:
         _json.dump(cal_results, f, indent=2)
     print(f"    Wrote {cal_path}")
 

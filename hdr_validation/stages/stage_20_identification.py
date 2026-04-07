@@ -515,7 +515,7 @@ def run_stage_20(
     }
 
     out_path = out_dir / "identification_comparison.json"
-    with open(out_path, "w") as f:
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2)
     print(f"  Saved: {out_path}")
 

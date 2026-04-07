@@ -248,7 +248,7 @@ def run_stage_10(
     from hdr_validation.provenance import get_provenance
     result_json["provenance"] = get_provenance()
     out_path = output_dir / "mode_b_fp_fn_sweep.json"
-    out_path.write_text(json.dumps(result_json, indent=2))
+    out_path.write_text(encoding="utf-8", data=json.dumps(result_json, indent=2))
 
     # Print formatted table
     print("\nMode B FP/FN Sweep — Effect of Calibration Adjustment")

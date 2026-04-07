@@ -345,7 +345,7 @@ def run_stage_09(
     from hdr_validation.provenance import get_provenance
     result_json["provenance"] = get_provenance()
     out_path = output_dir / "baseline_comparison.json"
-    out_path.write_text(json.dumps(result_json, indent=2))
+    out_path.write_text(encoding="utf-8", data=json.dumps(result_json, indent=2))
 
     # Print summary
     print("\nBaseline Comparison — Maladaptive Basin (k=1)")

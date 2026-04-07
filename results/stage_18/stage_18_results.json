@@ -3,146 +3,186 @@
     {
       "check": "claim_35_ici_nondegradation",
       "passed": true,
-      "value": "-0.0000",
+      "value": "+0.0002",
       "note": "HDR+ICI gain vs HDR-ICI >= -1% (ICI is safe to deploy)"
     },
     {
       "check": "claim_36_ici_vs_pooled_bounded",
       "passed": true,
-      "value": "-0.0207",
+      "value": "-0.0394",
       "note": "HDR+ICI degradation vs pooled LQR bounded (> -15%)"
     },
     {
       "check": "oracle_ceiling_valid",
       "passed": true,
-      "value": "oracle=92.1, pooled=138.6",
+      "value": "oracle=315.1, pooled=508.9",
       "note": "Oracle HDR cost should be <= pooled LQR cost (sanity)"
     },
     {
       "check": "ici_trigger_rate_nonzero",
       "passed": true,
-      "value": "0.0026",
+      "value": "0.0052",
       "note": "ICI trigger rate > 0 (mechanism exercised)"
     },
     {
       "check": "mode_error_bounded",
       "passed": true,
-      "value": "0.0026",
+      "value": "0.0099",
       "note": "Mode error rate < 0.50"
     },
     {
       "check": "estimation_gap_documented",
       "passed": true,
-      "value": "+0.3429",
+      "value": "+0.4156",
       "note": "Oracle gain - HDR+ICI gain > 0 (estimation has a cost)"
     },
     {
       "check": "no_divergence",
       "passed": true,
-      "value": "2.89",
+      "value": "3.59",
       "note": "Max state norm < 1e6 across all conditions"
     }
   ],
-  "elapsed": 1.2427318000000014,
+  "elapsed": 149.0419677,
   "parameters": {
-    "n_seeds": 2,
-    "n_ep_per_seed": 3,
-    "T": 64,
+    "n_seeds": 20,
+    "n_ep_per_seed": 30,
+    "T": 256,
     "sigma_proxy": 2.0
   },
   "summary_all": {
     "hdr_ici": {
-      "mean_cost": 142.15449464678434,
-      "mean_gain_vs_pooled": -0.0207,
-      "gain_ci_lo": -0.054,
-      "gain_ci_hi": 0.0075,
-      "win_rate_vs_pooled": 0.1667,
-      "mode_error_rate": 0.0026
+      "mean_cost": 289.8576956359892,
+      "mean_gain_vs_pooled": -0.0048,
+      "gain_ci_lo": -0.0071,
+      "gain_ci_hi": -0.0026,
+      "win_rate_vs_pooled": 0.64,
+      "mode_error_rate": 0.7164
     },
     "hdr_no_ici": {
-      "mean_cost": 142.1542119514078,
-      "mean_gain_vs_pooled": -0.0207,
-      "gain_ci_lo": -0.054,
-      "gain_ci_hi": 0.0075,
-      "win_rate_vs_pooled": 0.1667,
-      "mode_error_rate": 0.0026
+      "mean_cost": 289.7706318632521,
+      "mean_gain_vs_pooled": -0.0043,
+      "gain_ci_lo": -0.0066,
+      "gain_ci_hi": -0.0021,
+      "win_rate_vs_pooled": 0.6533,
+      "mode_error_rate": 0.7164
     },
     "pooled_lqr": {
-      "mean_cost": 138.63751996500733,
+      "mean_cost": 285.0975002629692,
       "mean_gain_vs_pooled": 0.0,
       "gain_ci_lo": 0.0,
       "gain_ci_hi": 0.0,
       "win_rate_vs_pooled": 0.0,
-      "mode_error_rate": 0.0026
+      "mode_error_rate": 0.7164
     },
     "oracle_hdr": {
-      "mean_cost": 92.12528024899353,
-      "mean_gain_vs_pooled": 0.3222,
-      "gain_ci_lo": 0.2464,
-      "gain_ci_hi": 0.3926,
+      "mean_cost": 172.14507678800445,
+      "mean_gain_vs_pooled": 0.4014,
+      "gain_ci_lo": 0.3979,
+      "gain_ci_hi": 0.405,
       "win_rate_vs_pooled": 1.0,
       "mode_error_rate": 0.0
     },
-    "ici_trigger_rate": 0.0026,
+    "ici_trigger_rate": 0.0059,
     "ici_value_add": {
-      "mean_gain": -0.0,
-      "ci_lo": -0.0,
-      "ci_hi": 0.0,
-      "win_rate": 0.0
+      "mean_gain": -0.0005,
+      "ci_lo": -0.0007,
+      "ci_hi": -0.0004,
+      "win_rate": 0.255
     }
   },
   "summary_maladaptive": {
     "hdr_ici": {
-      "mean_cost": 142.15449464678434,
-      "mean_gain_vs_pooled": -0.0207,
-      "gain_ci_lo": -0.054,
-      "gain_ci_hi": 0.0075,
-      "win_rate_vs_pooled": 0.1667,
-      "mode_error_rate": 0.0026
+      "mean_cost": 530.1624973935543,
+      "mean_gain_vs_pooled": -0.0394,
+      "gain_ci_lo": -0.0442,
+      "gain_ci_hi": -0.0349,
+      "win_rate_vs_pooled": 0.0176,
+      "mode_error_rate": 0.0099
     },
     "hdr_no_ici": {
-      "mean_cost": 142.1542119514078,
-      "mean_gain_vs_pooled": -0.0207,
-      "gain_ci_lo": -0.054,
-      "gain_ci_hi": 0.0075,
-      "win_rate_vs_pooled": 0.1667,
-      "mode_error_rate": 0.0026
+      "mean_cost": 530.2650337053643,
+      "mean_gain_vs_pooled": -0.0397,
+      "gain_ci_lo": -0.0445,
+      "gain_ci_hi": -0.0351,
+      "win_rate_vs_pooled": 0.0176,
+      "mode_error_rate": 0.0099
     },
     "pooled_lqr": {
-      "mean_cost": 138.63751996500733,
+      "mean_cost": 508.9260871978407,
       "mean_gain_vs_pooled": 0.0,
       "gain_ci_lo": 0.0,
       "gain_ci_hi": 0.0,
       "win_rate_vs_pooled": 0.0,
-      "mode_error_rate": 0.0026
+      "mode_error_rate": 0.0097
     },
     "oracle_hdr": {
-      "mean_cost": 92.12528024899353,
-      "mean_gain_vs_pooled": 0.3222,
-      "gain_ci_lo": 0.2464,
-      "gain_ci_hi": 0.3926,
+      "mean_cost": 315.11019646944425,
+      "mean_gain_vs_pooled": 0.3762,
+      "gain_ci_lo": 0.3701,
+      "gain_ci_hi": 0.3823,
       "win_rate_vs_pooled": 1.0,
       "mode_error_rate": 0.0
     },
-    "ici_trigger_rate": 0.0026,
+    "ici_trigger_rate": 0.0052,
     "ici_value_add": {
-      "mean_gain": -0.0,
+      "mean_gain": 0.0002,
       "ci_lo": -0.0,
-      "ci_hi": 0.0,
-      "win_rate": 0.0
+      "ci_hi": 0.0005,
+      "win_rate": 0.4529
     }
   },
-  "summary_healthy": {},
+  "summary_healthy": {
+    "hdr_ici": {
+      "mean_cost": 194.85347168532405,
+      "mean_gain_vs_pooled": 0.0089,
+      "gain_ci_lo": 0.0082,
+      "gain_ci_hi": 0.0096,
+      "win_rate_vs_pooled": 0.886,
+      "mode_error_rate": 0.9958
+    },
+    "hdr_no_ici": {
+      "mean_cost": 194.69144973962636,
+      "mean_gain_vs_pooled": 0.0097,
+      "gain_ci_lo": 0.009,
+      "gain_ci_hi": 0.0105,
+      "win_rate_vs_pooled": 0.9047,
+      "mode_error_rate": 0.9958
+    },
+    "pooled_lqr": {
+      "mean_cost": 196.6071286840666,
+      "mean_gain_vs_pooled": 0.0,
+      "gain_ci_lo": 0.0,
+      "gain_ci_hi": 0.0,
+      "win_rate_vs_pooled": 0.0,
+      "mode_error_rate": 0.9959
+    },
+    "oracle_hdr": {
+      "mean_cost": 115.62398296045845,
+      "mean_gain_vs_pooled": 0.4114,
+      "gain_ci_lo": 0.4076,
+      "gain_ci_hi": 0.4154,
+      "win_rate_vs_pooled": 1.0,
+      "mode_error_rate": 0.0
+    },
+    "ici_trigger_rate": 0.0062,
+    "ici_value_add": {
+      "mean_gain": -0.0008,
+      "ci_lo": -0.001,
+      "ci_hi": -0.0007,
+      "win_rate": 0.1767
+    }
+  },
   "episode_counts": {
-    "total": 6,
-    "maladaptive": 6,
-    "healthy": 0
+    "total": 600,
+    "maladaptive": 170,
+    "healthy": 430
   },
   "results_are_valid": true,
-  "validity_note": "N_mal=6: valid",
+  "validity_note": "N_mal=170: valid",
   "provenance": {
     "hdr_version": "7.4.0",
-    "generated_at": "2026-04-07T12:36:06.139798+00:00",
-    "git_commit": "74bff3a"
+    "generated_at": "2026-04-07T13:30:59.337706+00:00",
+    "git_commit": "849f1a5"
   }
 }
