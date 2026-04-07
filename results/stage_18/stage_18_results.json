@@ -43,7 +43,7 @@
       "note": "Max state norm < 1e6 across all conditions"
     }
   ],
-  "elapsed": 1.9329663999960758,
+  "elapsed": 1.2427318000000014,
   "parameters": {
     "n_seeds": 2,
     "n_ep_per_seed": 3,
@@ -142,7 +142,7 @@
   "validity_note": "N_mal=6: valid",
   "provenance": {
     "hdr_version": "7.4.0",
-    "generated_at": "2026-04-04T06:18:08.222334Z",
-    "git_commit": "40c0c16"
+    "generated_at": "2026-04-07T12:36:06.139798+00:00",
+    "git_commit": "74bff3a"
   }
 }

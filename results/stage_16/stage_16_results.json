@@ -5,7 +5,7 @@
     "numerical_stability": true,
     "region_consistency_rate": 1.0,
     "pass": true,
-    "elapsed": 0.07
+    "elapsed": 0.06
   },
   "16.02": {
     "subtest": "16.02",
@@ -38,7 +38,7 @@
     "gershgorin_holds": true,
     "per_site_imm_converged": true,
     "cross_site_response": 0.4216,
-    "pass": "True",
+    "pass": true,
     "elapsed": 0.0
   },
   "16.05": {
@@ -47,6 +47,10 @@
     "drift_tracked_rate": 1.0,
     "mode_c_trigger_rate": 1.0,
     "numerical_stability": true,
+    "bifurcation_margin_initial_positive": true,
+    "bifurcation_crossing_detected": true,
+    "bifurcation_margin_final_sign": -1.0,
+    "bifurcation_supervisor_routes_c": true,
     "pass": true,
     "elapsed": 0.01
   },
@@ -94,7 +98,7 @@
     "exposure_violations": 0,
     "toxicity_correlation": 1.0,
     "pass": true,
-    "elapsed": 0.07
+    "elapsed": 0.05
   },
   "16.10": {
     "subtest": "16.10",
@@ -105,7 +109,7 @@
     "stability_preserved": true,
     "sign_reversal_observed": true,
     "pass": true,
-    "elapsed": 0.0
+    "elapsed": 0.01
   },
   "16.11": {
     "subtest": "16.11",
@@ -177,11 +181,11 @@
     "expansion_invariants_pass": true,
     "cost_ratio": 1.0085,
     "pass": true,
-    "elapsed": 0.04
+    "elapsed": 0.03
   },
   "provenance": {
-    "hdr_version": "7.3.0",
-    "generated_at": "2026-04-03T20:33:57.695813Z",
-    "git_commit": "81d18c4"
+    "hdr_version": "7.4.0",
+    "generated_at": "2026-04-07T12:36:03.454261+00:00",
+    "git_commit": "74bff3a"
   }
 }

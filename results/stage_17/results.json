@@ -51,19 +51,19 @@
     {
       "check": "17.09_mc9axis_mrdt_agreement",
       "passed": "True",
-      "value": "0.2942",
+      "value": "0.1833",
       "note": "|MRDT_9axis - MRDT_analytical| / MRDT_analytical <= 0.35"
     },
     {
       "check": "17.10_mc9axis_gompertz_r_squared",
       "passed": "True",
-      "value": "0.9710",
+      "value": "0.9201",
       "note": "Gompertz R^2 (9-axis MC) >= 0.80"
     },
     {
       "check": "17.11_mc_scalar_mrdt_agreement",
       "passed": "True",
-      "value": "0.0157",
+      "value": "0.0466",
       "note": "|MRDT_scalar - MRDT_analytical| / MRDT_analytical <= 0.15"
     },
     {
@@ -105,11 +105,11 @@
     {
       "check": "17.18_projection_validity",
       "passed": "True",
-      "value": "0.2152",
+      "value": "0.1155",
       "note": "|MRDT_scalar - MRDT_9axis| / MRDT_9axis <= 0.25 (cross-axis coupling finding)"
     }
   ],
-  "elapsed": 1.2210632000060286,
+  "elapsed": 1.1806993999998667,
   "parameters": {
     "n_axes": 9,
     "alpha_0": 1.2,
@@ -121,7 +121,7 @@
       20,
       110
     ],
-    "mc_trajectories": 5000,
+    "mc_trajectories": 2000,
     "seed": 42
   },
   "gompertz_fit": {
@@ -146,23 +146,23 @@
     "dominant_mode_share_age_80_pct": 70.06943243759726
   },
   "monte_carlo_9axis": {
-    "n_trajectories": 5000,
-    "empirical_mrdt_years": 18.50141173941181,
-    "empirical_r_squared": 0.9709646361452641,
-    "mrdt_agreement_vs_analytical_pct": 29.41863856813273,
+    "n_trajectories": 2000,
+    "empirical_mrdt_years": 16.91609147975993,
+    "empirical_r_squared": 0.9200881032052862,
+    "mrdt_agreement_vs_analytical_pct": 18.32921509124363,
     "median_lifespan_mc_years": 58.5,
-    "n_censored": 13
+    "n_censored": 7
   },
   "monte_carlo_scalar": {
-    "n_trajectories": 5000,
-    "empirical_mrdt_years": 14.520484206579175,
-    "empirical_r_squared": 0.9782368818396955,
-    "mrdt_agreement_vs_analytical_pct": 1.5717786206780124,
-    "median_lifespan_mc_years": 66.5
+    "n_trajectories": 2000,
+    "empirical_mrdt_years": 14.962597868643856,
+    "empirical_r_squared": 0.9190692853263392,
+    "mrdt_agreement_vs_analytical_pct": 4.664393878512472,
+    "median_lifespan_mc_years": 65.5
   },
   "projection_validity": {
-    "scalar_vs_9axis_mrdt_agreement_pct": 21.516885245856358,
-    "scalar_vs_9axis_median_lifespan_diff_years": 8.0
+    "scalar_vs_9axis_mrdt_agreement_pct": 11.548138134943443,
+    "scalar_vs_9axis_median_lifespan_diff_years": 7.0
   },
   "sensitivity": {
     "mrdt_vs_sigma_w": {
@@ -192,7 +192,7 @@
   ],
   "provenance": {
     "hdr_version": "7.4.0",
-    "generated_at": "2026-04-03T21:01:05.945035Z",
-    "git_commit": "d0a1ac4"
+    "generated_at": "2026-04-07T12:36:04.877656+00:00",
+    "git_commit": "74bff3a"
   }
 }
