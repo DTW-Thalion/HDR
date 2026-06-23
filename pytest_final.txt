@@ -1,17 +1,15 @@
 HDR Validation Suite — Pytest Results (v7.4.0)
-Generated: 2026-03-17
+Generated: 2026-06-23
 
-Total collected: 293
-Total passed:    293
+Total collected: 372
+Total passed:    372
 Total failed:    0
 Total skipped:   0
-Test files:      30
+Test files:      36
 
-Runtime: 146.72s
+Runtime: 455.79s
 
 Notes:
-- 2 tests in test_stage_16.py were fixed (key name mismatches:
-  expansion_bound_holds -> bound_holds, new_axes_responsive -> new_axis_responsive)
-  due to duplicate function definitions in stage_16_extensions.py where the
-  second definition (line 2603) overrides the first (line 1088) with different keys.
+- All 372 tests pass with zero failures across 36 test files.
+- Includes tests for stages 08, 08b, 09, 10, 11, 16, 17, 18, 18b, 18c, 20.
 - 18 warnings (deprecation + pytest marker warnings), no failures.

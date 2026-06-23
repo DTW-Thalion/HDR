@@ -1,6 +1,6 @@
 # HDR Validation Suite v7.4.0
 
-An in-silico validation suite for the **Homeodynamic Remediation (HDR) Framework v7.4** — a multi-mode adaptive control system for constrained stochastic linear dynamical systems (SLDS). The suite validates mathematical properties, implementation correctness, and empirical performance across synthetic physiological scenarios covering 32 claims spanning v5.0, v7.0, and v7.1 of the framework.
+An in-silico validation suite for the **Homeodynamic Remediation (HDR) Framework v7.4** — a multi-mode adaptive control system for constrained stochastic linear dynamical systems (SLDS). The suite validates mathematical properties, implementation correctness, and empirical performance across synthetic physiological scenarios covering 36 claims spanning v5.0, v7.0, v7.1, and v7.5 of the framework.
 
 ## Repository Structure
 
@@ -20,7 +20,7 @@ HDR/
 ├── extended_512_runner.py       # Extended profile (T=512)
 ├── validation_runner.py         # Validation profile runner
 ├── highpower_runner.py          # Benchmark A (20 seeds × 30 ep/seed)
-├── test_*.py                    # 31 pytest test files (307 tests)
+├── test_*.py                    # 36 pytest test files (372 tests)
 ├── config.json                  # Master configuration
 └── paper_defaults.json          # Reference parameter values from paper
 ```
@@ -36,7 +36,7 @@ HDR/
 
 ## Running the Validation Suite
 
-### Full validation (all 32 claims)
+### Full validation (all 36 claims)
 
 ```bash
 python run_all.py --full-validation
@@ -48,8 +48,8 @@ This runs four phases:
 |-------|-----------|----------------|
 | 1 | Extended profile, stages 01–03c + 05–07 | 3–14 |
 | 2 | Highpower benchmark (20 seeds × 30 ep/seed) | 1–2 |
-| 3 | Stages 08–20 at production scale | 9, 13, 15–36 |
-| 4 | Full pytest suite (31 files, 307 tests) | 15–32 |
+| 3 | Stages 08–20 at production scale + pytest | 9, 13, 15–36 |
+| 4 | Full pytest suite (36 files, 372 tests) | 15–36 |
 
 ### Per-profile runs
 
@@ -80,7 +80,7 @@ Outputs to `results/stage_04/highpower/`.
 ### Running tests
 
 ```bash
-pytest                          # All 31 test files
+pytest                          # All 36 test files (372 tests)
 pytest test_ici.py -v           # Specific test file
 ```
 
@@ -131,32 +131,22 @@ Artifacts are written to `results/stage_{id}/` with atomic file I/O. Each artifa
 
 ## Claim Validation
 
+The suite validates 36 claims across v5.0, v7.0, v7.1, and v7.5:
 
-def lyapunov_cost(A: np.ndarray, Q: np.ndarray, x: np.ndarray) -> tuple[float, np.ndarray]:
-    P = solve_discrete_lyapunov(A, Q)
-    x = np.asarray(x, dtype=float)
-    return float(x.T @ P @ x), P
+- **Claims 1–4**: ICI correctness, Mode A improvement, τ̃ correlation, chance-constraint calibration
+- **Claims 5–6**: ISS scaling, stability under drift
+- **Claims 7–8**: Mode B improvement and DP approximation quality
+- **Claims 9–10**: Coherence penalty, identifiability improvement
+- **Claims 11–14**: ICI regime identification, Mode C Fisher improvement, p_A^robust FP reduction, compound bound correctness
+- **Claims 15–18** (v7.0): Basin classification, reversible/irreversible partition, PWA coupling, multi-site Gershgorin bounds
+- **Claims 19–22** (v7.0): Jump-diffusion, cumulative exposure, state-conditioned coupling, modular expansion
+- **Claims 23–26** (v7.0): FF-RLS drift tracking, multi-rate observation, MI-MPC binary constraints, extended supervisor
+- **Claims 27–28** (v7.0): Particle filter consistency, hierarchical coupling convergence
+- **Claims 29–32** (v7.0): B_k sample complexity, basin boundary convergence, population planning, proxy-composite estimation
+- **Claims 33–34** (v7.5): Emergent Gompertz mortality law, Lipsitz–Goldberger complexity collapse
+- **Claims 35–36** (v7.5): ICI gating under partial observability, estimation-gap documentation
 
-
-def dare_terminal_cost(A: np.ndarray, B: np.ndarray, Q: np.ndarray, R: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    P = solve_discrete_are(A, B, Q, R)
-    K = np.linalg.solve(R + B.T @ P @ B, B.T @ P @ A)
-    return P, K
-
-
-def tau_sandwich(A: np.ndarray, Q: np.ndarray, x: np.ndarray, target: TargetSet, rho: float) -> dict[str, float]:
-    proj = target.project_box(x)
-    xbar = np.asarray(x) - proj
-    tau_h = tau_tilde(x, target, Q, rho, method="box")
-    tau_L, P = lyapunov_cost(A, Q, xbar)
-    eigvals = np.linalg.eigvalsh(np.sqrt(Q) @ P @ np.linalg.pinv(np.sqrt(Q)))
-    eigvals = np.real(eigvals)
-    return {
-        "tau_tilde": float(tau_h),
-        "tau_L": float(tau_L),
-        "lower_coeff": float(np.min(eigvals)),
-        "upper_coeff": float(np.max(eigvals)),
-    }
+Run `python run_all.py --full-validation` to validate all 36 claims in a single run. See `CLAIM_CRITERIA.md` for full criterion definitions and `CLAIM_MATRIX.md` for current status.
 
 ## Reproducing Benchmark A (high-power run)
 
@@ -175,9 +165,9 @@ Outputs are written to results/stage_04/highpower/:
 
 Expected values (fixed seeds 101–2020, 30 ep/seed):
   N_maladaptive : 179
-  Mean gain     : +0.037  (95 % CI [+0.031, +0.042])
-  Win rate      : 0.838
-  Safety delta  : -0.0001
+  Mean gain     : +0.035  (95 % CI [+0.030, +0.040])
+  Win rate      : 0.832
+  Safety delta  : +0.0001
 
 ## Cluster-aware CI analysis (WP-2.3)
 
